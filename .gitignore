@@ -216,3 +216,35 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Databricks DAB artifacts
+.databricks/
+bundle_artifacts/
+*.tfstate
+*.tfstate.backup
+
+# ──────────────────────────────────────────────
+# CustomerLake project-specific exclusions
+# ──────────────────────────────────────────────
+
+# Root-level duplicate notebooks (canonical copies live in src/notebooks/)
+# These 10 are tracked in INFRA-CLEANUP-DUPES — do NOT commit to Git
+/agent_eval.py
+/campaign_agent.py
+/campaign_optimization_models.py
+/churn_prediction_model.py
+/federation_demo.py
+/identity_agent.py
+/ltv_propensity_models.py
+/probabilistic_identity_model.py
+/profile_agent.py
+/RISK-SEG-1_v_risk_tiered_audiences.py
+
+# Root-level WIP/ephemeral notebooks (agent scratch work, not canonical)
+/data_planner_audit_*.ipynb
+/ml_engineer_fixes_*.ipynb
+/DA-SYNTHETIC-*.ipynb
+/demo_walkthrough_15min.ipynb
+
+# MLflow experiment artifacts (tracked by MLflow, not Git)
+agent_evaluation/

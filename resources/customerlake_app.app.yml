@@ -1,0 +1,21 @@
+# CustomerLake Databricks App — Profile Search, Audience Builder, Campaign Dashboard
+# Owner: @app-developer
+# Tag: customerlake_project: customerlake
+
+resources:
+  apps:
+    customerlake_app:
+      name: customerlake
+      description: |
+        CustomerLake demo app — profile search, audience builder,
+        campaign dashboard, and identity steward view.
+        Built on cdm_tmforum data with unified customer profiles.
+      source_code_path: ../customerlake-app
+      config:
+        - name: DATABRICKS_WAREHOUSE_ID
+          value: ${var.warehouse_id}
+      permissions:
+        - user_name: stephen.hage@databricks.com
+          level: CAN_MANAGE
+      tags:
+        customerlake_project: customerlake

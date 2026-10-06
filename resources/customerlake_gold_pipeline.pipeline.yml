@@ -1,0 +1,24 @@
+# CustomerLake Gold Views — SDP Pipeline (Task C-1)
+# Owner: @data-engineer
+# Materializes: customer_profile_360, transaction_fact, digital_activity
+# Target: cdm_tmforum.gold_sdp (pipeline-managed schema)
+# Tag: customerlake_project: customerlake
+# Updated by @devops (2026-09-29): Aligned library path with C-1 production notebook
+
+resources:
+  pipelines:
+    customerlake_gold_pipeline:
+      name: customerlake-gold-pipeline
+      catalog: ${var.catalog}
+      target: gold_sdp
+      development: true
+      continuous: false
+      channel: PREVIEW
+      libraries:
+        - notebook:
+            path: ../src/pipelines/gold_views_pipeline
+      tags:
+        customerlake_project: customerlake
+      configuration:
+        customerlake_catalog: ${var.catalog}
+        customerlake_schema: gold_sdp

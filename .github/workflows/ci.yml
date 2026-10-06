@@ -1,0 +1,30 @@
+# CustomerLake CI — Validate DAB on every push/PR
+name: CI - Bundle Validate
+
+on:
+  push:
+    branches: ['feature/*', 'main']
+  pull_request:
+    branches: ['main', 'release/*']
+
+jobs:
+  validate:
+    name: Validate Bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: databricks/setup-cli@main
+
+      - name: Validate dev target
+        run: databricks bundle validate --target dev
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+      - name: Validate test target
+        if: startsWith(github.base_ref, 'release/')
+        run: databricks bundle validate --target test
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}

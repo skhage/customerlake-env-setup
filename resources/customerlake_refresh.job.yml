@@ -1,0 +1,27 @@
+# CustomerLake Refresh Job — Orchestrates pipeline + metric refresh
+# Owner: @data-engineer
+# Tag: customerlake_project: customerlake
+
+resources:
+  jobs:
+    customerlake_refresh:
+      name: customerlake-refresh
+      tags:
+        customerlake_project: customerlake
+      tasks:
+        - task_key: run_gold_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.customerlake_gold_pipeline.id}
+            full_refresh: false
+        - task_key: refresh_metrics
+          depends_on:
+            - task_key: run_gold_pipeline
+          notebook_task:
+            notebook_path: ../src/notebooks/refresh_metrics.py
+            source: WORKSPACE
+          # Uses serverless compute by default
+      schedule:
+        quartz_cron_expression: '0 0 6 * * ?'
+        timezone_id: America/Los_Angeles
+      queue:
+        enabled: true

@@ -1,0 +1,24 @@
+# CustomerLake Audience Refresh — SDP Pipeline (Task C-2)
+# Owner: @data-engineer
+# Flow: eligibility → consent → deduplication → activation
+# Materializes: eligible_contacts (private), audience_snapshot_refresh, activation_queue
+# Target: cdm_tmforum.marketing_sdp (pipeline-managed schema)
+# Tag: customerlake_project: customerlake
+
+resources:
+  pipelines:
+    customerlake_audience_pipeline:
+      name: customerlake-audience-pipeline
+      catalog: ${var.catalog}
+      target: marketing_sdp
+      development: true
+      continuous: false
+      channel: PREVIEW
+      libraries:
+        - notebook:
+            path: ../src/pipelines/audience_refresh_pipeline
+      tags:
+        customerlake_project: customerlake
+      configuration:
+        customerlake_catalog: ${var.catalog}
+        customerlake_schema: marketing_sdp

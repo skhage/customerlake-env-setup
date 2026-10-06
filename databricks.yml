@@ -1,0 +1,65 @@
+# CustomerLake Readiness — Declarative Automation Bundle
+# Project: customerlake-env-setup
+# Owner: @devops (Release Engineering)
+# Tagging mandate: All assets MUST carry customerlake_project: customerlake
+
+bundle:
+  name: customerlake-env-setup
+  tags:
+    customerlake_project: customerlake
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog catalog for CustomerLake objects
+    default: cdm_tmforum
+  schema:
+    description: Default schema within the catalog
+    default: gold
+  warehouse_id:
+    description: SQL warehouse ID for jobs and dashboards
+    lookup:
+      warehouse: Shared SQL Warehouse
+
+# ──────────────────────────────────────────────
+# Targets: dev / test / prod
+# ──────────────────────────────────────────────
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+    variables:
+      catalog: cdm_tmforum
+      schema: gold
+    tags:
+      environment: dev
+      customerlake_project: customerlake
+
+  test:
+    mode: development
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+    variables:
+      catalog: cdm_tmforum
+      schema: gold
+    tags:
+      environment: test
+      customerlake_project: customerlake
+
+  prod:
+    mode: production
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+    variables:
+      catalog: cdm_tmforum
+      schema: gold
+    tags:
+      environment: prod
+      customerlake_project: customerlake
+    run_as:
+      # Production runs as a service principal — update when provisioned
+      user_name: stephen.hage@databricks.com

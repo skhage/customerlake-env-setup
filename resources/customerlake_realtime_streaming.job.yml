@@ -1,0 +1,29 @@
+# CustomerLake Real-Time Profile Updates — Streaming Job (Task C-3)
+# Owner: @data-engineer
+# Processes interactions, billing, and digital activity into profile_realtime_metrics
+# via Structured Streaming with foreachBatch MERGE.
+# Tag: customerlake_project: customerlake
+# Created by @devops proactive audit (2026-09-30)
+
+resources:
+  jobs:
+    customerlake_realtime_streaming:
+      name: customerlake-realtime-streaming
+      tags:
+        customerlake_project: customerlake
+      tasks:
+        - task_key: realtime_profile_updates
+          notebook_task:
+            notebook_path: ../src/pipelines/realtime_profile_updates
+            source: WORKSPACE
+          # Uses serverless compute by default
+      # Continuous trigger for always-on streaming
+      trigger:
+        periodic:
+          interval: 1
+          unit: HOURS
+      # Note: For production, switch to continuous trigger:
+      # continuous:
+      #   pause_status: UNPAUSED
+      queue:
+        enabled: true
