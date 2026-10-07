@@ -248,6 +248,8 @@ bundle_artifacts/
 /DE-FIX-*.ipynb
 /DE-LTV-MIGRATE-*.ipynb
 /DE-REFRESH-EXEC-*.ipynb
+/PM-*-ROLLUP-execution.ipynb
+/PM-*-execution.ipynb
 /predemo_cache_warmup.ipynb
 /demo_walkthrough_15min.ipynb
 
