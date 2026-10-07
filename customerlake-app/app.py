@@ -4435,6 +4435,233 @@ async def cache_table_health():
 # ---------------------------------------------------------------------------
 # 22. DEMO PREFETCH — CMO-138 Response
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# 24. REVENUE ATTRIBUTION — CMO-169, CMO-176 Response (Proactive)
+# ---------------------------------------------------------------------------
+# Ablation results (ML-ABLATION-CHURN):
+#   Model A (billing-only): AUC 0.8739
+#   Model C (cross-source): AUC 0.9752 (+11.6%)
+#   131 exclusive churners: $9.7M billed, $72.2M recurring
+#   Precision 53% → 80% = 58% fewer false positives
+ABLATION_AUC_BILLING_ONLY = 0.8739
+ABLATION_AUC_CROSS_SOURCE = 0.9752
+ABLATION_AUC_LIFT_PCT = round(
+    (ABLATION_AUC_CROSS_SOURCE - ABLATION_AUC_BILLING_ONLY)
+    / ABLATION_AUC_BILLING_ONLY * 100, 1
+)
+ABLATION_EXCLUSIVE_CHURNERS = 131
+ABLATION_EXCLUSIVE_BILLED = 9_700_000
+ABLATION_EXCLUSIVE_RECURRING = 72_200_000
+ABLATION_FALSE_POS_REDUCTION_PCT = 58
+ABLATION_WASTED_CONTACTS_SAVED = 2486
+
+
+@app.get("/api/executive/revenue-attribution")
+async def executive_revenue_attribution():
+    """Honest CDP-attributable revenue breakdown.
+
+    CMO-169: $313.6M headline is not CustomerLake revenue impact.
+    CMO-176: CDP-attributable revenue is $4M not $305M.
+
+    Returns a tiered attribution:
+      Tier 1 (PROVEN): Holdout-measured or directly attributable — ~$4M
+      Tier 2 (MODEL-DERIVED): Ablation-backed cross-source churn lift
+      Tier 3 (MANAGED PORTFOLIO): Total billing managed, NOT CDP impact
+    """
+    cached = cache_get("revenue_attribution")
+    if cached:
+        return cached
+    try:
+        # Tier 1: Proven attributable — from existing endpoints
+        # Dark audience (calibrated)
+        dark_kpis = sql_query(f"""
+            SELECT dark_addressable_entities,
+                   SUM(COALESCE(total_billed_amount, 0)) as dark_billed
+            FROM {CATALOG}.gold.customer_profile_360
+            WHERE entity_id IN (
+                SELECT entity_id FROM {VIEW_DARK_AUDIENCE}
+                WHERE is_dark_addressable = true
+            )
+            GROUP BY ALL
+            LIMIT 1
+        """)
+
+        # Campaign incrementality (holdout-measured)
+        incr = sql_query(f"""
+            SELECT
+                ROUND(SUM(campaign_incremental_revenue_usd), 0) as incremental_revenue,
+                ROUND(SUM(fully_loaded_cost_usd), 0) as total_cost
+            FROM {VIEW_LTV_CAC_INCR}
+        """)
+
+        # Suppression savings (measured component only)
+        suppress = sql_query(f"""
+            SELECT total_90day_cost_savings, total_90day_revenue_protected,
+                   total_90day_pnl_impact
+            FROM {CATALOG}._metrics.customerlake_suppression_90day_pnl
+            LIMIT 1
+        """)
+
+        # Churn revenue at risk (total portfolio)
+        churn = sql_query(f"""
+            SELECT
+                ROUND(SUM(COALESCE(total_billed_amount, 0)), 0) as total_portfolio_billed,
+                COUNT(*) as total_entities,
+                SUM(CASE WHEN churn_risk_score > 0.5 THEN 1 ELSE 0 END) as high_risk_entities,
+                ROUND(SUM(CASE WHEN churn_risk_score > 0.5
+                    THEN COALESCE(total_billed_amount, 0) ELSE 0 END), 0) as high_risk_revenue
+            FROM {CATALOG}.gold.customer_profile_360
+        """)
+
+        # Build tier 1
+        incr_r = incr[0] if incr else {}
+        suppress_r = suppress[0] if suppress else {}
+        churn_r = churn[0] if churn else {}
+
+        incr_rev = float(incr_r.get("incremental_revenue") or 0)
+        suppress_measured = float(suppress_r.get("total_90day_cost_savings") or 0)
+        suppress_projected = float(suppress_r.get("total_90day_revenue_protected") or 0)
+        suppress_total = float(suppress_r.get("total_90day_pnl_impact") or 0)
+
+        # Dark audience calibrated value
+        dark_billed = float(dark_kpis[0].get("dark_billed") or 0) if dark_kpis else 0
+        dark_calibrated = round(dark_billed / LTV_CALIBRATION_UNACTIVATED)
+
+        proven_total = round(incr_rev + suppress_measured + dark_calibrated)
+
+        tier1 = {
+            "label": "Proven CDP-Attributable",
+            "confidence": "HIGH — holdout-measured or directly attributable",
+            "total": proven_total,
+            "components": [
+                {
+                    "name": "Campaign Incrementality",
+                    "value": round(incr_rev),
+                    "method": "Holdout-controlled A/B measurement",
+                    "confidence": "MEASURED",
+                },
+                {
+                    "name": "Dark Audience Discovery",
+                    "value": dark_calibrated,
+                    "method": f"Calibrated billing (÷{LTV_CALIBRATION_UNACTIVATED:.1f}x LTV correction)",
+                    "confidence": "CALIBRATED",
+                },
+                {
+                    "name": "Suppression Cost Savings",
+                    "value": round(suppress_measured),
+                    "method": "Real marketing spend eliminated",
+                    "confidence": "MEASURED",
+                },
+            ],
+        }
+
+        # Tier 2: Model-derived (ablation-backed)
+        exclusive_recurring = ABLATION_EXCLUSIVE_RECURRING
+        exclusive_billed = ABLATION_EXCLUSIVE_BILLED
+
+        tier2 = {
+            "label": "Model-Derived (Ablation-Backed)",
+            "confidence": "MEDIUM — validated by ablation study, not holdout-measured",
+            "total": exclusive_recurring,
+            "components": [
+                {
+                    "name": "Cross-Source Exclusive Churn Detection",
+                    "value": exclusive_recurring,
+                    "method": (
+                        f"{ABLATION_EXCLUSIVE_CHURNERS} churners detected ONLY by cross-source model "
+                        f"(AUC {ABLATION_AUC_CROSS_SOURCE} vs billing-only {ABLATION_AUC_BILLING_ONLY}). "
+                        f"${exclusive_billed:,} billed, ${exclusive_recurring:,} recurring."
+                    ),
+                    "confidence": "ABLATION-VALIDATED",
+                },
+                {
+                    "name": "Retention Efficiency Gain",
+                    "value": None,
+                    "method": (
+                        f"{ABLATION_FALSE_POS_REDUCTION_PCT}% fewer false positives = "
+                        f"{ABLATION_WASTED_CONTACTS_SAVED:,} fewer wasted retention contacts/cycle. "
+                        f"Precision improvement: 53% → 80% at high-confidence threshold."
+                    ),
+                    "confidence": "ABLATION-VALIDATED",
+                    "note": "Cost savings depend on retention team cost-per-contact — not quantified yet.",
+                },
+            ],
+            "ablation_summary": {
+                "billing_only_auc": ABLATION_AUC_BILLING_ONLY,
+                "cross_source_auc": ABLATION_AUC_CROSS_SOURCE,
+                "auc_lift_pct": ABLATION_AUC_LIFT_PCT,
+                "exclusive_churners": ABLATION_EXCLUSIVE_CHURNERS,
+                "exclusive_billed_usd": exclusive_billed,
+                "exclusive_recurring_usd": exclusive_recurring,
+                "false_positive_reduction_pct": ABLATION_FALSE_POS_REDUCTION_PCT,
+                "wasted_contacts_saved": ABLATION_WASTED_CONTACTS_SAVED,
+                "feature_importance_cross_source_pct": 52.4,
+                "note": "5-fold stratified CV on 22,059 customers. Logged to MLflow.",
+            },
+        }
+
+        # Tier 3: Managed portfolio (NOT CDP impact)
+        portfolio_billed = float(churn_r.get("total_portfolio_billed") or 0)
+        total_entities = int(churn_r.get("total_entities") or 0)
+
+        tier3 = {
+            "label": "Total Managed Portfolio (NOT CDP Impact)",
+            "confidence": "CONTEXT ONLY — this revenue exists regardless of CustomerLake",
+            "total": round(portfolio_billed),
+            "total_entities": total_entities,
+            "high_risk_entities": int(churn_r.get("high_risk_entities") or 0),
+            "high_risk_revenue": float(churn_r.get("high_risk_revenue") or 0),
+            "warning": (
+                "This is total billing under management, not CDP-attributable value. "
+                "Do NOT present this as 'CustomerLake revenue impact.' The previous "
+                "$305M headline was structurally misleading (CMO-169/176)."
+            ),
+        }
+
+        result = {
+            "headline": {
+                "proven_attributable": proven_total,
+                "model_derived": exclusive_recurring,
+                "total_managed_portfolio": round(portfolio_billed),
+                "cmo_headline": (
+                    f"${proven_total:,} proven CDP impact + ${exclusive_recurring:,} "
+                    f"recurring revenue protected by cross-source intelligence. "
+                    f"NOT ${portfolio_billed:,.0f} — that's total portfolio, not CDP value."
+                ),
+            },
+            "tier1_proven": tier1,
+            "tier2_model_derived": tier2,
+            "tier3_managed_portfolio": tier3,
+            "narrative": {
+                "board_ready": (
+                    f"CustomerLake delivers ${proven_total:,} in proven, measured value "
+                    f"(holdout-controlled incrementality + suppression savings + dark audience "
+                    f"discovery). Our cross-source churn model — which cannot be replicated by "
+                    f"billing-only CDPs — protects an additional ${exclusive_recurring:,} in "
+                    f"recurring revenue by detecting {ABLATION_EXCLUSIVE_CHURNERS} at-risk customers "
+                    f"that single-source models miss entirely."
+                ),
+                "differentiator": (
+                    f"The {ABLATION_AUC_LIFT_PCT}% AUC improvement from cross-source data is the "
+                    f"proof point: billing-only churn prediction (AUC {ABLATION_AUC_BILLING_ONLY}) "
+                    f"vs CustomerLake's unified model (AUC {ABLATION_AUC_CROSS_SOURCE}). "
+                    f"This translates to {ABLATION_FALSE_POS_REDUCTION_PCT}% fewer false positives "
+                    f"and {ABLATION_WASTED_CONTACTS_SAVED:,} fewer wasted retention contacts per cycle. "
+                    f"No legacy CDP can do this because they don't own the identity graph."
+                ),
+                "what_changed": (
+                    "Previous headline: '$305M CustomerLake revenue impact.' "
+                    "That was total managed portfolio — not CDP-attributable. "
+                    f"New headline: '${proven_total:,} proven + ${exclusive_recurring:,} "
+                    f"model-derived = honest attribution.' This is what a CMO can defend."
+                ),
+            },
+        }
+        return cache_set("revenue_attribution", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/demo/prefetch")
 async def demo_prefetch():
     """Warm all demo-critical endpoint caches in a single call.
@@ -4452,6 +4679,7 @@ async def demo_prefetch():
         ("dual_roi", "/api/executive/dual-roi", executive_dual_roi),
         ("channel_maturity", "/api/channels/maturity", channel_maturity),
         ("honest_revenue", "/api/dark-audience/honest-revenue", dark_audience_honest_revenue),
+        ("revenue_attribution", "/api/executive/revenue-attribution", executive_revenue_attribution),
     ]
     for key, path, func in endpoints:
         t0 = time.time()
@@ -4487,7 +4715,8 @@ async def demo_cache_status():
     now = time.time()
     status = {}
     for key in ["exec_summary", "tiered_roi", "roi_methodology",
-                "ltv_cac_reconciliation", "dual_roi", "honest_revenue"]:
+                "ltv_cac_reconciliation", "dual_roi", "honest_revenue",
+                "revenue_attribution"]:
         entry = _CACHE.get(key)
         if entry and entry[0] > now:
             status[key] = {
@@ -4511,4 +4740,4 @@ async def demo_cache_status():
 # ---------------------------------------------------------------------------
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "app": "CustomerLake", "version": "39.0.0"}
+    return {"status": "ok", "app": "CustomerLake", "version": "40.0.0"}
