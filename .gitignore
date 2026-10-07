@@ -245,13 +245,14 @@ bundle_artifacts/
 /ml_engineer_fixes_*.ipynb
 /DA-SYNTHETIC-*.ipynb
 /DA-CACHE-REFRESH-*.ipynb
+/DE-CACHE-*.ipynb
 /DE-FIX-*.ipynb
 /DE-LTV-MIGRATE-*.ipynb
 /DE-REFRESH-EXEC-*.ipynb
-/PM-*-ROLLUP-execution.ipynb
-/PM-*-execution.ipynb
+/PM-*.ipynb
 /predemo_cache_warmup.ipynb
 /demo_walkthrough_15min.ipynb
+/cache_refresh_*.ipynb
 
 # MLflow experiment artifacts (tracked by MLflow, not Git)
 agent_evaluation/
