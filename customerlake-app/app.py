@@ -239,7 +239,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="CustomerLake",
     description="AI-Driven Customer Intelligence Platform",
-    version="38.0.0",
+    version="39.0.0",
     lifespan=lifespan,
 )
 
@@ -2352,6 +2352,17 @@ async def closedloop_targeting():
         total_conversions = sum(t.get("total_conversions", 0) or 0 for t in tiers)
         total_cost = sum(float(t.get("total_cost", 0) or 0) for t in tiers)
         total_attr_rev = sum(float(t.get("total_attributed_revenue", 0) or 0) for t in tiers)
+        # CMO-160: ROAS figures are gross-attribution (total_attributed_revenue / cost),
+        # NOT incremental. True incremental ROI = 0.37x from holdout measurement.
+        # Add explicit disambiguation so the app never conflates the two.
+        for t in tiers:
+            t["roas_type"] = "GROSS_ATTRIBUTION"
+            t["roas_disclaimer"] = (
+                "Gross-attribution ROAS (total_attributed_revenue / total_cost). "
+                "NOT incremental — does not subtract baseline conversion. "
+                "True incremental ROI from holdout measurement = 0.37x."
+            )
+
         return {
             "tiers": tiers,
             "summary": {
@@ -2360,6 +2371,16 @@ async def closedloop_targeting():
                 "total_cost": total_cost,
                 "total_attributed_revenue": total_attr_rev,
                 "blended_roas": round(total_attr_rev / total_cost, 2) if total_cost else 0,
+                "blended_roas_type": "GROSS_ATTRIBUTION",
+                "incremental_roi_x": 0.37,
+                "incremental_roi_source": "Holdout-based measurement (treatment vs control)",
+                "vanity_metric_warning": (
+                    "Gross-attribution ROAS counts ALL conversions in the treatment group "
+                    "regardless of whether they would have converted anyway. "
+                    "True incremental ROI from holdout measurement = 0.37x. "
+                    "Lead with incremental ROI in board presentations; use gross-attribution "
+                    "ROAS only for internal channel optimization."
+                ),
             },
         }
     except Exception as e:
@@ -3337,6 +3358,15 @@ async def executive_summary():
             "hero_kpis": {
                 "total_portfolio_revenue": h.get("total_portfolio_revenue_usd"),
                 "revenue_at_risk": h.get("revenue_at_risk_usd"),
+                "revenue_at_risk_calibrated": round(
+                    float(h.get("revenue_at_risk_usd") or 0) / LTV_CALIBRATION_PORTFOLIO
+                ),
+                "revenue_at_risk_calibration_note": (
+                    f"Revenue at risk is derived from ML churn_probability × predicted_ltv_12m. "
+                    f"The LTV model over-predicts by ~{LTV_CALIBRATION_PORTFOLIO:.1f}x "
+                    f"(verdict: OVER_PREDICTS_SEVERE). Calibrated figure divides by "
+                    f"{LTV_CALIBRATION_PORTFOLIO:.1f}x. Use calibrated for board presentations."
+                ),
                 "incremental_roi_x": float(true_roas.get("metric_value") or 0),
                 "roi_footnote": true_roas.get("footnote", ""),
                 "total_entities": h.get("total_entities"),
@@ -4481,4 +4511,4 @@ async def demo_cache_status():
 # ---------------------------------------------------------------------------
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "app": "CustomerLake", "version": "38.0.0"}
+    return {"status": "ok", "app": "CustomerLake", "version": "39.0.0"}
