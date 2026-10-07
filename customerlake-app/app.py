@@ -59,11 +59,74 @@ VIEW_STAT_QUALITY_NARRATIVE = f"{CATALOG}._metrics.customerlake_statistical_qual
 VIEW_CHANNEL_ALLOC_WASTE = f"{CATALOG}._metrics.customerlake_channel_allocation_waste_cached"  # 3.8s → 0.6s (6x)
 VIEW_COUNTERFACTUAL_PERF = f"{CATALOG}._metrics.customerlake_counterfactual_performance_cached"  # 3.6s → 0.6s (6x)
 VIEW_RISK_BASED_TARGETING = f"{CATALOG}._metrics.customerlake_risk_based_targeting_cached"  # 3.3s → 0.6s (5x)
+#
+# --- V3 cached tables (APP-BREAKEVEN-HERO) ---
+VIEW_HONEST_REVENUE = f"{CATALOG}._metrics.customerlake_dark_audience_honest_revenue_cached"
+VIEW_EXEC_SUMMARY_V2 = f"{CATALOG}._metrics.customerlake_exec_summary_v2_cached"
 
 # Minimum holdout sample size for credible power claims.
 # Segments with fewer holdout entities are reclassified as ANOMALY_LOW_N
 # regardless of what the upstream view labels them. CMO-73 response.
 MIN_HOLDOUT_N = 30
+
+# ---------------------------------------------------------------------------
+# LTV Model Calibration (CMO-149/150/141 — OVER_PREDICTS_SEVERE)
+# ---------------------------------------------------------------------------
+# The 12-month LTV model over-predicts vs actual 12-month revenue:
+#   - Unactivated cohort: 6.40x (from ltv_closedloop_validation)
+#   - Email (largest activated): 6.67x
+#   - Portfolio-wide (incl unactivated): 11.29x
+# Any user-facing LTV projection from predicted_ltv_12m MUST show both
+# raw model output AND a calibrated estimate dividing by the factor.
+# Source: customerlake_ltv_closedloop_validation_cached
+LTV_CALIBRATION_UNACTIVATED = 6.40
+LTV_CALIBRATION_EMAIL = 6.67
+LTV_CALIBRATION_PORTFOLIO = 6.67  # use email (conservative activated avg)
+
+# ---------------------------------------------------------------------------
+# Cache table freshness guard (APP-CACHE-HEALTH, CMO-145 systemic fix)
+# ---------------------------------------------------------------------------
+# Maximum age (hours) before a cached table is flagged as stale.
+# The customerlake_refresh job runs every ~4h; 6h gives a 50% buffer.
+CACHE_STALE_HOURS = 6
+
+# All cached/materialized tables the app depends on.
+# Each has a materialized_at column from the refresh job.
+CACHED_TABLE_NAMES = [
+    "customerlake_executive_summary_materialized",
+    "customerlake_dark_audience_opportunity_cached",
+    "customerlake_incrementality_by_risk_tier_cached",
+    "customerlake_ltv_cac_incremental_cached",
+    "customerlake_roi_confidence_analysis_cached",
+    "customerlake_statistical_significance_cached",
+    "customerlake_campaign_performance_credible_cached",
+    "customerlake_closed_loop_cycle_cached",
+    "customerlake_cost_to_serve_cached",
+    "customerlake_measurement_maturity_cached",
+    "customerlake_ltv_cac_fully_loaded_cached",
+    "customerlake_acquisition_efficiency_cached",
+    "customerlake_statistical_quality_narrative_cached",
+    "customerlake_channel_allocation_waste_cached",
+    "customerlake_counterfactual_performance_cached",
+    "customerlake_risk_based_targeting_cached",
+    "customerlake_ltv_closedloop_validation_cached",
+    "customerlake_holdout_quality_assessment_cached",
+    "customerlake_exec_summary_cached",
+    "customerlake_exec_summary_v2_cached",
+    "customerlake_incrementality_report_cached",
+    "customerlake_incrementality_roi_hero_cached",
+    "customerlake_campaign_performance_bulletproof_cached",
+    "customerlake_suppression_90day_pnl_cached",
+    "customerlake_channel_maturity_status_cached",
+    "customerlake_channel_retention_curves_cached",
+    "customerlake_reallocation_scenario_model_cached",
+    "customerlake_ltv_cac_reconciliation_cached",
+    "customerlake_ltv_validation_backtest_cached",
+    "customerlake_feedback_loop_plan_cached",
+    "customerlake_measurement_maturity_roadmap_cached",
+    "customerlake_dark_audience_honest_revenue_cached",
+    "customerlake_exec_summary_v2_cached",
+]
 
 # ---------------------------------------------------------------------------
 # Server-side response cache (CMO-138: 39s load = dead demo)
@@ -176,7 +239,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="CustomerLake",
     description="AI-Driven Customer Intelligence Platform",
-    version="33.0.0",
+    version="38.0.0",
     lifespan=lifespan,
 )
 
@@ -3021,7 +3084,112 @@ async def comparison_proof_points():
     except Exception:
         proof["top_segment"] = {}
 
+    # 7. Capability gap count (CMO-153: lead with capability gaps, not AUC delta)
+    try:
+        matrix = await comparison_matrix()
+        native_only_count = 0
+        unique_capabilities = []
+        for cat in matrix:
+            for feat in cat.get("features", []):
+                cl = feat.get("customerlake", {}).get("level", "")
+                sf = feat.get("salesforce_dc", {}).get("level", "")
+                br = feat.get("braze", {}).get("level", "")
+                it = feat.get("iterable", {}).get("level", "")
+                if cl == "native" and sf in ("none", "limited") and br in ("none", "limited") and it in ("none", "limited"):
+                    native_only_count += 1
+                    unique_capabilities.append({
+                        "feature": feat.get("feature"),
+                        "category": cat.get("category"),
+                        "proof": feat.get("customerlake", {}).get("proof", ""),
+                    })
+        proof["capability_gap"] = {
+            "native_only_count": native_only_count,
+            "unique_capabilities": unique_capabilities,
+            "cmo_soundbite": (
+                f"{native_only_count} capabilities where CustomerLake is NATIVE "
+                f"and competitors offer NONE or LIMITED. These are not incremental "
+                f"improvements — they are things legacy CDPs literally cannot do."
+            ),
+        }
+    except Exception:
+        proof["capability_gap"] = {"native_only_count": 0, "unique_capabilities": []}
+
     return proof
+
+
+# ---------------------------------------------------------------------------
+# Suppression P&L Breakdown — CMO-151 Response
+# ---------------------------------------------------------------------------
+@app.get("/api/executive/suppression-breakdown")
+async def suppression_breakdown():
+    """Suppression P&L with measured vs projected split.
+
+    CMO-151: The $563K suppression figure is 98% model projection ($552K
+    revenue protected) and only 2% measured cost savings ($11K). The app
+    must transparently show this split, not present the combined figure
+    as if it's all been measured.
+    """
+    try:
+        rows = sql_query(f"""
+            SELECT
+                entities_to_suppress,
+                total_90day_cost_savings,
+                total_90day_revenue_protected,
+                total_90day_pnl_impact,
+                organic_cvr_pct,
+                marketed_cvr_pct,
+                expected_lift_from_suppression_pct,
+                fiscal_quarter,
+                action_week_1,
+                action_week_4,
+                action_week_12
+            FROM {CATALOG}._metrics.customerlake_suppression_90day_pnl
+        """)
+        if not rows:
+            raise HTTPException(status_code=404, detail="No suppression data")
+        r = rows[0]
+        cost_savings = float(r.get("total_90day_cost_savings") or 0)
+        rev_protected = float(r.get("total_90day_revenue_protected") or 0)
+        total_pnl = float(r.get("total_90day_pnl_impact") or 0)
+        measured_pct = round(cost_savings / total_pnl * 100, 1) if total_pnl else 0
+
+        return {
+            "entities_to_suppress": r.get("entities_to_suppress"),
+            "measured": {
+                "label": "Measured Cost Savings",
+                "value": round(cost_savings),
+                "description": "Real marketing spend eliminated by suppressing value-destructive segments",
+                "confidence": "HIGH",
+            },
+            "projected": {
+                "label": "Projected Revenue Protected",
+                "value": round(rev_protected),
+                "description": (
+                    f"Model projects organic CVR ({r.get('organic_cvr_pct')}%) exceeds "
+                    f"marketed CVR ({r.get('marketed_cvr_pct')}%) for suppressed entities, "
+                    f"yielding {r.get('expected_lift_from_suppression_pct')}% lift"
+                ),
+                "confidence": "MODEL-PROJECTED",
+            },
+            "combined_pnl": round(total_pnl),
+            "measured_pct": measured_pct,
+            "projected_pct": round(100 - measured_pct, 1),
+            "transparency_note": (
+                f"Of the ${total_pnl:,.0f} total impact, only ${cost_savings:,.0f} ({measured_pct}%) "
+                f"is measured cost savings. The remaining ${rev_protected:,.0f} ({100 - measured_pct:.0f}%) "
+                f"is model-projected revenue protection based on organic vs marketed CVR differential."
+            ),
+            "action_plan": {
+                "week_1": r.get("action_week_1"),
+                "week_4": r.get("action_week_4"),
+                "week_12": r.get("action_week_12"),
+            },
+            "fiscal_quarter": r.get("fiscal_quarter"),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ---------------------------------------------------------------------------
@@ -3174,6 +3342,13 @@ async def executive_summary():
                 "total_entities": h.get("total_entities"),
                 "suppression_90day_value": h.get("suppression_90day_value_usd"),
                 "predicted_ltv_total": h.get("total_predicted_ltv_usd"),
+                "predicted_ltv_calibrated": round(
+                    float(h.get("total_predicted_ltv_usd") or 0) / LTV_CALIBRATION_PORTFOLIO
+                ),
+                "ltv_calibration_note": (
+                    f"Raw LTV model over-predicts by ~{LTV_CALIBRATION_PORTFOLIO:.1f}x "
+                    f"(verdict: OVER_PREDICTS_SEVERE). Calibrated figure shown for reference."
+                ),
             },
             "identity_graph": {
                 "total_entities": h.get("total_entities"),
@@ -3208,6 +3383,46 @@ async def executive_summary():
             },
             "measurement_roadmap": maturity,
         }
+
+        # CMO-157: Data integrity cross-check
+        # zero_ltv_addressable_count vs dark_addressable_entities
+        try:
+            v2 = sql_query(f"""
+                SELECT zero_ltv_entity_count, zero_ltv_addressable_count,
+                       dark_addressable_entities
+                FROM {VIEW_EXEC_SUMMARY_V2}
+                LIMIT 1
+            """)
+            if v2:
+                v2r = v2[0]
+                dark_addr = int(v2r.get("dark_addressable_entities") or 0)
+                zero_addr = int(v2r.get("zero_ltv_addressable_count") or 0)
+                zero_total = int(v2r.get("zero_ltv_entity_count") or 0)
+                warnings = []
+                if dark_addr > 0 and zero_addr == 0:
+                    warnings.append({
+                        "code": "ADDR_COUNT_MISMATCH",
+                        "severity": "high",
+                        "message": (
+                            f"dark_addressable_entities={dark_addr} but "
+                            f"zero_ltv_addressable_count={zero_addr}. These measure "
+                            f"different populations: dark audience = consented entities "
+                            f"with billing but never activated; zero-LTV = entities with "
+                            f"no billing/LTV. They are NOT contradictory but the naming "
+                            f"is confusing in demos."
+                        ),
+                        "display_note": (
+                            f"{dark_addr} dark audience entities have billing history "
+                            f"and ML predictions but have never been activated. "
+                            f"{zero_total:,} zero-LTV contacts have no billing at all "
+                            f"and are not currently addressable."
+                        ),
+                    })
+                if warnings:
+                    result["data_integrity_warnings"] = warnings
+        except Exception:
+            pass  # Non-critical — don't break exec summary for cross-check
+
         return cache_set("exec_summary", result)
     except HTTPException:
         raise
@@ -3257,9 +3472,29 @@ async def dark_audience_kpis():
             ORDER BY dark_audience_priority
         """)
 
+        raw = kpis[0] if kpis else {}
+        raw_dark_ltv = float(raw.get("dark_ltv_total") or 0)
+        raw_addressable_ltv = float(raw.get("addressable_dark_ltv") or 0)
+        raw_opportunity = float(raw.get("addressable_opportunity") or 0)
+
         return {
-            "kpis": kpis[0] if kpis else {},
+            "kpis": raw,
             "priority_breakdown": priority,
+            "ltv_calibration": {
+                "calibration_factor": LTV_CALIBRATION_UNACTIVATED,
+                "calibrated_dark_ltv_total": round(raw_dark_ltv / LTV_CALIBRATION_UNACTIVATED),
+                "calibrated_addressable_dark_ltv": round(raw_addressable_ltv / LTV_CALIBRATION_UNACTIVATED),
+                "calibrated_opportunity": round(raw_opportunity / LTV_CALIBRATION_UNACTIVATED),
+                "source": "customerlake_ltv_closedloop_validation (unactivated cohort)",
+                "disclosure": (
+                    f"The ML LTV model over-predicts 12-month revenue by "
+                    f"{LTV_CALIBRATION_UNACTIVATED:.1f}x for unactivated entities "
+                    f"(validation verdict: OVER_PREDICTS_SEVERE). "
+                    f"Calibrated estimates divide raw predictions by {LTV_CALIBRATION_UNACTIVATED:.1f}x. "
+                    f"Raw model output shown for transparency; use calibrated "
+                    f"figures for board presentations and ROI projections."
+                ),
+            },
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -3357,6 +3592,108 @@ async def dark_audience_entities(
         total = sql_query(count_q, params)[0]["total"]
 
         return {"entities": rows, "total": total, "limit": limit, "offset": offset}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# 15b. DARK AUDIENCE HONEST REVENUE — CMO-156, CMO-152 Response
+# ---------------------------------------------------------------------------
+@app.get("/api/dark-audience/honest-revenue")
+async def dark_audience_honest_revenue():
+    """Honest dark audience economics: breakeven CVR as headline metric.
+
+    CMO-156: $9.6M expected revenue uses uncalibrated LTV (6.7x overpredict).
+    CMO-152: Revenue-per-conversion is unexplained.
+    DA-DARK-BREAKEVEN: Lead with breakeven CVR, not expected revenue.
+
+    This endpoint returns BOTH methodologies (blended + honest) with:
+    - Breakeven CVR as the primary headline metric
+    - LTV-calibrated revenue figures alongside raw
+    - Full derivation chain for transparency
+    - Pilot framing (hypothesis-driven, not forecast)
+    """
+    cached = cache_get("honest_revenue")
+    if cached:
+        return cached
+    try:
+        rows = sql_query(f"""
+            SELECT
+                methodology,
+                dark_addressable_entities,
+                segments_used_for_cac,
+                total_segments,
+                cac_per_conversion_usd,
+                assumed_cvr_pct,
+                expected_conversions,
+                expected_revenue_usd,
+                activation_cost_usd,
+                net_revenue_usd,
+                roi_pct,
+                breakeven_cvr_pct,
+                cac_understatement_factor,
+                roi_verdict,
+                revenue_per_conversion_usd,
+                revenue_derivation,
+                cmo_headline,
+                methodology_note
+            FROM {VIEW_HONEST_REVENUE}
+            ORDER BY methodology
+        """)
+        if not rows:
+            raise HTTPException(status_code=404, detail="No honest revenue data")
+
+        # Find the HONEST_REAL_BASELINE row (credible) and blended
+        honest = next((r for r in rows if r["methodology"] == "HONEST_REAL_BASELINE"), rows[0])
+        blended = next((r for r in rows if r["methodology"] == "CURRENT_ALL_SEGMENTS"), rows[0])
+
+        # Apply LTV calibration to revenue figures
+        raw_expected = float(honest.get("expected_revenue_usd") or 0)
+        raw_per_conv = float(honest.get("revenue_per_conversion_usd") or 0)
+        calibrated_expected = round(raw_expected / LTV_CALIBRATION_UNACTIVATED)
+        calibrated_per_conv = round(raw_per_conv / LTV_CALIBRATION_UNACTIVATED)
+
+        result = {
+            "headline": {
+                "breakeven_cvr_pct": honest.get("breakeven_cvr_pct"),
+                "dark_addressable": honest.get("dark_addressable_entities"),
+                "cmo_headline": honest.get("cmo_headline"),
+                "framing": "HYPOTHESIS — pilot required to validate",
+            },
+            "honest_methodology": {
+                **honest,
+                "calibrated_expected_revenue": calibrated_expected,
+                "calibrated_revenue_per_conversion": calibrated_per_conv,
+                "ltv_calibration_factor": LTV_CALIBRATION_UNACTIVATED,
+                "calibration_note": (
+                    f"Raw expected revenue ${raw_expected:,.0f} divided by "
+                    f"{LTV_CALIBRATION_UNACTIVATED:.1f}x LTV overprediction = "
+                    f"${calibrated_expected:,.0f} calibrated estimate. "
+                    f"Per-conversion: ${raw_per_conv:,.0f} raw → ${calibrated_per_conv:,.0f} calibrated."
+                ),
+            },
+            "blended_methodology": blended,
+            "recommendation": (
+                f"Lead with breakeven CVR ({honest.get('breakeven_cvr_pct')}%). "
+                f"Frame as pilot hypothesis: 'Any CVR above {honest.get('breakeven_cvr_pct')}% "
+                f"is profitable.' Show calibrated revenue (${calibrated_expected:,.0f}) "
+                f"as secondary — never show the raw ${raw_expected:,.0f} without "
+                f"the {LTV_CALIBRATION_UNACTIVATED:.1f}x disclosure."
+            ),
+            "ltv_warning": {
+                "raw_expected_revenue": raw_expected,
+                "calibrated_expected_revenue": calibrated_expected,
+                "overprediction_factor": LTV_CALIBRATION_UNACTIVATED,
+                "verdict": "OVER_PREDICTS_SEVERE",
+                "guidance": (
+                    "Never present raw $9.6M to the board. "
+                    "Calibrated estimate: ~$1.5M. Lead with breakeven CVR instead."
+                ),
+            },
+        }
+        return cache_set("honest_revenue", result)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -3817,31 +4154,53 @@ async def executive_dual_roi():
             ],
             "narrative": {
                 "headline": (
-                    f"Campaign-period ROI is {campaign_roi:.2f}x "
-                    f"(${total_cost:,.0f} spend → ${float(p.get('total_campaign_revenue') or 0):,.0f} in-period revenue). "
-                    f"But CustomerLake's ML-calibrated LTV projection shows {ltv_roi:.2f}x ROI "
-                    f"(${ltv_uplift:,.0f} additional projected value from retained customers)."
+                    f"Portfolio-wide incremental ROI is 37% — measured with holdout controls "
+                    f"across all segments (${total_cost:,.0f} spend, "
+                    f"${float(p.get('total_campaign_revenue') or 0):,.0f} in-period revenue). "
+                    f"ML models project {ltv_roi:.2f}x LTV ROI, but this projection is "
+                    f"pending recalibration (model over-predicts by ~{LTV_CALIBRATION_PORTFOLIO:.1f}x "
+                    f"at 12 months)."
                 ),
                 "why_two_rois": (
                     "Campaign-period ROI counts only revenue during the campaign window. "
                     "Portfolio LTV ROI adds ML-projected lifetime value using per-channel "
                     "survival curves (LightGBM churn model + 12-month forward discount at 10%). "
-                    "The gap between them IS the CustomerLake differentiator: no legacy CDP "
-                    "can project per-channel LTV from its own identity-resolved churn model."
+                    "IMPORTANT: The LTV model currently over-predicts 12-month revenue by "
+                    f"~{LTV_CALIBRATION_PORTFOLIO:.1f}x (validation verdict: OVER_PREDICTS_SEVERE). "
+                    "The gap between campaign-period and LTV ROI is directionally correct — "
+                    "retained customers DO generate future value — but the magnitude "
+                    "requires model recalibration before use in board presentations."
                 ),
                 "cmo_talking_point": (
-                    f"Our marketing looks like it returns {campaign_roi:.0%} in-period. "
-                    f"But when we factor in customer retention — measured by our own ML models "
-                    f"running on identity-resolved data — the true return is {ltv_roi:.0%}. "
-                    f"That {ltv_uplift:,.0f} USD gap is invisible to any CDP that doesn't own "
-                    f"the identity graph AND the churn model."
+                    "Our portfolio-wide marketing delivers 37% incremental ROI — measured "
+                    "with holdout controls, no cherry-picking. That's the defensible "
+                    "board-ready number. Our ML models suggest significant upside from "
+                    f"customer retention ({ltv_roi:.0%} projected LTV ROI), but that "
+                    f"projection needs recalibration — it currently over-predicts by "
+                    f"~{LTV_CALIBRATION_PORTFOLIO:.0f}x. Lead with the 37%. Present the "
+                    "LTV uplift as directional upside, not a promise."
+                ),
+            },
+            "ltv_calibration_warning": {
+                "model_overprediction_factor": LTV_CALIBRATION_PORTFOLIO,
+                "validation_verdict": "OVER_PREDICTS_SEVERE",
+                "calibrated_ltv_roi_x": round(
+                    ((float(p.get('total_projected_ltv') or 0) / LTV_CALIBRATION_PORTFOLIO)
+                     - total_cost) / max(total_cost, 1), 2
+                ),
+                "guidance": (
+                    "The 168% LTV ROI uses uncalibrated ML projections. "
+                    "Until model recalibration, lead with the 37% portfolio ROI "
+                    "(holdout-controlled, campaign-period). Present LTV projections "
+                    "only with full OVER_PREDICTS_SEVERE disclosure."
                 ),
             },
             "differentiator": (
                 "Legacy CDPs report one ROI number. CustomerLake shows two — campaign-period "
                 "and LTV-projected — because it owns the identity graph, the churn model, "
-                "and the per-channel retention curves. The gap between the two numbers is "
-                "the measurable value of customer intelligence."
+                "and the per-channel retention curves. More importantly, CustomerLake tells "
+                "you when its own projections need recalibration. That honesty IS the "
+                "differentiator."
             ),
         }
         return cache_set("dual_roi", result)
@@ -3957,7 +4316,94 @@ async def channel_maturity():
 
 
 # ---------------------------------------------------------------------------
-# 21. DEMO PREFETCH — CMO-138 Response
+# 21. CACHE TABLE HEALTH — CMO-145 Systemic Fix (APP-CACHE-HEALTH)
+# ---------------------------------------------------------------------------
+@app.get("/api/cache/table-health")
+async def cache_table_health():
+    """Check freshness of all materialized cached tables.
+
+    CMO-145 exposed a systemic gap: the app served stale cached data
+    (VALIDATED_CONSERVATIVE) when the live view had already been updated to
+    ACTION_REQUIRED. This endpoint queries the materialized_at timestamp
+    from every cached table so the frontend can show a freshness indicator
+    and warn when data may be stale.
+    """
+    cached = cache_get("cache_table_health")
+    if cached:
+        return cached
+
+    from datetime import datetime, timezone, timedelta
+    stale_threshold = timedelta(hours=CACHE_STALE_HOURS)
+    now = datetime.now(timezone.utc)
+    tables = []
+    oldest_ts = None
+    newest_ts = None
+    stale_count = 0
+
+    for tbl in CACHED_TABLE_NAMES:
+        fqn = f"{CATALOG}._metrics.{tbl}"
+        try:
+            rows = sql_query(f"""
+                SELECT MAX(materialized_at) as last_refresh
+                FROM {fqn}
+            """)
+            ts = rows[0].get("last_refresh") if rows else None
+            if ts:
+                if isinstance(ts, str):
+                    ts = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                age = now - ts
+                age_hours = round(age.total_seconds() / 3600, 1)
+                is_stale = age > stale_threshold
+                if is_stale:
+                    stale_count += 1
+                if oldest_ts is None or ts < oldest_ts:
+                    oldest_ts = ts
+                if newest_ts is None or ts > newest_ts:
+                    newest_ts = ts
+                tables.append({
+                    "table": tbl,
+                    "last_refresh": str(ts),
+                    "age_hours": age_hours,
+                    "is_stale": is_stale,
+                    "status": "stale" if is_stale else "fresh",
+                })
+            else:
+                stale_count += 1
+                tables.append({
+                    "table": tbl,
+                    "last_refresh": None,
+                    "age_hours": None,
+                    "is_stale": True,
+                    "status": "missing",
+                })
+        except Exception:
+            stale_count += 1
+            tables.append({
+                "table": tbl,
+                "last_refresh": None,
+                "age_hours": None,
+                "is_stale": True,
+                "status": "error",
+            })
+
+    all_fresh = stale_count == 0
+    result = {
+        "overall_status": "fresh" if all_fresh else "stale",
+        "stale_threshold_hours": CACHE_STALE_HOURS,
+        "tables_total": len(CACHED_TABLE_NAMES),
+        "tables_fresh": len(CACHED_TABLE_NAMES) - stale_count,
+        "tables_stale": stale_count,
+        "oldest_refresh": str(oldest_ts) if oldest_ts else None,
+        "newest_refresh": str(newest_ts) if newest_ts else None,
+        "data_as_of": str(newest_ts) if newest_ts else None,
+        "tables": tables,
+    }
+    # Cache for 2 minutes — balance between freshness awareness and load
+    return cache_set("cache_table_health", result, ttl=120)
+
+
+# ---------------------------------------------------------------------------
+# 22. DEMO PREFETCH — CMO-138 Response
 # ---------------------------------------------------------------------------
 @app.get("/api/demo/prefetch")
 async def demo_prefetch():
@@ -3975,6 +4421,7 @@ async def demo_prefetch():
         ("ltv_cac_reconciliation", "/api/ltv-cac/reconciliation", ltv_cac_reconciliation),
         ("dual_roi", "/api/executive/dual-roi", executive_dual_roi),
         ("channel_maturity", "/api/channels/maturity", channel_maturity),
+        ("honest_revenue", "/api/dark-audience/honest-revenue", dark_audience_honest_revenue),
     ]
     for key, path, func in endpoints:
         t0 = time.time()
@@ -4010,7 +4457,7 @@ async def demo_cache_status():
     now = time.time()
     status = {}
     for key in ["exec_summary", "tiered_roi", "roi_methodology",
-                "ltv_cac_reconciliation", "dual_roi"]:
+                "ltv_cac_reconciliation", "dual_roi", "honest_revenue"]:
         entry = _CACHE.get(key)
         if entry and entry[0] > now:
             status[key] = {
@@ -4034,4 +4481,4 @@ async def demo_cache_status():
 # ---------------------------------------------------------------------------
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "app": "CustomerLake", "version": "33.0.0"}
+    return {"status": "ok", "app": "CustomerLake", "version": "38.0.0"}

@@ -244,7 +244,14 @@ bundle_artifacts/
 /data_planner_audit_*.ipynb
 /ml_engineer_fixes_*.ipynb
 /DA-SYNTHETIC-*.ipynb
+/DE-FIX-*.ipynb
 /demo_walkthrough_15min.ipynb
 
 # MLflow experiment artifacts (tracked by MLflow, not Git)
 agent_evaluation/
+agent_evaluation
+
+# DevOps utility notebooks (not canonical project code)
+src/notebooks/_devops_*.py
+src/notebooks/_devops_*.ipynb
+src/notebooks/_sync_*.py

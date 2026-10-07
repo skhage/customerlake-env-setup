@@ -1,6 +1,6 @@
 # CustomerLake Brand Guidelines
 
-**Version:** 2.1.0 — Updated 2026-10-05 by @designer (V38 Full Brand Sweep: v29.0.0 (5335 lines, 16 pages, 3776-line backend). V37-FIX-1/2/3 ALL VERIFIED APPLIED. APP-DUAL-ROI reviewed — 9/9 brand dimensions PASS. Contrast verified (4.7–8.3:1). 3 new diff-badges approved: IN-PERIOD, ML-PROJECTED, EVERY NUMBER QUERYABLE. 35/35 tables have captions. 0 new issues filed.)  
+**Version:** 2.2.0 — Updated 2026-10-06 by @designer (V45 Full Brand Sweep: v37.0.0 (5745 lines, 17 pages, 4335-line backend). V44-UX-FIX-1 VERIFIED. CMO-59 presentation changes reviewed (CMO-151/153/155). 8/8 WCAG contrast checks pass (4.5–13.3:1). 4 new diff-badges approved: CAPABILITIES FIRST, TERMINOLOGY, CALIBRATED, NEEDS RECALIBRATION. 36 tables have captions. 1 low fix filed: V45-UX-FIX-1 FastAPI version sync. Capability Hero Count type element and pill-badge radius added.)  
 **Status:** BINDING — All CustomerLake apps, dashboards, and demos MUST conform  
 **Scope:** Databricks App (`customerlake`), AI/BI dashboards, Genie spaces, demo materials  
 **Tag:** `customerlake_project: customerlake`
@@ -117,6 +117,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 | Source Badge | 10px | 600 | 1.0 | Normal | Source system tags |
 | Caption | 11px | 400 | 1.5 | 0.5px | Footer text, subtitles |
 | Hero KPI Value | 32–36px | 700 | 1.2 | Normal | Page north-star metrics (CFO Bottom Line, True Causal ROI) |
+| Capability Hero Count | 48px | 700 | 1.2 | Normal | Single dramatic count on ComparisonPage capability-gap hero |
 | Diff Badge | 10px | 600 | 1.0 | Normal | UNIQUE/DEDUP feature callouts |
 
 ### Typography Rules
@@ -280,7 +281,8 @@ All spacing values MUST be multiples of 8px:
 ### Differentiator Badges
 - `.diff-badge`: 2px/6px padding, 4px radius, 10px, 600 weight
 - Color: `rgba(79,143,247,0.15)` bg, `--accent` text
-- Used for UNIQUE, DEDUP, RESOLVE, MULTI-CH, CONSENT, ATTRIBUTED, ENTITY-LEVEL, CTR, ROI, OMNICHANNEL, COST + ROI, OBSERVE, ALIGN, CHURN, PROTECT, DISPUTE, CHANNEL, COST/SAVE, DELIVERY, ENABLE, ENTITY, LOOP, OPTIMIZE, SAVE RATE, TRANSPARENT, vs ACQUIRE, HOLDOUT, TRUE ROI, RISK-TIER, SUPPRESS, CAUSAL, P-VALUE, CONFIDENCE-INTERVAL, STATISTICAL-POWER, CFO-READY, COMPETITOR COMPARISON, CONFLICT-AWARE, COST-PER-ENTITY, COUNTERFACTUAL, CROSS-SOURCE, IDENTITY-RESOLVED, LIVE DATA, LTV, ML-CHANNEL-WASTE, REVENUE-LINKED, TCO-TRANSPARENT, ZERO MARKETING CLAIMS, IN-PERIOD, ML-PROJECTED, EVERY NUMBER QUERYABLE
+- Used for UNIQUE, DEDUP, RESOLVE, MULTI-CH, CONSENT, ATTRIBUTED, ENTITY-LEVEL, CTR, ROI, OMNICHANNEL, COST + ROI, OBSERVE, ALIGN, CHURN, PROTECT, DISPUTE, CHANNEL, COST/SAVE, DELIVERY, ENABLE, ENTITY, LOOP, OPTIMIZE, SAVE RATE, TRANSPARENT, vs ACQUIRE, HOLDOUT, TRUE ROI, RISK-TIER, SUPPRESS, CAUSAL, P-VALUE, CONFIDENCE-INTERVAL, STATISTICAL-POWER, CFO-READY, COMPETITOR COMPARISON, CONFLICT-AWARE, COST-PER-ENTITY, COUNTERFACTUAL, CROSS-SOURCE, IDENTITY-RESOLVED, LIVE DATA, LTV, ML-CHANNEL-WASTE, REVENUE-LINKED, TCO-TRANSPARENT, ZERO MARKETING CLAIMS, IN-PERIOD, ML-PROJECTED, EVERY NUMBER QUERYABLE, CAPABILITIES FIRST, TERMINOLOGY, CALIBRATED, NEEDS RECALIBRATION
+- **Pill badges** (capability feature tags): `var(--success-bg)` bg, `var(--success)` text, `4px 12px` padding, `borderRadius: 16px` (full pill), 12px, 500 weight
 
 ---
 

@@ -793,15 +793,17 @@
       const [roiMethod, setRoiMethod] = useState(null);
       const [ltvReconcile, setLtvReconcile] = useState(null);
       const [dualRoi, setDualRoi] = useState(null);
-      const [loading, setLoading] = useState(true);
-      const [loadError, setLoadError] = useState(false);
+      const [suppressBreakdown, setSuppressBreakdown] = useState(null);
+       const [loading, setLoading] = useState(true);
+       const [loadError, setLoadError] = useState(false);
 
-      useEffect(() => {
-        // Progressive loading: fill each section independently as its API responds (CMO-138)
-        api('/api/executive/summary').then(d => setData(d)).catch(() => setLoadError(true));
-        api('/api/executive/tiered-roi').then(tr => setTieredRoi(tr)).catch(() => null);
-        api('/api/executive/roi-methodology').then(rm => setRoiMethod(rm)).catch(() => null);
-        api('/api/ltv-cac/reconciliation').then(lr => setLtvReconcile(lr)).catch(() => null);
+       useEffect(() => {
+         // Progressive loading: fill each section independently as its API responds (CMO-138)
+         api('/api/executive/summary').then(d => setData(d)).catch(() => setLoadError(true));
+         api('/api/executive/tiered-roi').then(tr => setTieredRoi(tr)).catch(() => null);
+         api('/api/executive/roi-methodology').then(rm => setRoiMethod(rm)).catch(() => null);
+         api('/api/ltv-cac/reconciliation').then(lr => setLtvReconcile(lr)).catch(() => null);
+         api('/api/executive/suppression-breakdown').then(sb => setSuppressBreakdown(sb)).catch(() => null);
         api('/api/executive/dual-roi').then(dr => setDualRoi(dr)).catch(() => null)
           .finally(() => setLoading(false));
       }, []);
@@ -833,7 +835,23 @@
             <p>Board-ready snapshot — all 54 metric views distilled into one page · {data.snapshot_date}</p>
           </div>
 
-          {/* HERO ROW: Dual ROI narrative (CMO-133/135) + 3 action KPIs */}
+          {/* DATA INTEGRITY WARNINGS — CMO-157: cross-check contradictions */}
+           {data.data_integrity_warnings && data.data_integrity_warnings.length > 0 && (
+             <div className="card" role="note" style={{borderLeft:'3px solid var(--warning)', marginBottom:16, background:'rgba(245,158,11,0.04)'}}>
+               <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:6}}>
+                 <span className="diff-badge" style={{fontSize:9, background:'rgba(245,158,11,0.15)', color:'var(--warning)'}}>DATA NOTE</span>
+                 <span style={{fontWeight:600, fontSize:12, color:'var(--text-primary)'}}>Metric Cross-Check</span>
+               </div>
+               {data.data_integrity_warnings.map((w, i) => (
+                 <div key={i} style={{fontSize:12, color:'var(--text-secondary)', marginTop:i > 0 ? 8 : 0}}>
+                   <div style={{fontWeight:600, color:'var(--warning)', marginBottom:2}}>{w.code}</div>
+                   <div>{w.display_note}</div>
+                 </div>
+               ))}
+             </div>
+           )}
+
+           {/* HERO ROW: Dual ROI narrative (CMO-133/135) + 3 action KPIs */}
             <div className="kpi-grid" style={{gridTemplateColumns:'repeat(4, 1fr)'}}>
               {/* DUAL ROI HERO — Campaign vs LTV side by side */}
               <div className="kpi-card" style={{borderLeft:'3px solid var(--accent)', background:'var(--accent-light)', gridColumn: dualRoi ? 'span 1' : 'span 1'}}>
@@ -845,15 +863,15 @@
                 <div className="kpi-sub">{dualRoi ? dualRoi.portfolio.campaign_roi_x + 'x' : '0.43x'} on {fmtB(dualRoi ? dualRoi.portfolio.total_cost : 1463235)}</div>
                 <div className="kpi-sub" style={{fontSize:10, marginTop:2}}>Revenue during campaign window only</div>
               </div>
-              <div className="kpi-card" style={{borderLeft:'3px solid var(--success)', background:'var(--success-bg)'}}>
+              <div className="kpi-card" style={{borderLeft:'3px solid var(--warning)', background:'rgba(245,158,11,0.06)'}}>
                 <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
                   <div className="kpi-label">Portfolio LTV ROI</div>
+                  <span className="diff-badge" style={{fontSize:9, background:'rgba(245,158,11,0.15)', color:'var(--warning)'}}>NEEDS RECALIBRATION</span>
                   <span className="diff-badge" style={{fontSize:9}}>ML-PROJECTED</span>
-                  <span className="diff-badge" style={{fontSize:9}}>CROSS-SOURCE</span>
                 </div>
-                <div className="kpi-value" style={{color:'var(--success)', fontSize:32}}>{dualRoi ? (dualRoi.portfolio.ltv_roi_x * 100).toFixed(0) + '%' : '168%'}</div>
-                <div className="kpi-sub" style={{fontWeight:600, color:'var(--success)'}}>{dualRoi ? dualRoi.portfolio.ltv_roi_x + 'x' : '1.68x'} — the full CustomerLake story</div>
-                <div className="kpi-sub" style={{fontSize:10, marginTop:2}}>ML per-channel survival curves · 12mo forward discount</div>
+                <div className="kpi-value" style={{color:'var(--warning)', fontSize:32}}>{dualRoi ? (dualRoi.portfolio.ltv_roi_x * 100).toFixed(0) + '%' : '168%'}</div>
+                <div className="kpi-sub" style={{fontWeight:600, color:'var(--warning)'}}>{dualRoi && dualRoi.narrative && dualRoi.narrative.ltv_calibration_warning ? dualRoi.narrative.ltv_calibration_warning.model_overprediction_factor + 'x model overprediction detected' : '~6.7x model overprediction detected'}</div>
+                <div className="kpi-sub" style={{fontSize:10, marginTop:2}}>Use 37% portfolio ROI for board presentations. LTV projection is directional only.</div>
               </div>
               <div className="kpi-card" style={{borderLeft:'3px solid var(--danger)'}}>
                 <div className="kpi-label">Revenue at Risk</div>
@@ -861,26 +879,35 @@
                 <div className="kpi-sub">High-churn entities identified by ML</div>
               </div>
               <div className="kpi-card" style={{borderLeft:'3px solid var(--warning)'}}>
-                <div className="kpi-label">Suppression Savings (90d)</div>
-                <div className="kpi-value" style={{color:'var(--warning)'}}>{fmtB(h.suppression_90day_value)}</div>
-                <div className="kpi-sub">Stop spending on value-destructive segments</div>
+                <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
+                   <div className="kpi-label">Suppression Savings (90d)</div>
+                   <span className="diff-badge" style={{fontSize:9, background:'rgba(245,158,11,0.15)', color:'var(--warning)'}}>{suppressBreakdown ? suppressBreakdown.measured_pct + '% MEASURED' : ''}</span>
+                 </div>
+                 <div className="kpi-value" style={{color:'var(--warning)'}}>{suppressBreakdown ? fmtB(suppressBreakdown.measured.value) : fmtB(h.suppression_90day_value)}</div>
+                 <div className="kpi-sub" style={{fontWeight:500}}>{suppressBreakdown ? 'Measured cost savings (real spend eliminated)' : 'Stop spending on value-destructive segments'}</div>
+                 {suppressBreakdown && <div className="kpi-sub" style={{fontSize:10, marginTop:2, color:'var(--text-muted)'}}>+ {fmtB(suppressBreakdown.projected.value)} projected revenue protection ({suppressBreakdown.projected_pct}%)</div>}
               </div>
             </div>
 
             {/* DUAL ROI EXPLANATION BANNER (CMO-133) */}
             {dualRoi && (
-              <div role="note" style={{padding:'12px 16px', background:'var(--success-bg)', border:'1px solid rgba(52,211,153,0.2)', borderRadius:'var(--radius)', marginBottom:16}}>
+              <div role="note" style={{padding:'12px 16px', background:'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:'var(--radius)', marginBottom:16}}>
                 <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:6}}>
-                  <strong style={{color:'var(--success)'}}>WHY TWO ROI NUMBERS?</strong>
+                  <strong style={{color:'var(--warning)'}}>WHY TWO ROI NUMBERS?</strong>
                   <span className="diff-badge">UNIQUE</span>
                   <span className="diff-badge">IDENTITY-RESOLVED</span>
                 </div>
                 <div style={{fontSize:12, color:'var(--text-secondary)', lineHeight:1.5}}>
                   {dualRoi.narrative.why_two_rois}
                 </div>
-                <div style={{marginTop:8, padding:'8px 12px', background:'rgba(52,211,153,0.06)', borderRadius:'var(--radius)', fontSize:12, fontWeight:500, color:'var(--success)'}}>
+                <div style={{marginTop:8, padding:'8px 12px', background:'rgba(245,158,11,0.06)', borderRadius:'var(--radius)', fontSize:12, fontWeight:500, color:'var(--text-primary)'}}>
                   <Icon d={icons.trendingUp} size={14} /> CMO talking point: {dualRoi.narrative.cmo_talking_point}
                 </div>
+                {dualRoi.narrative.ltv_calibration_warning && (
+                  <div style={{marginTop:6, padding:'6px 12px', background:'rgba(245,158,11,0.10)', borderRadius:'var(--radius)', fontSize:11, color:'var(--warning)', display:'flex', alignItems:'center', gap:6}}>
+                    <span style={{fontWeight:700}}>⚠ LTV CALIBRATION:</span> Model overpredicts by {dualRoi.narrative.ltv_calibration_warning.model_overprediction_factor}x — {dualRoi.narrative.ltv_calibration_warning.guidance}
+                  </div>
+                )}
               </div>
             )}
 
@@ -4599,20 +4626,31 @@
       const scenarios = p.roi_scenarios || [];
       const highestConf = scenarios.find(s => s.scenario === 'HIGHLY_SIGNIFICANT_ONLY');
       const worstCase = scenarios.find(s => s.scenario === 'ZERO_LIFT_PESSIMISTIC');
+      const capGap = p.capability_gap || {};
+      const uniqueCaps = capGap.unique_capabilities || [];
 
       return React.createElement('div', null,
         React.createElement('div', { className: 'page-header' },
           React.createElement('h2', null, 'Why CustomerLake'),
-          React.createElement('p', null, 'Live competitive comparison backed by data — not marketing claims')
+          React.createElement('p', null, 'Capabilities competitors literally cannot do — backed by live data, not marketing claims')
         ),
         // Diff badges
         React.createElement('div', { style: { display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' } },
+          React.createElement('span', { className: 'diff-badge' }, 'CAPABILITIES FIRST'),
           React.createElement('span', { className: 'diff-badge' }, 'LIVE DATA'),
-          React.createElement('span', { className: 'diff-badge' }, 'COMPETITOR COMPARISON'),
           React.createElement('span', { className: 'diff-badge' }, 'ZERO MARKETING CLAIMS'),
           React.createElement('span', { className: 'diff-badge' }, 'EVERY NUMBER QUERYABLE')
         ),
-        // Hero KPIs
+        // Capability Gap Hero
+        capGap.native_only_count ? React.createElement('div', { className: 'card', style: { marginBottom: 16, textAlign: 'center', padding: 32, borderLeft: '3px solid var(--success)' } },
+          React.createElement('div', { style: { fontSize: 48, fontWeight: 700, color: 'var(--success)' } }, capGap.native_only_count),
+          React.createElement('div', { style: { fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', marginTop: 8 } }, 'Capabilities competitors cannot do'),
+          uniqueCaps.length > 0 ? React.createElement('div', { style: { display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginTop: 16 } },
+            uniqueCaps.slice(0, 8).map((c, i) => React.createElement('span', { key: i, style: { background: 'var(--success-bg)', color: 'var(--success)', padding: '4px 12px', borderRadius: 16, fontSize: 12, fontWeight: 500 } }, c.feature))
+          ) : null,
+          capGap.cmo_soundbite ? React.createElement('div', { style: { fontSize: 13, color: 'var(--text-secondary)', marginTop: 12, fontStyle: 'italic' } }, capGap.cmo_soundbite) : null
+        ) : null,
+        // ROI + Cost Hero KPIs
         React.createElement('div', { className: 'kpi-grid', style: { gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' } },
           React.createElement('div', { className: 'kpi-card' },
             React.createElement('div', { className: 'kpi-label' }, 'HIGHEST CONFIDENCE ROI'),
@@ -4776,6 +4814,7 @@
       const [kpiData, setKpiData] = useState(null);
       const [summary, setSummary] = useState(null);
       const [entities, setEntities] = useState(null);
+      const [honestRev, setHonestRev] = useState(null);
       const [loading, setLoading] = useState(true);
       const [filter, setFilter] = useState('');
       const [search, setSearch] = useState('');
@@ -4787,10 +4826,12 @@
           api('/api/dark-audience/kpis'),
           api('/api/dark-audience/summary'),
           api('/api/dark-audience/entities?addressable_only=true&limit=25'),
-        ]).then(([k, s, e]) => {
+          api('/api/dark-audience/honest-revenue').catch(() => null),
+        ]).then(([k, s, e, hr]) => {
           setKpiData(k);
           setSummary(s);
           setEntities(e);
+          setHonestRev(hr);
         }).finally(() => setLoading(false));
       }, []);
 
@@ -4858,22 +4899,79 @@
             <p>CMO-80: {fmtPct(k.dark_pct)} of profiles have never been activated \u2014 surface the hidden revenue opportunity</p>
           </div>
 
-          {/* HERO KPIs */}
-          <div className="kpi-grid" style={{gridTemplateColumns:'repeat(4, 1fr)'}}>
-            <div className="kpi-card" style={{borderLeft:'3px solid var(--danger)'}}>
-              <div className="kpi-label">Never Activated</div>
-              <div className="kpi-value" style={{color:'var(--danger)'}}>{fmt(k.never_activated)}</div>
-              <div className="kpi-sub">{fmtPct(k.dark_pct)} of all entities \u2014 invisible to marketing</div>
-            </div>
-            <div className="kpi-card" style={{borderLeft:'3px solid var(--info)'}}>
-              <div className="kpi-label">Dark Addressable</div>
-              <div className="kpi-value" style={{color:'var(--info)'}}>{fmt(k.dark_addressable)}</div>
-              <div className="kpi-sub">Have consent + ML scores but zero campaigns</div>
-            </div>
-            <div className="kpi-card" style={{borderLeft:'3px solid var(--success)'}}>
-              <div className="kpi-label">Recoverable LTV</div>
-              <div className="kpi-value" style={{color:'var(--success)'}}>{fmtB(k.addressable_dark_ltv)}</div>
-              <div className="kpi-sub">Predicted 12-month LTV for dark addressable</div>
+          {/* DISAMBIGUATION BANNER — CMO-155: dark audience ≠ dark funnel */}
+           <div className="card" role="note" style={{borderLeft:'3px solid var(--info)', marginBottom:16, background:'var(--info-bg)'}}>
+             <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:6}}>
+               <span className="diff-badge" style={{fontSize:9}}>TERMINOLOGY</span>
+               <span style={{fontWeight:600, fontSize:13, color:'var(--text-primary)'}}>Dark Audience ≠ Zero-LTV Contacts</span>
+             </div>
+             <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, fontSize:12, color:'var(--text-secondary)'}}>
+               <div style={{padding:10, background:'rgba(129,140,248,0.08)', borderRadius:'var(--radius)'}}>
+                 <div style={{fontWeight:600, color:'var(--info)', marginBottom:4}}>Dark Audience ({fmt(k.dark_addressable)} entities)</div>
+                 <div>Have billing history, consent, and ML scores but have <strong>never been activated</strong>. These are actionable — the revenue opportunity on this page.</div>
+               </div>
+               <div style={{padding:10, background:'var(--bg-hover)', borderRadius:'var(--radius)'}}>
+                 <div style={{fontWeight:600, color:'var(--text-muted)', marginBottom:4}}>Zero-LTV Contacts (see Exec Summary)</div>
+                 <div>No billing history, no predicted LTV. Not addressable today. These are a separate population — <strong>not part of this dark audience</strong>.</div>
+               </div>
+             </div>
+           </div>
+
+          {/* BREAKEVEN CVR HERO — CMO-156: Lead with breakeven, not revenue */}
+           {honestRev && honestRev.headline && (
+             <div className="card" style={{borderLeft:'4px solid var(--success)', marginBottom:16, background:'rgba(34,197,94,0.04)'}}>
+               <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:8}}>
+                 <span className="diff-badge" style={{fontSize:9, background:'rgba(34,197,94,0.15)', color:'var(--success)'}}>PILOT HYPOTHESIS</span>
+                 <span className="diff-badge" style={{fontSize:9}}>CMO-156</span>
+               </div>
+               <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16}}>
+                 <div>
+                   <div className="kpi-label">Breakeven CVR</div>
+                   <div style={{fontSize:32, fontWeight:800, color:'var(--success)'}}>{honestRev.headline.breakeven_cvr_pct}%</div>
+                   <div className="kpi-sub">Any CVR above this is profitable (honest CAC)</div>
+                 </div>
+                 <div>
+                   <div className="kpi-label">Dark Addressable Entities</div>
+                   <div style={{fontSize:24, fontWeight:700, color:'var(--info)'}}>{fmt(honestRev.headline.dark_addressable)}</div>
+                   <div className="kpi-sub">Never marketed to — only CustomerLake can find them</div>
+                 </div>
+                 <div>
+                   <div className="kpi-label">Honest CAC</div>
+                   <div style={{fontSize:24, fontWeight:700, color:'var(--text-primary)'}}>{fmtUsd(honestRev.honest_methodology && honestRev.honest_methodology.cac_per_conversion_usd)}</div>
+                   <div className="kpi-sub">From {honestRev.honest_methodology && honestRev.honest_methodology.segments_used_for_cac} real-baseline segments (of {honestRev.honest_methodology && honestRev.honest_methodology.total_segments})</div>
+                 </div>
+               </div>
+               <div style={{marginTop:12, padding:'10px 12px', background:'var(--bg-hover)', borderRadius:'var(--radius)', fontSize:12, color:'var(--text-secondary)'}}>
+                 <strong>Pitch:</strong> {honestRev.headline.cmo_headline}
+               </div>
+               {honestRev.ltv_warning && (
+                 <div style={{marginTop:8, padding:'8px 12px', background:'rgba(245,158,11,0.06)', borderRadius:'var(--radius)', fontSize:11, color:'var(--warning)'}}>
+                   <strong>\u26a0 LTV Warning:</strong> Raw expected revenue {fmtB(honestRev.ltv_warning.raw_expected_revenue)} uses uncalibrated ML model ({honestRev.ltv_warning.overprediction_factor}x overpredict). Calibrated: {fmtB(honestRev.ltv_warning.calibrated_expected_revenue)}. {honestRev.ltv_warning.guidance}
+                 </div>
+               )}
+             </div>
+           )}
+
+           {/* SECONDARY KPIs */}
+           <div className="kpi-grid" style={{gridTemplateColumns:'repeat(4, 1fr)'}}>
+             <div className="kpi-card" style={{borderLeft:'3px solid var(--danger)'}}>
+               <div className="kpi-label">Never Activated</div>
+               <div className="kpi-value" style={{color:'var(--danger)'}}>{fmt(k.never_activated)}</div>
+               <div className="kpi-sub">{fmtPct(k.dark_pct)} of all entities \u2014 invisible to marketing</div>
+             </div>
+             <div className="kpi-card" style={{borderLeft:'3px solid var(--info)'}}>
+               <div className="kpi-label">Dark Addressable</div>
+               <div className="kpi-value" style={{color:'var(--info)'}}>{fmt(k.dark_addressable)}</div>
+               <div className="kpi-sub">Have consent + ML scores but zero campaigns</div>
+             </div>
+             <div className="kpi-card" style={{borderLeft:'3px solid var(--warning)', background:'rgba(245,158,11,0.06)'}}>
+               <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
+                 <div className="kpi-label">Recoverable LTV</div>
+                 <span className="diff-badge" style={{fontSize:9, background:'rgba(245,158,11,0.15)', color:'var(--warning)'}}>CALIBRATED</span>
+               </div>
+               <div className="kpi-value" style={{color:'var(--warning)'}}>{kpiData && kpiData.ltv_calibration ? fmtB(kpiData.ltv_calibration.calibrated_addressable_dark_ltv) : fmtB(k.addressable_dark_ltv / 6.40)}</div>
+               <div className="kpi-sub" style={{fontSize:10, color:'var(--text-muted)'}}>Raw model: {fmtB(k.addressable_dark_ltv)} \u00b7 <span style={{color:'var(--warning)'}}>\u00f76.4x overprediction</span></div>
+              <div className="kpi-sub" style={{fontSize:10, marginTop:2}}>Calibrated 12-month LTV for dark addressable</div>
             </div>
             <div className="kpi-card" style={{borderLeft:'3px solid var(--warning)'}}>
               <div className="kpi-label">Opportunity Score</div>
@@ -5119,10 +5217,10 @@
           </div>
 
           <div style={{display:'flex', gap:8, flexWrap:'wrap', marginBottom:16}}>
-            <span className="diff-badge">MEASUREMENT</span>
+            <span className="diff-badge">STATISTICAL-POWER</span>
             <span className="diff-badge">HOLDOUT</span>
-            <span className="diff-badge">HONEST</span>
-            <span className="diff-badge">PER-CHANNEL</span>
+            <span className="diff-badge">TRANSPARENT</span>
+            <span className="diff-badge">CHANNEL</span>
           </div>
 
           {/* Hero KPIs */}
@@ -5201,7 +5299,7 @@
                   </div>
 
                   {/* Board readiness */}
-                  <div style={{fontSize:11, padding:'6px 10px', background:'var(--bg-hover)', borderRadius:'var(--radius-sm)', marginBottom:8}}>
+                  <div style={{fontSize:11, padding:'8px 12px', background:'var(--bg-hover)', borderRadius:'var(--radius)', marginBottom:8}}>
                     <span style={{fontWeight:600}}>Board Readiness:</span> <span style={{color: c.board_readiness === 'NOT_FOR_DECISIONS' ? 'var(--danger)' : 'var(--success)'}}>{c.board_readiness.replace(/_/g, ' ')}</span>
                   </div>
 
@@ -5462,6 +5560,100 @@
       );
     }
 
+    // -----------------------------------------------------------------------
+    // DataFreshnessBar — Cache table freshness guard (APP-CACHE-HEALTH)
+    // CMO-145 systemic fix: shows data recency and warns on stale caches
+    // -----------------------------------------------------------------------
+    function DataFreshnessBar() {
+      const [health, setHealth] = useState(null);
+      const [expanded, setExpanded] = useState(false);
+
+      useEffect(() => {
+        api('/api/cache/table-health')
+          .then(setHealth)
+          .catch(() => null);
+      }, []);
+
+      if (!health) return null;
+
+      const isStale = health.overall_status === 'stale';
+      const dataTs = health.data_as_of;
+      const fmtTime = (iso) => {
+        if (!iso) return 'unknown';
+        const d = new Date(iso);
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      };
+
+      const barStyle = {
+        display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px',
+        fontSize: 11, fontWeight: 500, borderRadius: 'var(--radius)',
+        marginBottom: 12, cursor: 'pointer', userSelect: 'none',
+        background: isStale ? 'var(--warning-bg)' : 'rgba(52,211,153,0.08)',
+        color: isStale ? 'var(--warning)' : 'var(--success)',
+        border: '1px solid ' + (isStale ? 'rgba(251,191,36,0.25)' : 'rgba(52,211,153,0.15)'),
+      };
+
+      return React.createElement('div', null,
+        React.createElement('div', {
+          style: barStyle,
+          onClick: () => setExpanded(!expanded),
+          onKeyDown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(!expanded); } },
+          role: 'button',
+          tabIndex: 0,
+          'aria-expanded': expanded,
+          'aria-label': (isStale ? 'Data cache is stale' : 'Data cache is fresh') + '. Click for cache details',
+        },
+          React.createElement(Icon, { d: isStale ? icons.alertCircle : icons.shieldCheck, size: 14 }),
+          React.createElement('span', null,
+            isStale
+              ? 'Data may be stale \u2014 ' + health.tables_stale + '/' + health.tables_total + ' tables need refresh'
+              : 'Data fresh \u2014 ' + health.tables_fresh + '/' + health.tables_total + ' tables'
+          ),
+          React.createElement('span', { style: { color: 'var(--text-muted)', marginLeft: 'auto' } },
+            'As of ' + fmtTime(dataTs)
+          ),
+          React.createElement('span', { style: { fontSize: 10, color: 'var(--text-muted)' } },
+            expanded ? '\u25B2' : '\u25BC'
+          )
+        ),
+        expanded && React.createElement('div', {
+          style: { background: 'var(--bg-card)', border: '1px solid var(--border)',
+                   borderRadius: 'var(--radius)', padding: 12, marginBottom: 12,
+                   maxHeight: 200, overflowY: 'auto', fontSize: 11 }
+        },
+          React.createElement('table', { style: { width: '100%', borderCollapse: 'collapse' } },
+            React.createElement('caption', { className: 'kpi-label', style: { captionSide: 'top', textAlign: 'left', marginBottom: 8 } },
+              'Cached Table Health (threshold: ' + health.stale_threshold_hours + 'h)'
+            ),
+            React.createElement('thead', null,
+              React.createElement('tr', { style: { background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' } },
+                React.createElement('th', { style: { textAlign: 'left', padding: '6px 12px', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.02em' } }, 'Table'),
+                React.createElement('th', { style: { textAlign: 'right', padding: '6px 12px', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.02em' } }, 'Age (hrs)'),
+                React.createElement('th', { style: { textAlign: 'center', padding: '6px 12px', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.02em' } }, 'Status')
+              )
+            ),
+            React.createElement('tbody', null,
+              (health.tables || []).map((t, i) =>
+                React.createElement('tr', { key: i },
+                  React.createElement('td', { style: { padding: '4px 12px', color: 'var(--text-secondary)', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } },
+                    t.table.replace('customerlake_', '').replace('_cached', '').replace('_materialized', '')
+                  ),
+                  React.createElement('td', { style: { padding: '4px 12px', textAlign: 'right', color: 'var(--text-secondary)' } },
+                    t.age_hours != null ? t.age_hours + 'h' : '\u2014'
+                  ),
+                  React.createElement('td', { style: { padding: '4px 12px', textAlign: 'center' } },
+                    React.createElement('span', {
+                      className: 'badge ' + (t.status === 'fresh' ? 'badge-success' : t.status === 'stale' ? 'badge-warning' : 'badge-danger')
+                    }, t.status.toUpperCase())
+                  )
+                )
+              )
+            )
+          )
+        )
+      );
+    }
+
     function App() {
       const [page, setPage] = useState('demo');
       const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -5586,7 +5778,7 @@
             </nav>
             <div style={{marginTop:'auto', padding:'16px 20px', borderTop:'1px solid var(--border)'}}>
               <div style={{fontSize:'11px', color:'var(--text-muted)'}}>Powered by Databricks</div>
-              <div style={{fontSize:'10px', color:'var(--text-muted)', marginTop:'2px'}}>cdm_tmforum · Lakebase · Unity Catalog · v33.0.0</div>
+              <div style={{fontSize:'10px', color:'var(--text-muted)', marginTop:'2px'}}>cdm_tmforum · Lakebase · Unity Catalog · v38.0.0</div>
             </div>
           </div>
           <main className="main-content">
@@ -5594,6 +5786,7 @@
               <DemoStepBar currentStep={demoStep} onStepClick={handleDemoStepClick} onExit={exitDemo} />
             )}
             <SimulationBanner page={page} />
+            <DataFreshnessBar />
             {renderPage()}
           </main>
         </div>

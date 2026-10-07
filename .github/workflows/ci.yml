@@ -1,9 +1,11 @@
 # CustomerLake CI — Validate DAB on every push/PR
+# Owner: @devops (Release Engineering)
+# Updated by @devops agent run 27 (2026-10-06): validate all 3 targets, add YAML lint
 name: CI - Bundle Validate
 
 on:
   push:
-    branches: ['feature/*', 'main']
+    branches: ['feature/*', 'devops/*', 'main']
   pull_request:
     branches: ['main', 'release/*']
 
@@ -23,8 +25,62 @@ jobs:
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
 
       - name: Validate test target
-        if: startsWith(github.base_ref, 'release/')
         run: databricks bundle validate --target test
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+      - name: Validate prod target
+        run: databricks bundle validate --target prod
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+      - name: Verify tagging mandate
+        run: |
+          echo "Checking all resource YAMLs contain customerlake_project tag..."
+          for f in resources/*.yml; do
+            if ! grep -q 'customerlake_project' "$f"; then
+              echo "ERROR: $f missing customerlake_project tag"
+              exit 1
+            fi
+          done
+          echo "All resource YAMLs pass tagging check."
+
+      - name: Verify notebook paths exist
+        run: |
+          echo "Checking all notebook_path references resolve to files..."
+          ERRORS=0
+          for f in resources/*.yml; do
+            # Extract notebook_path values (relative to resources/)
+            grep -oP 'notebook_path:\s*\K\S+' "$f" | while read -r nbpath; do
+              # Resolve relative path from resources/ dir
+              resolved="resources/${nbpath}"
+              # Check .py, .ipynb, or bare path (Databricks notebook)
+              if [ ! -f "${resolved}" ] && [ ! -f "${resolved}.py" ] && [ ! -f "${resolved}.ipynb" ] && [ ! -d "${resolved}" ]; then
+                echo "ERROR: $f references notebook_path '$nbpath' — not found at ${resolved}"
+                ERRORS=$((ERRORS+1))
+              fi
+            done
+          done
+          if [ $ERRORS -gt 0 ]; then
+            echo "FAIL: $ERRORS broken notebook_path reference(s)"
+            exit 1
+          fi
+          echo "All notebook paths verified."
+
+      - name: Check for email_notifications on all jobs
+        run: |
+          echo "Checking all job resources have email_notifications..."
+          WARNINGS=0
+          for f in resources/*.job.yml; do
+            if ! grep -q 'email_notifications' "$f"; then
+              echo "WARNING: $f missing email_notifications"
+              WARNINGS=$((WARNINGS+1))
+            fi
+          done
+          if [ $WARNINGS -gt 0 ]; then
+            echo "WARN: $WARNINGS job(s) without email_notifications"
+          else
+            echo "All jobs have email_notifications configured."
+          fi

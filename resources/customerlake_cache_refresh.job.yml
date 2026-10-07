@@ -1,27 +1,24 @@
-# CustomerLake Refresh Job — Orchestrates pipeline + metric refresh
+# CustomerLake Cache Refresh — Daily Metric Materialization (Task DE-CACHE-SDP)
 # Owner: @data-engineer
+# Refreshes all 30 _cached tables in cdm_tmforum._metrics via INSERT OVERWRITE.
+# Each source metric view is atomically replaced with fresh data + materialized_at timestamp.
 # Tag: customerlake_project: customerlake
+# Created by @devops agent run 27 (2026-10-06)
 
 resources:
   jobs:
-    customerlake_refresh:
-      name: customerlake-refresh
+    customerlake_cache_refresh:
+      name: customerlake-cache-refresh
       tags:
         customerlake_project: customerlake
       tasks:
-        - task_key: run_gold_pipeline
-          pipeline_task:
-            pipeline_id: ${resources.pipelines.customerlake_gold_pipeline.id}
-            full_refresh: false
-        - task_key: refresh_metrics
-          depends_on:
-            - task_key: run_gold_pipeline
+        - task_key: refresh_cached_metrics
           notebook_task:
-            notebook_path: ../src/notebooks/refresh_metrics.py
+            notebook_path: ../src/pipelines/cache_refresh_pipeline
             source: WORKSPACE
           # Uses serverless compute by default
       schedule:
-        quartz_cron_expression: '0 0 6 * * ?'
+        quartz_cron_expression: '0 0 5 * * ?'
         timezone_id: America/Los_Angeles
       queue:
         enabled: true
