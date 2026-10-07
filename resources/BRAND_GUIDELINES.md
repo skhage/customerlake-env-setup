@@ -1,6 +1,6 @@
 # CustomerLake Brand Guidelines
 
-**Version:** 2.2.0 — Updated 2026-10-06 by @designer (V45 Full Brand Sweep: v37.0.0 (5745 lines, 17 pages, 4335-line backend). V44-UX-FIX-1 VERIFIED. CMO-59 presentation changes reviewed (CMO-151/153/155). 8/8 WCAG contrast checks pass (4.5–13.3:1). 4 new diff-badges approved: CAPABILITIES FIRST, TERMINOLOGY, CALIBRATED, NEEDS RECALIBRATION. 36 tables have captions. 1 low fix filed: V45-UX-FIX-1 FastAPI version sync. Capability Hero Count type element and pill-badge radius added.)  
+**Version:** 2.3.0 — Updated 2026-10-07 by @designer (V48 Full Brand Sweep: v39.0.0 (5799 lines, 17 pages, 4514-line backend). APP-LTV-INTEGRITY reviewed — backend calibration PASS, frontend dual-ROI display PASS. V46 ghost-completion caught: V48-UX-FIX-1 filed (4 sub-fixes). V47-AMBER-CLEANUP closed (0 occurrences). 3 new diff-badges approved: CMO-156, DATA NOTE, PILOT HYPOTHESIS. 36 tables with 36 captions. 7/9 brand dimensions pass.)  
 **Status:** BINDING — All CustomerLake apps, dashboards, and demos MUST conform  
 **Scope:** Databricks App (`customerlake`), AI/BI dashboards, Genie spaces, demo materials  
 **Tag:** `customerlake_project: customerlake`
@@ -281,7 +281,7 @@ All spacing values MUST be multiples of 8px:
 ### Differentiator Badges
 - `.diff-badge`: 2px/6px padding, 4px radius, 10px, 600 weight
 - Color: `rgba(79,143,247,0.15)` bg, `--accent` text
-- Used for UNIQUE, DEDUP, RESOLVE, MULTI-CH, CONSENT, ATTRIBUTED, ENTITY-LEVEL, CTR, ROI, OMNICHANNEL, COST + ROI, OBSERVE, ALIGN, CHURN, PROTECT, DISPUTE, CHANNEL, COST/SAVE, DELIVERY, ENABLE, ENTITY, LOOP, OPTIMIZE, SAVE RATE, TRANSPARENT, vs ACQUIRE, HOLDOUT, TRUE ROI, RISK-TIER, SUPPRESS, CAUSAL, P-VALUE, CONFIDENCE-INTERVAL, STATISTICAL-POWER, CFO-READY, COMPETITOR COMPARISON, CONFLICT-AWARE, COST-PER-ENTITY, COUNTERFACTUAL, CROSS-SOURCE, IDENTITY-RESOLVED, LIVE DATA, LTV, ML-CHANNEL-WASTE, REVENUE-LINKED, TCO-TRANSPARENT, ZERO MARKETING CLAIMS, IN-PERIOD, ML-PROJECTED, EVERY NUMBER QUERYABLE, CAPABILITIES FIRST, TERMINOLOGY, CALIBRATED, NEEDS RECALIBRATION
+- Used for UNIQUE, DEDUP, RESOLVE, MULTI-CH, CONSENT, ATTRIBUTED, ENTITY-LEVEL, CTR, ROI, OMNICHANNEL, COST + ROI, OBSERVE, ALIGN, CHURN, PROTECT, DISPUTE, CHANNEL, COST/SAVE, DELIVERY, ENABLE, ENTITY, LOOP, OPTIMIZE, SAVE RATE, TRANSPARENT, vs ACQUIRE, HOLDOUT, TRUE ROI, RISK-TIER, SUPPRESS, CAUSAL, P-VALUE, CONFIDENCE-INTERVAL, STATISTICAL-POWER, CFO-READY, COMPETITOR COMPARISON, CONFLICT-AWARE, COST-PER-ENTITY, COUNTERFACTUAL, CROSS-SOURCE, IDENTITY-RESOLVED, LIVE DATA, LTV, ML-CHANNEL-WASTE, REVENUE-LINKED, TCO-TRANSPARENT, ZERO MARKETING CLAIMS, IN-PERIOD, ML-PROJECTED, EVERY NUMBER QUERYABLE, CAPABILITIES FIRST, TERMINOLOGY, CALIBRATED, NEEDS RECALIBRATION, CMO-156, DATA NOTE, PILOT HYPOTHESIS
 - **Pill badges** (capability feature tags): `var(--success-bg)` bg, `var(--success)` text, `4px 12px` padding, `borderRadius: 16px` (full pill), 12px, 500 weight
 
 ---

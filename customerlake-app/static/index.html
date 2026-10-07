@@ -837,9 +837,9 @@
 
           {/* DATA INTEGRITY WARNINGS — CMO-157: cross-check contradictions */}
            {data.data_integrity_warnings && data.data_integrity_warnings.length > 0 && (
-             <div className="card" role="note" style={{borderLeft:'3px solid var(--warning)', marginBottom:16, background:'rgba(245,158,11,0.04)'}}>
+             <div className="card" role="note" style={{borderLeft:'3px solid var(--warning)', marginBottom:16, background:'rgba(251,191,36,0.04)'}}>
                <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:6}}>
-                 <span className="diff-badge" style={{fontSize:9, background:'rgba(245,158,11,0.15)', color:'var(--warning)'}}>DATA NOTE</span>
+                 <span className="diff-badge" style={{fontSize:9, background:'rgba(251,191,36,0.15)', color:'var(--warning)'}}>DATA NOTE</span>
                  <span style={{fontWeight:600, fontSize:12, color:'var(--text-primary)'}}>Metric Cross-Check</span>
                </div>
                {data.data_integrity_warnings.map((w, i) => (
@@ -863,10 +863,10 @@
                 <div className="kpi-sub">{dualRoi ? dualRoi.portfolio.campaign_roi_x + 'x' : '0.43x'} on {fmtB(dualRoi ? dualRoi.portfolio.total_cost : 1463235)}</div>
                 <div className="kpi-sub" style={{fontSize:10, marginTop:2}}>Revenue during campaign window only</div>
               </div>
-              <div className="kpi-card" style={{borderLeft:'3px solid var(--warning)', background:'rgba(245,158,11,0.06)'}}>
+              <div className="kpi-card" style={{borderLeft:'3px solid var(--warning)', background:'rgba(251,191,36,0.06)'}}>
                 <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
                   <div className="kpi-label">Portfolio LTV ROI</div>
-                  <span className="diff-badge" style={{fontSize:9, background:'rgba(245,158,11,0.15)', color:'var(--warning)'}}>NEEDS RECALIBRATION</span>
+                  <span className="diff-badge" style={{fontSize:9, background:'rgba(251,191,36,0.15)', color:'var(--warning)'}}>NEEDS RECALIBRATION</span>
                   <span className="diff-badge" style={{fontSize:9}}>ML-PROJECTED</span>
                 </div>
                 <div className="kpi-value" style={{color:'var(--warning)', fontSize:32}}>{dualRoi ? (dualRoi.portfolio.ltv_roi_x * 100).toFixed(0) + '%' : '168%'}</div>
@@ -881,7 +881,7 @@
               <div className="kpi-card" style={{borderLeft:'3px solid var(--warning)'}}>
                 <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
                    <div className="kpi-label">Suppression Savings (90d)</div>
-                   <span className="diff-badge" style={{fontSize:9, background:'rgba(245,158,11,0.15)', color:'var(--warning)'}}>{suppressBreakdown ? suppressBreakdown.measured_pct + '% MEASURED' : ''}</span>
+                   <span className="diff-badge" style={{fontSize:9, background:'rgba(251,191,36,0.15)', color:'var(--warning)'}}>{suppressBreakdown ? suppressBreakdown.measured_pct + '% MEASURED' : ''}</span>
                  </div>
                  <div className="kpi-value" style={{color:'var(--warning)'}}>{suppressBreakdown ? fmtB(suppressBreakdown.measured.value) : fmtB(h.suppression_90day_value)}</div>
                  <div className="kpi-sub" style={{fontWeight:500}}>{suppressBreakdown ? 'Measured cost savings (real spend eliminated)' : 'Stop spending on value-destructive segments'}</div>
@@ -891,7 +891,7 @@
 
             {/* DUAL ROI EXPLANATION BANNER (CMO-133) */}
             {dualRoi && (
-              <div role="note" style={{padding:'12px 16px', background:'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:'var(--radius)', marginBottom:16}}>
+              <div role="note" style={{padding:'12px 16px', background:'rgba(251,191,36,0.06)', border:'1px solid rgba(251,191,36,0.2)', borderRadius:'var(--radius)', marginBottom:16}}>
                 <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:6}}>
                   <strong style={{color:'var(--warning)'}}>WHY TWO ROI NUMBERS?</strong>
                   <span className="diff-badge">UNIQUE</span>
@@ -900,11 +900,11 @@
                 <div style={{fontSize:12, color:'var(--text-secondary)', lineHeight:1.5}}>
                   {dualRoi.narrative.why_two_rois}
                 </div>
-                <div style={{marginTop:8, padding:'8px 12px', background:'rgba(245,158,11,0.06)', borderRadius:'var(--radius)', fontSize:12, fontWeight:500, color:'var(--text-primary)'}}>
+                <div style={{marginTop:8, padding:'8px 12px', background:'rgba(251,191,36,0.06)', borderRadius:'var(--radius)', fontSize:12, fontWeight:500, color:'var(--text-primary)'}}>
                   <Icon d={icons.trendingUp} size={14} /> CMO talking point: {dualRoi.narrative.cmo_talking_point}
                 </div>
                 {dualRoi.narrative.ltv_calibration_warning && (
-                  <div style={{marginTop:6, padding:'6px 12px', background:'rgba(245,158,11,0.10)', borderRadius:'var(--radius)', fontSize:11, color:'var(--warning)', display:'flex', alignItems:'center', gap:6}}>
+                  <div style={{marginTop:6, padding:'6px 12px', background:'rgba(251,191,36,0.10)', borderRadius:'var(--radius)', fontSize:11, color:'var(--warning)', display:'flex', alignItems:'center', gap:6}}>
                     <span style={{fontWeight:700}}>⚠ LTV CALIBRATION:</span> Model overpredicts by {dualRoi.narrative.ltv_calibration_warning.model_overprediction_factor}x — {dualRoi.narrative.ltv_calibration_warning.guidance}
                   </div>
                 )}
@@ -4919,15 +4919,15 @@
 
           {/* BREAKEVEN CVR HERO — CMO-156: Lead with breakeven, not revenue */}
            {honestRev && honestRev.headline && (
-             <div className="card" style={{borderLeft:'4px solid var(--success)', marginBottom:16, background:'rgba(34,197,94,0.04)'}}>
+             <div className="card" style={{borderLeft:'3px solid var(--success)', marginBottom:16, background:'rgba(52,211,153,0.04)'}}>
                <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:8}}>
-                 <span className="diff-badge" style={{fontSize:9, background:'rgba(34,197,94,0.15)', color:'var(--success)'}}>PILOT HYPOTHESIS</span>
+                 <span className="diff-badge" style={{fontSize:9, background:'rgba(52,211,153,0.15)', color:'var(--success)'}}>PILOT HYPOTHESIS</span>
                  <span className="diff-badge" style={{fontSize:9}}>CMO-156</span>
                </div>
                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16}}>
                  <div>
                    <div className="kpi-label">Breakeven CVR</div>
-                   <div style={{fontSize:32, fontWeight:800, color:'var(--success)'}}>{honestRev.headline.breakeven_cvr_pct}%</div>
+                   <div style={{fontSize:32, fontWeight:700, color:'var(--success)'}}>{honestRev.headline.breakeven_cvr_pct}%</div>
                    <div className="kpi-sub">Any CVR above this is profitable (honest CAC)</div>
                  </div>
                  <div>
@@ -4945,7 +4945,7 @@
                  <strong>Pitch:</strong> {honestRev.headline.cmo_headline}
                </div>
                {honestRev.ltv_warning && (
-                 <div style={{marginTop:8, padding:'8px 12px', background:'rgba(245,158,11,0.06)', borderRadius:'var(--radius)', fontSize:11, color:'var(--warning)'}}>
+                 <div style={{marginTop:8, padding:'8px 12px', background:'rgba(251,191,36,0.06)', borderRadius:'var(--radius)', fontSize:11, color:'var(--warning)'}}>
                    <strong>\u26a0 LTV Warning:</strong> Raw expected revenue {fmtB(honestRev.ltv_warning.raw_expected_revenue)} uses uncalibrated ML model ({honestRev.ltv_warning.overprediction_factor}x overpredict). Calibrated: {fmtB(honestRev.ltv_warning.calibrated_expected_revenue)}. {honestRev.ltv_warning.guidance}
                  </div>
                )}
@@ -4964,10 +4964,10 @@
                <div className="kpi-value" style={{color:'var(--info)'}}>{fmt(k.dark_addressable)}</div>
                <div className="kpi-sub">Have consent + ML scores but zero campaigns</div>
              </div>
-             <div className="kpi-card" style={{borderLeft:'3px solid var(--warning)', background:'rgba(245,158,11,0.06)'}}>
+             <div className="kpi-card" style={{borderLeft:'3px solid var(--warning)', background:'rgba(251,191,36,0.06)'}}>
                <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
                  <div className="kpi-label">Recoverable LTV</div>
-                 <span className="diff-badge" style={{fontSize:9, background:'rgba(245,158,11,0.15)', color:'var(--warning)'}}>CALIBRATED</span>
+                 <span className="diff-badge" style={{fontSize:9, background:'rgba(251,191,36,0.15)', color:'var(--warning)'}}>CALIBRATED</span>
                </div>
                <div className="kpi-value" style={{color:'var(--warning)'}}>{kpiData && kpiData.ltv_calibration ? fmtB(kpiData.ltv_calibration.calibrated_addressable_dark_ltv) : fmtB(k.addressable_dark_ltv / 6.40)}</div>
                <div className="kpi-sub" style={{fontSize:10, color:'var(--text-muted)'}}>Raw model: {fmtB(k.addressable_dark_ltv)} \u00b7 <span style={{color:'var(--warning)'}}>\u00f76.4x overprediction</span></div>
@@ -5778,7 +5778,7 @@
             </nav>
             <div style={{marginTop:'auto', padding:'16px 20px', borderTop:'1px solid var(--border)'}}>
               <div style={{fontSize:'11px', color:'var(--text-muted)'}}>Powered by Databricks</div>
-              <div style={{fontSize:'10px', color:'var(--text-muted)', marginTop:'2px'}}>cdm_tmforum · Lakebase · Unity Catalog · v38.0.0</div>
+              <div style={{fontSize:'10px', color:'var(--text-muted)', marginTop:'2px'}}>cdm_tmforum · Lakebase · Unity Catalog · v39.0.0</div>
             </div>
           </div>
           <main className="main-content">
