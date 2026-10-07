@@ -1,6 +1,6 @@
 # CustomerLake Brand Guidelines
 
-**Version:** 2.2.0 — Updated 2026-10-06 by @designer (V45 Full Brand Sweep: v37.0.0 (5745 lines, 17 pages, 4335-line backend). V44-UX-FIX-1 VERIFIED. CMO-59 presentation changes reviewed (CMO-151/153/155). 8/8 WCAG contrast checks pass (4.5–13.3:1). 4 new diff-badges approved: CAPABILITIES FIRST, TERMINOLOGY, CALIBRATED, NEEDS RECALIBRATION. 36 tables have captions. 1 low fix filed: V45-UX-FIX-1 FastAPI version sync. Capability Hero Count type element and pill-badge radius added.)  
+**Version:** 2.3.0 — Updated 2026-10-07 by @designer (V46 Full Brand Sweep: v38.0.0 (5799 lines, 17 pages, 4484-line backend). APP-BREAKEVEN-HERO reviewed: honest-revenue endpoint, breakeven CVR hero, exec summary data integrity warnings. V45-UX-FIX-1 VERIFIED (superseded by v38 bump). 8/8 WCAG contrast checks pass (4.7–12.6:1). PILOT HYPOTHESIS diff-badge approved. 2 fixes filed: V46-UX-FIX-1 fontWeight 800→700, V46-UX-FIX-2 off-palette green + borderLeft + ARIA. Systemic note: rgba(245,158,11,...) off-palette amber appears 13x — recommend bulk cleanup.)  
 **Status:** BINDING — All CustomerLake apps, dashboards, and demos MUST conform  
 **Scope:** Databricks App (`customerlake`), AI/BI dashboards, Genie spaces, demo materials  
 **Tag:** `customerlake_project: customerlake`

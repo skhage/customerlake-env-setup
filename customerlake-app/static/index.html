@@ -4919,15 +4919,15 @@
 
           {/* BREAKEVEN CVR HERO — CMO-156: Lead with breakeven, not revenue */}
            {honestRev && honestRev.headline && (
-             <div className="card" style={{borderLeft:'4px solid var(--success)', marginBottom:16, background:'rgba(34,197,94,0.04)'}}>
+             <div className="card" role="region" aria-label="Breakeven CVR pilot hypothesis" style={{borderLeft:'3px solid var(--success)', marginBottom:16, background:'rgba(52,211,153,0.04)'}}>
                <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:8}}>
-                 <span className="diff-badge" style={{fontSize:9, background:'rgba(34,197,94,0.15)', color:'var(--success)'}}>PILOT HYPOTHESIS</span>
+                 <span className="diff-badge" style={{fontSize:9, background:'rgba(52,211,153,0.15)', color:'var(--success)'}}>PILOT HYPOTHESIS</span>
                  <span className="diff-badge" style={{fontSize:9}}>CMO-156</span>
                </div>
                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16}}>
                  <div>
                    <div className="kpi-label">Breakeven CVR</div>
-                   <div style={{fontSize:32, fontWeight:800, color:'var(--success)'}}>{honestRev.headline.breakeven_cvr_pct}%</div>
+                   <div style={{fontSize:32, fontWeight:700, color:'var(--success)'}}>{honestRev.headline.breakeven_cvr_pct}%</div>
                    <div className="kpi-sub">Any CVR above this is profitable (honest CAC)</div>
                  </div>
                  <div>
