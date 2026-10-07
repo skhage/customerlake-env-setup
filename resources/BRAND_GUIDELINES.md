@@ -1,6 +1,6 @@
 # CustomerLake Brand Guidelines
 
-**Version:** 2.2.0 — Updated 2026-10-06 by @designer (V45 Full Brand Sweep: v37.0.0 (5745 lines, 17 pages, 4335-line backend). V44-UX-FIX-1 VERIFIED. CMO-59 presentation changes reviewed (CMO-151/153/155). 8/8 WCAG contrast checks pass (4.5–13.3:1). 4 new diff-badges approved: CAPABILITIES FIRST, TERMINOLOGY, CALIBRATED, NEEDS RECALIBRATION. 36 tables have captions. 1 low fix filed: V45-UX-FIX-1 FastAPI version sync. Capability Hero Count type element and pill-badge radius added.)  
+**Version:** 2.3.1 — Updated 2026-10-07 by @designer (V47 Full Brand Sweep: v38.0.0 (5799 lines, 17 pages, 4484-line backend). V46-FIX VERIFICATION: 3/3 PASS (V46-UX-FIX-1 fontWeight 800→700, V45-UX-FIX-1 version sync at 38.0.0, V46-UX-FIX-2 off-palette green fixed). 9/9 brand dimensions pass. 8/8 WCAG contrast checks pass (4.5–12.6:1). Deferred V10-UX-FIX-2 and V10-UX-FIX-3 confirmed RESOLVED. Off-palette amber reduced to 12x — V47-AMBER-CLEANUP filed to @app-developer for bulk rgba(245,158,11,...)→rgba(251,191,36,...) replacement.)  
 **Status:** BINDING — All CustomerLake apps, dashboards, and demos MUST conform  
 **Scope:** Databricks App (`customerlake`), AI/BI dashboards, Genie spaces, demo materials  
 **Tag:** `customerlake_project: customerlake`
@@ -423,8 +423,8 @@ When creating AI/BI dashboards or Genie spaces tagged `customerlake_project: cus
 
 ### V10 Audit Findings (2026-09-30) — Polish Only
 - [x] **V10-UX-FIX-1:** Footer version stale at `v7.0`. PARTIALLY FIXED to v8.0 — superseded by V11-UX-FIX-3.
-- [ ] **V10-UX-FIX-2:** Profile detail panel campaign attributions (line 715) render all purposes with `badge-success`. Should use `badge-info` or map purpose to semantic color.
-- [ ] **V10-UX-FIX-3:** Steward error dismiss button (line 1268) uses Unicode `✕` text instead of `<Icon d={icons.x} />` SVG. Consistency fix — use the Icon component.
+- [x] **V10-UX-FIX-2:** ~~Profile detail panel campaign attributions render all purposes with `badge-success`.~~ RESOLVED (confirmed V47) — L1485 now maps purpose to semantic badge class (retention→badge-success, acquisition→badge-info, winback→badge-warning, upsell→badge-info, else→badge-neutral).
+- [x] **V10-UX-FIX-3:** ~~Steward error dismiss button uses Unicode `✕` text instead of SVG.~~ RESOLVED (confirmed V47) — all close/dismiss buttons now use `<Icon d={icons.x} />` component.
 
 ### V35 Audit Findings (2026-10-05) — V34-Fix Verification + Full Brand Sweep
 - [x] **V34-UX-FIX-1:** VERIFIED APPLIED. L843 and L920 banner padding changed from 10px 14px to 12px 16px. ON 8px grid.
@@ -676,13 +676,15 @@ When creating AI/BI dashboards or Genie spaces tagged `customerlake_project: cus
 - Backend security: Parameterized queries, try/catch, HTTPException.
 
 **KNOWN DEFERRED (Low — acceptable for demo):**
-- V10-UX-FIX-2: Attribution purposes all use badge-success
-- V10-UX-FIX-3: Steward dismiss ✕ Unicode instead of SVG
+- ~~V10-UX-FIX-2: Attribution purposes all use badge-success~~ RESOLVED (V47)
+- ~~V10-UX-FIX-3: Steward dismiss ✕ Unicode instead of SVG~~ RESOLVED (V47)
 - V12-UX-FIX-3: Naive vs True ROI uses global naive
 - DASH-UX-FIX-3: Dashboard bar chart axis labels
+- V47-AMBER-CLEANUP: 12x off-palette rgba(245,158,11,...) → rgba(251,191,36,...) (filed to @app-developer)
 - Loading skeleton screens (Low polish)
 - Empty state illustrations (Low polish)
 
 | 2026-10-02 | 1.9.3 | @designer | **V24 FULL BRAND SWEEP (v18.0).** APP-UNUSED-VIEWS (v17: ML Channel Propensity, Statistical Quality Disclosure, Holdout Data Quality) all 9/9 PASS. APP-STAT-CONFIDENCE (v18: new 11th page, 237 lines, 3 endpoints) 8/9 PASS. All V21/V22/V23 fixes verified holding. 2 low issues filed: V24-UX-FIX-1 (fontWeight:800→700 on Stat Confidence hero KPIs), V24-UX-FIX-2 (Channel Propensity grid auto-fill→auto-fit + 140→160px). 4 diff-badge terms added to §6: CAUSAL, P-VALUE, CONFIDENCE-INTERVAL, STATISTICAL-POWER. Version sync v18.0 = 18.0.0 PASS. 11/11 pages brand-compliant. |
 | 2026-10-04 | 1.9.6 | @designer | **V32 FULL BRAND SWEEP (v26.0.0, 4760 lines, 15 pages).** All 7 open V21-V24 fixes VERIFIED APPLIED (V21-UX-FIX-1/2/3/4, V22-UX-FIX-1, V24-UX-FIX-1/2). 4 new pages audited: Cost & ROI (9/9 PASS), Why CustomerLake (9/9 PASS), Dark Audience Explorer (7/9 PASS — 2 tables missing captions), Statistical Confidence updates (PASS). Version sync v26.0.0 = 26.0.0 PASS. Filed V32-UX-FIX-1/2 (Dark Audience table captions) to @app-developer. |
+| 2026-10-07 | 2.3.1 | @designer | **V47 V46-FIX VERIFICATION + FULL BRAND SWEEP.** V46-UX-FIX-1 (fontWeight 800→700): VERIFIED L4930. V45-UX-FIX-1 (version sync): VERIFIED all three at 38.0.0. V46-UX-FIX-2 (off-palette green + ARIA): VERIFIED L4922/L4924 now rgba(52,211,153,...). 9/9 brand dimensions PASS. 8/8 WCAG contrast checks PASS (4.5–12.6:1). Deferred V10-UX-FIX-2 and V10-UX-FIX-3 confirmed RESOLVED (purpose badge mapping at L1485, all close buttons use Icon component). Off-palette amber at 12x (down from 13 in V46). Filed V47-AMBER-CLEANUP (low) to @app-developer for bulk rgba(245,158,11,...)→rgba(251,191,36,...) replacement. App metrics: 808 var(--) refs, 43 Icon components, 64 aria-label, 23 aria-live, 18 role=note, 21 role=img. |
 | 2026-09-30 | 1.3.0 | @designer | **V10 COMPREHENSIVE AUDIT — FULL PASS.** 9-dimension review (Color, Typography, Iconography, Layout, Components, Responsive, Accessibility, Brand Voice, Security). All 2,310 lines of index.html and 78K of app.py verified against brand spec. WCAG 2.1 AA: all 16 compliance items (A1–A16) confirmed in code. All UX-FIX-1 through V8-UX-FIX-4 verified. 3 low-priority polish items filed: V10-UX-FIX-1 (footer version stale v7.0→v10.0), V10-UX-FIX-2 (attribution badge semantic color), V10-UX-FIX-3 (steward dismiss icon consistency). |

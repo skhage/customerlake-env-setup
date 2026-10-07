@@ -874,9 +874,15 @@
                 <div className="kpi-sub" style={{fontSize:10, marginTop:2}}>Use 37% portfolio ROI for board presentations. LTV projection is directional only.</div>
               </div>
               <div className="kpi-card" style={{borderLeft:'3px solid var(--danger)'}}>
-                <div className="kpi-label">Revenue at Risk</div>
-                <div className="kpi-value" style={{color:'var(--danger)'}}>{fmtB(h.revenue_at_risk)}</div>
-                <div className="kpi-sub">High-churn entities identified by ML</div>
+                <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
+                  <div className="kpi-label">Revenue at Risk</div>
+                  <span className="diff-badge" style={{fontSize:9, background:'rgba(239,68,68,0.15)', color:'var(--danger)'}}>CALIBRATED</span>
+                </div>
+                <div className="kpi-value" style={{color:'var(--danger)'}}>{fmtB(h.revenue_at_risk_calibrated || h.revenue_at_risk)}</div>
+                <div className="kpi-sub" style={{fontWeight:500}}>High-churn entities identified by ML</div>
+                <div className="kpi-sub" style={{fontSize:10, marginTop:2, color:'var(--text-muted)'}}>
+                  Raw model: {fmtB(h.revenue_at_risk)} (LTV over-predicts ~6.7x)
+                </div>
               </div>
               <div className="kpi-card" style={{borderLeft:'3px solid var(--warning)'}}>
                 <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
@@ -3748,8 +3754,9 @@
             </div>
             <div className="card" style={{padding:16, textAlign:'center'}}>
               <div style={{fontSize:28, fontWeight:700, color:'var(--accent)'}}>{fmtUsd(tgtSummary.blended_roas)}</div>
-              <div style={{fontSize:12, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginTop:4}}>Blended ROAS</div>
-              <div style={{fontSize:12, color:'var(--text-secondary)', marginTop:2}}>{fmtUsd(tgtSummary.total_attributed_revenue)} / {fmtUsd(tgtSummary.total_cost)} spend</div>
+              <div style={{fontSize:12, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginTop:4}}>Blended ROAS <span style={{fontSize:9, color:'var(--warning)', fontWeight:600}}>(GROSS)</span></div>
+               <div style={{fontSize:12, color:'var(--text-secondary)', marginTop:2}}>{fmtUsd(tgtSummary.total_attributed_revenue)} / {fmtUsd(tgtSummary.total_cost)} spend</div>
+               <div style={{fontSize:10, color:'var(--warning)', marginTop:2}}>Incremental ROI: 0.37x (holdout-measured)</div>
             </div>
             <div className="card" style={{padding:16, textAlign:'center'}}>
               <div style={{fontSize:28, fontWeight:700, color:'var(--info)'}}>{fmt(tgtSummary.total_conversions)}</div>
@@ -3835,7 +3842,11 @@
             {/* Section 3: Risk-Based Targeting */}
             <div className="card" style={{padding:20}}>
               <h3 style={{fontSize:15, fontWeight:600, marginBottom:4}}>Risk-Based Targeting Effectiveness</h3>
-              <p style={{fontSize:12, color:'var(--text-muted)', marginBottom:16}}>ML churn probability drives precision send volume and conversion</p>
+              <p style={{fontSize:12, color:'var(--text-muted)', marginBottom:8}}>ML churn probability drives precision send volume and conversion</p>
+               <div role="note" style={{padding:'8px 12px', background:'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.15)', borderRadius:'var(--radius)', marginBottom:16, fontSize:11, color:'var(--warning)', display:'flex', alignItems:'flex-start', gap:6}}>
+                 <span style={{fontWeight:700, whiteSpace:'nowrap'}}>{String.fromCharCode(9888)} ATTRIBUTION NOTE:</span>
+                 <span>ROAS shown is <strong>gross attribution</strong> (total revenue / cost), not incremental. True incremental ROI from holdout measurement = <strong>0.37x</strong>. Use incremental ROI for board presentations.</span>
+               </div>
               <div className="table-scroll">
                 <table>
                   <caption className="kpi-label" style={{captionSide:'top', textAlign:'left', marginBottom:'8px'}}>Risk-based targeting effectiveness by ML churn tier</caption>
@@ -3858,7 +3869,7 @@
                 </table>
               </div>
               <div style={{marginTop:12, padding:'8px 12px', background:'var(--bg-secondary)', borderRadius:'var(--radius)', fontSize:12, color:'var(--text-secondary)'}}>
-                <strong style={{color:'var(--accent)'}}>Key insight:</strong> CRITICAL-risk entities convert at 30% with 18x ROAS. MINIMAL-risk targeting is value-destructive. ML precision targeting replaces flat-blast.
+                <strong style={{color:'var(--accent)'}}>Key insight:</strong> CRITICAL-risk entities convert at 30% (gross) vs MINIMAL at 6%. ML precision targeting concentrates spend where conversion lift is real. True incremental ROI = 0.37x — proves value over no-send baseline.
               </div>
             </div>
           </div>
@@ -5778,7 +5789,7 @@
             </nav>
             <div style={{marginTop:'auto', padding:'16px 20px', borderTop:'1px solid var(--border)'}}>
               <div style={{fontSize:'11px', color:'var(--text-muted)'}}>Powered by Databricks</div>
-              <div style={{fontSize:'10px', color:'var(--text-muted)', marginTop:'2px'}}>cdm_tmforum · Lakebase · Unity Catalog · v38.0.0</div>
+              <div style={{fontSize:'10px', color:'var(--text-muted)', marginTop:'2px'}}>cdm_tmforum · Lakebase · Unity Catalog · v39.0.0</div>
             </div>
           </div>
           <main className="main-content">
