@@ -245,10 +245,7 @@ bundle_artifacts/
 /ml_engineer_fixes_*.ipynb
 /DA-SYNTHETIC-*.ipynb
 /DA-CACHE-REFRESH-*.ipynb
-/DE-CACHE-*.ipynb
-/DE-FIX-*.ipynb
-/DE-LTV-MIGRATE-*.ipynb
-/DE-REFRESH-EXEC-*.ipynb
+/DE-*.ipynb
 /PM-*.ipynb
 /predemo_cache_warmup.ipynb
 /demo_walkthrough_15min.ipynb
