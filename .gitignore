@@ -253,6 +253,7 @@ bundle_artifacts/
 /predemo_cache_warmup.ipynb
 /demo_walkthrough_15min.ipynb
 /cache_refresh_*.ipynb
+/cache-refresh-*.ipynb
 
 # MLflow experiment artifacts (tracked by MLflow, not Git)
 agent_evaluation/
