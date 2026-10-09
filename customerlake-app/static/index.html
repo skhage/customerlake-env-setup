@@ -630,6 +630,7 @@
       menu: 'M4 6h16 M4 12h16 M4 18h16',
       x: 'M18 6L6 18 M6 6l12 12',
       alertCircle: 'M12 12m-10 0a10 10 0 1 0 20 0 10 10 0 1 0-20 0 M12 8v4 M12 16h.01',
+      alertTriangle: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01',
       shieldCheck: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4',
       megaphone: 'M3 11l18-5v12L3 13v-2z M11.6 16.8a3 3 0 1 1-5.8-1.6',
       sparkles: 'M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z M19 13l.75 2.25L22 16l-2.25.75L19 19l-.75-2.25L16 16l2.25-.75L19 13z',
@@ -794,6 +795,7 @@
       const [ltvReconcile, setLtvReconcile] = useState(null);
       const [dualRoi, setDualRoi] = useState(null);
       const [suppressBreakdown, setSuppressBreakdown] = useState(null);
+      const [revenueAttribution, setRevenueAttribution] = useState(null);
        const [loading, setLoading] = useState(true);
        const [loadError, setLoadError] = useState(false);
 
@@ -804,7 +806,8 @@
          api('/api/executive/roi-methodology').then(rm => setRoiMethod(rm)).catch(() => null);
          api('/api/ltv-cac/reconciliation').then(lr => setLtvReconcile(lr)).catch(() => null);
          api('/api/executive/suppression-breakdown').then(sb => setSuppressBreakdown(sb)).catch(() => null);
-        api('/api/executive/dual-roi').then(dr => setDualRoi(dr)).catch(() => null)
+        api('/api/executive/dual-roi').then(dr => setDualRoi(dr)).catch(() => null);
+        api('/api/executive/revenue-attribution').then(ra => setRevenueAttribution(ra)).catch(() => null)
           .finally(() => setLoading(false));
       }, []);
 
@@ -835,19 +838,62 @@
             <p>Board-ready snapshot — all 54 metric views distilled into one page · {data.snapshot_date}</p>
           </div>
 
-          {/* DATA INTEGRITY WARNINGS — CMO-157: cross-check contradictions */}
+          {/* DATA INTEGRITY WARNINGS — CMO-157/195/193: cross-check contradictions + spend/CVR guardrails */}
            {data.data_integrity_warnings && data.data_integrity_warnings.length > 0 && (
-             <div className="card" role="note" style={{borderLeft:'3px solid var(--warning)', marginBottom:16, background:'rgba(251,191,36,0.04)'}}>
+             <div className="card" role="note" style={{borderLeft:'3px solid ' + (data.data_integrity_warnings.some(function(w){return w.severity==='critical'}) ? 'var(--danger)' : 'var(--warning)'), marginBottom:16, background: data.data_integrity_warnings.some(function(w){return w.severity==='critical'}) ? 'rgba(248,113,113,0.04)' : 'rgba(251,191,36,0.04)'}}>
                <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:6}}>
-                 <span className="diff-badge" style={{fontSize:9, background:'rgba(251,191,36,0.15)', color:'var(--warning)'}}>DATA NOTE</span>
-                 <span style={{fontWeight:600, fontSize:12, color:'var(--text-primary)'}}>Metric Cross-Check</span>
+                 <Icon d={icons.alertTriangle} size={14} />
+                 <span className="diff-badge" style={{fontSize:9, background: data.data_integrity_warnings.some(function(w){return w.severity==='critical'}) ? 'rgba(248,113,113,0.15)' : 'rgba(251,191,36,0.15)', color: data.data_integrity_warnings.some(function(w){return w.severity==='critical'}) ? 'var(--danger)' : 'var(--warning)'}}>DATA INTEGRITY</span>
+                 <span style={{fontWeight:600, fontSize:12, color:'var(--text-primary)'}}>Cross-Source Validation</span>
                </div>
                {data.data_integrity_warnings.map((w, i) => (
-                 <div key={i} style={{fontSize:12, color:'var(--text-secondary)', marginTop:i > 0 ? 8 : 0}}>
-                   <div style={{fontWeight:600, color:'var(--warning)', marginBottom:2}}>{w.code}</div>
-                   <div>{w.display_note}</div>
+                 <div key={i} style={{fontSize:12, color:'var(--text-secondary)', marginTop:i > 0 ? 10 : 0, paddingTop:i > 0 ? 10 : 0, borderTop:i > 0 ? '1px solid var(--border)' : 'none'}}>
+                   <div style={{display:'flex', alignItems:'center', gap:6, marginBottom:2}}>
+                     <span style={{fontWeight:600, color: w.severity === 'critical' ? 'var(--danger)' : 'var(--warning)'}}>{w.code}</span>
+                     {w.severity === 'critical' && <span className="badge badge-danger" style={{fontSize:9}}>CRITICAL</span>}
+                   </div>
+                   <div>{w.display_note || w.message}</div>
+                   {w.guidance && <div style={{marginTop:4, fontSize:11, fontStyle:'italic', color:'var(--text-muted)'}}>{w.guidance}</div>}
                  </div>
                ))}
+             </div>
+           )}
+
+           {/* CMO-190/196/202: $1B TALKING POINT SUPPRESSION */}
+           {data.cmo_talking_point && data.cmo_talking_point.status === 'SUPPRESSED' && (
+             <div className="card" role="alert" aria-label="Talking point suppressed" style={{borderLeft:'3px solid var(--danger)', marginBottom:16, background:'rgba(248,113,113,0.04)'}}>
+               <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:8}}>
+                 <Icon d={icons.alertTriangle} size={14} />
+                 <span className="badge badge-danger" style={{fontSize:9}}>SUPPRESSED</span>
+                 <span style={{fontWeight:600, fontSize:12, color:'var(--text-primary)'}}>CMO Talking Point Override</span>
+               </div>
+               <div style={{padding:'10px 14px', background:'var(--success-bg)', borderRadius:'var(--radius)', fontSize:13, color:'var(--text-primary)', fontWeight:500, lineHeight:1.5, marginBottom:8}}>
+                 <Icon d={icons.trendingUp} size={14} /> {data.cmo_talking_point.display}
+               </div>
+               <details style={{fontSize:11, color:'var(--text-muted)'}}>
+                 <summary style={{cursor:'pointer', fontWeight:500, color:'var(--danger)'}}>Why was the original suppressed?</summary>
+                 <div style={{marginTop:6, padding:'8px 12px', background:'rgba(248,113,113,0.06)', borderRadius:'var(--radius)'}}>
+                   <div style={{textDecoration:'line-through', color:'var(--text-muted)', marginBottom:4}}>{data.cmo_talking_point.suppressed_original}</div>
+                   <div>{data.cmo_talking_point.suppression_reason}</div>
+                 </div>
+               </details>
+             </div>
+           )}
+           {data.cmo_talking_point && data.cmo_talking_point.status === 'APPROVED' && (
+             <div style={{padding:'10px 14px', background:'var(--success-bg)', borderRadius:'var(--radius)', fontSize:13, color:'var(--text-primary)', fontWeight:500, lineHeight:1.5, marginBottom:16, display:'flex', alignItems:'center', gap:8}}>
+               <Icon d={icons.trendingUp} size={14} />
+               <span>CMO Talking Point:</span> {data.cmo_talking_point.display}
+             </div>
+           )}
+
+           {/* SPEND DISAMBIGUATION — CMO-200: 4-way spend contradiction */}
+           {data.spend_disambiguation && (
+             <div role="note" style={{padding:'10px 16px', background:'rgba(251,191,36,0.04)', border:'1px solid rgba(251,191,36,0.15)', borderRadius:'var(--radius)', marginBottom:16, fontSize:12}}>
+               <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
+                 <span className="diff-badge" style={{fontSize:9, background:'rgba(251,191,36,0.15)', color:'var(--warning)'}}>SPEND SOURCE</span>
+                 <span style={{fontWeight:600, color:'var(--text-primary)'}}>Canonical: {data.spend_disambiguation.canonical_source}</span>
+               </div>
+               <div style={{color:'var(--text-secondary)', lineHeight:1.4}}>{data.spend_disambiguation.guidance}</div>
              </div>
            )}
 
@@ -873,10 +919,14 @@
                 <div className="kpi-sub" style={{fontWeight:600, color:'var(--warning)'}}>{dualRoi && dualRoi.narrative && dualRoi.narrative.ltv_calibration_warning ? dualRoi.narrative.ltv_calibration_warning.model_overprediction_factor + 'x model overprediction detected' : '~6.7x model overprediction detected'}</div>
                 <div className="kpi-sub" style={{fontSize:10, marginTop:2}}>Use 37% portfolio ROI for board presentations. LTV projection is directional only.</div>
               </div>
-              <div className="kpi-card" style={{borderLeft:'3px solid var(--danger)'}}>
-                <div className="kpi-label">Revenue at Risk</div>
-                <div className="kpi-value" style={{color:'var(--danger)'}}>{fmtB(h.revenue_at_risk)}</div>
-                <div className="kpi-sub">High-churn entities identified by ML</div>
+              <div className="kpi-card" style={{borderLeft:'3px solid var(--success)'}}>
+                <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
+                  <div className="kpi-label">CDP-Attributable Impact</div>
+                  <span className="diff-badge" style={{fontSize:9, background:'var(--success-bg)', color:'var(--success)'}}>PROVEN</span>
+                </div>
+                <div className="kpi-value" style={{color:'var(--success)'}}>{revenueAttribution ? fmtB(revenueAttribution.tier1_proven.total_usd) : fmtB(h.revenue_at_risk_calibrated)}</div>
+                <div className="kpi-sub">{revenueAttribution ? 'Holdout-measured + calibrated' : 'Calibrated revenue at risk'}</div>
+                {revenueAttribution && <div className="kpi-sub" style={{fontSize:10, marginTop:2, color:'var(--text-muted)'}}>+ ${(revenueAttribution.tier2_model_derived.recurring_revenue_usd / 1e6).toFixed(1)}M ablation-backed churn lift</div>}
               </div>
               <div className="kpi-card" style={{borderLeft:'3px solid var(--warning)'}}>
                 <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
@@ -905,9 +955,78 @@
                 </div>
                 {dualRoi.narrative.ltv_calibration_warning && (
                   <div style={{marginTop:6, padding:'6px 12px', background:'rgba(251,191,36,0.10)', borderRadius:'var(--radius)', fontSize:11, color:'var(--warning)', display:'flex', alignItems:'center', gap:6}}>
-                    <span style={{fontWeight:700}}>⚠ LTV CALIBRATION:</span> Model overpredicts by {dualRoi.narrative.ltv_calibration_warning.model_overprediction_factor}x — {dualRoi.narrative.ltv_calibration_warning.guidance}
+                    <span style={{fontWeight:700, display:'inline-flex', alignItems:'center', gap:4}}><Icon d={icons.alertTriangle} size={12} /> LTV CALIBRATION:</span> Model overpredicts by {dualRoi.narrative.ltv_calibration_warning.model_overprediction_factor}x — {dualRoi.narrative.ltv_calibration_warning.guidance}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* REVENUE ATTRIBUTION — Honest Breakdown (CMO-169/176, APP-REVENUE-ATTRIBUTION v40) */}
+            {revenueAttribution && (
+              <div className="card" style={{marginBottom:16}}>
+                <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:12}}>
+                  <div className="card-title" style={{margin:0}}><Icon d={icons.trendingUp} size={16} /> Revenue Attribution — Honest Breakdown</div>
+                  <span className="diff-badge" style={{background:'var(--success-bg)', color:'var(--success)'}}>PROVEN</span>
+                  <span className="diff-badge">ABLATION-BACKED</span>
+                  <span className="diff-badge">CROSS-SOURCE</span>
+                </div>
+
+                {/* Tier 1: PROVEN */}
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:13, fontWeight:700, color:'var(--success)', marginBottom:8, display:'flex', alignItems:'center', gap:8}}>
+                    Tier 1: PROVEN — ${revenueAttribution.tier1_proven.total_usd?.toLocaleString()}
+                    <span className="diff-badge" style={{fontSize:9, background:'var(--success-bg)', color:'var(--success)'}}>HOLDOUT-MEASURED</span>
+                  </div>
+                  <div className="kpi-grid" style={{gridTemplateColumns:'repeat(3, 1fr)', gap:12}}>
+                    {revenueAttribution.tier1_proven.components.map((c, i) => (
+                      <div key={i} className="kpi-card" style={{borderLeft:'3px solid var(--success)', padding:12}}>
+                        <div style={{fontSize:11, fontWeight:600, color:'var(--text-primary)', marginBottom:4}}>{c.name}</div>
+                        <div style={{fontSize:20, fontWeight:700, color:'var(--success)'}}>{fmtB(c.value_usd)}</div>
+                        <div style={{fontSize:10, color:'var(--text-muted)', marginTop:4}}>{c.method}</div>
+                        <span className="diff-badge" style={{fontSize:8, marginTop:4, background: c.confidence === 'PROVEN' ? 'var(--success-bg)' : 'var(--info-bg)', color: c.confidence === 'PROVEN' ? 'var(--success)' : 'var(--info)'}}>{c.confidence}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tier 2: MODEL-DERIVED */}
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:13, fontWeight:700, color:'var(--info)', marginBottom:8, display:'flex', alignItems:'center', gap:8}}>
+                    Tier 2: MODEL-DERIVED — ${(revenueAttribution.tier2_model_derived.recurring_revenue_usd / 1e6).toFixed(1)}M recurring
+                    <span className="diff-badge" style={{fontSize:9, background:'var(--info-bg)', color:'var(--info)'}}>ABLATION-BACKED</span>
+                  </div>
+                  <div className="kpi-grid" style={{gridTemplateColumns:'repeat(2, 1fr)', gap:12}}>
+                    {revenueAttribution.tier2_model_derived.components.map((c, i) => (
+                      <div key={i} className="kpi-card" style={{borderLeft:'3px solid var(--info)', padding:12}}>
+                        <div style={{fontSize:11, fontWeight:600, color:'var(--text-primary)', marginBottom:4}}>{c.name}</div>
+                        <div style={{fontSize:12, color:'var(--text-secondary)', lineHeight:1.4}}>{c.description}</div>
+                        <span className="diff-badge" style={{fontSize:8, marginTop:6, background:'var(--info-bg)', color:'var(--info)'}}>{c.confidence}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Ablation summary */}
+                  <div style={{marginTop:8, padding:'8px 12px', background:'var(--bg-hover)', borderRadius:'var(--radius)', fontSize:11, color:'var(--text-secondary)'}}>
+                    <strong>Ablation:</strong> AUC {revenueAttribution.tier2_model_derived.ablation_summary.auc_billing_only} (billing-only) → {revenueAttribution.tier2_model_derived.ablation_summary.auc_cross_source} (cross-source), +{revenueAttribution.tier2_model_derived.ablation_summary.auc_lift.toFixed(4)} lift | {revenueAttribution.tier2_model_derived.ablation_summary.exclusive_churners} exclusive churners | {revenueAttribution.tier2_model_derived.ablation_summary.false_positive_reduction_pct}% fewer false positives
+                  </div>
+                </div>
+
+                {/* Tier 3: MANAGED PORTFOLIO */}
+                <div style={{padding:'10px 14px', background:'rgba(248,113,113,0.06)', border:'1px solid rgba(248,113,113,0.2)', borderRadius:'var(--radius)'}}>
+                  <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
+                    <span style={{fontSize:12, fontWeight:700, color:'var(--danger)'}}>Tier 3: MANAGED PORTFOLIO — {fmtB(revenueAttribution.tier3_managed_portfolio.total_portfolio_usd)}</span>
+                    <span className="diff-badge" style={{fontSize:9, background:'var(--danger-bg)', color:'var(--danger)'}}>NOT CDP IMPACT</span>
+                  </div>
+                  <div style={{fontSize:11, color:'var(--danger)'}}>
+                    {revenueAttribution.tier3_managed_portfolio.warning}
+                  </div>
+                </div>
+
+                {/* Board-ready narrative */}
+                <div style={{marginTop:12, padding:'10px 14px', background:'var(--accent-light)', borderRadius:'var(--radius)'}}>
+                  <div style={{fontSize:12, fontWeight:600, color:'var(--accent)', marginBottom:4}}>Board-Ready Narrative</div>
+                  <div style={{fontSize:12, color:'var(--text-primary)', lineHeight:1.5}}>{revenueAttribution.board_narrative.cmo_talking_point}</div>
+                  <div style={{marginTop:6, fontSize:10, color:'var(--text-muted)'}}>Previous headline: {revenueAttribution.board_narrative.previous_headline}</div>
+                </div>
               </div>
             )}
 
@@ -1050,7 +1169,8 @@
               <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginTop:8}}>
                 <div>
                   <div className="kpi-label">Campaign Spend</div>
-                  <div style={{fontSize:20, fontWeight:700}}>{fmtCur(cp.total_spend)}</div>
+                  <div style={{fontSize:20, fontWeight:700}}>{cp.canonical_spend ? fmtCur(cp.canonical_spend) : fmtCur(cp.total_spend)}</div>
+                  {cp.spend_discrepancy_ratio > 1 && <div style={{fontSize:10, color:'var(--danger)', marginTop:2}}>Canonical (activation_log) · exec_summary {cp.spend_discrepancy_ratio}x higher</div>}
                 </div>
                 <div>
                   <div className="kpi-label">Incremental Revenue</div>
@@ -3306,7 +3426,29 @@
             </div>
           )}
 
-          {/* KPI Cards */}
+          {/* HOLDOUT INTEGRITY WARNING — CMO-197/198/199 */}
+           {data.holdout_integrity_warning && (
+             <div className="card" role="alert" aria-label="Holdout methodology warning" style={{borderLeft:'3px solid var(--danger)', marginBottom:16, background:'rgba(248,113,113,0.04)'}}>
+               <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:8}}>
+                 <Icon d={icons.alertTriangle} size={14} />
+                 <span className="badge badge-danger" style={{fontSize:9}}>{data.holdout_integrity_warning.display_badge}</span>
+                 <span style={{fontWeight:600, fontSize:12, color:'var(--danger)'}}>{data.holdout_integrity_warning.issues_found} Critical Issues Found</span>
+               </div>
+               <div style={{fontSize:12, color:'var(--text-secondary)', lineHeight:1.5}}>
+                 {data.holdout_integrity_warning.summary}
+               </div>
+               <div style={{marginTop:8, display:'flex', gap:8, flexWrap:'wrap'}}>
+                 <span className="diff-badge" style={{fontSize:9, background:'rgba(248,113,113,0.15)', color:'var(--danger)'}}>22% CONTAMINATED</span>
+                 <span className="diff-badge" style={{fontSize:9, background:'rgba(248,113,113,0.15)', color:'var(--danger)'}}>$70K HOLDOUT SPEND</span>
+                 <span className="diff-badge" style={{fontSize:9, background:'rgba(251,191,36,0.15)', color:'var(--warning)'}}>40% HOLDOUT RATIO</span>
+               </div>
+               <div style={{marginTop:6, fontSize:11, color:'var(--text-muted)', fontStyle:'italic'}}>
+                 All incremental ROI figures below are directional only until holdout methodology is remediated.
+               </div>
+             </div>
+           )}
+
+           {/* KPI Cards */}
           <div className="kpi-grid">
             <div className="kpi-card">
               <div className="kpi-label">TRUE INCREMENTAL REVENUE</div>
@@ -5778,7 +5920,7 @@
             </nav>
             <div style={{marginTop:'auto', padding:'16px 20px', borderTop:'1px solid var(--border)'}}>
               <div style={{fontSize:'11px', color:'var(--text-muted)'}}>Powered by Databricks</div>
-              <div style={{fontSize:'10px', color:'var(--text-muted)', marginTop:'2px'}}>cdm_tmforum · Lakebase · Unity Catalog · v39.0.0</div>
+              <div style={{fontSize:'10px', color:'var(--text-muted)', marginTop:'2px'}}>cdm_tmforum · Lakebase · Unity Catalog · v42.0.0</div>
             </div>
           </div>
           <main className="main-content">

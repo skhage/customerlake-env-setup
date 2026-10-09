@@ -220,6 +220,7 @@ __marimo__/
 # Databricks DAB artifacts
 .databricks/
 bundle_artifacts/
+.bundle/
 *.tfstate
 *.tfstate.backup
 
@@ -246,6 +247,7 @@ bundle_artifacts/
 /DA-SYNTHETIC-*.ipynb
 /DA-CACHE-REFRESH-*.ipynb
 /DE-*.ipynb
+/ML-*.ipynb
 /PM-*.ipynb
 /predemo_cache_warmup.ipynb
 /demo_walkthrough_15min.ipynb

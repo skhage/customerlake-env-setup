@@ -11,12 +11,11 @@ resources:
       name: customerlake-audience-pipeline
       catalog: ${var.catalog}
       target: marketing_sdp
-      development: true
       continuous: false
       channel: PREVIEW
       libraries:
         - notebook:
-            path: ../src/pipelines/audience_refresh_pipeline
+            path: ../src/pipelines/audience_refresh_pipeline.py
       tags:
         customerlake_project: customerlake
       configuration:

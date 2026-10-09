@@ -14,7 +14,7 @@ resources:
       tasks:
         - task_key: refresh_cached_metrics
           notebook_task:
-            notebook_path: ../src/pipelines/cache_refresh_pipeline
+            notebook_path: ../src/pipelines/cache_refresh_pipeline.ipynb
             source: WORKSPACE
           # Uses serverless compute by default
       schedule:

@@ -14,7 +14,7 @@ resources:
       tasks:
         - task_key: realtime_profile_updates
           notebook_task:
-            notebook_path: ../src/pipelines/realtime_profile_updates
+            notebook_path: ../src/pipelines/realtime_profile_updates.py
             source: WORKSPACE
           # Uses serverless compute by default
       # Continuous trigger for always-on streaming

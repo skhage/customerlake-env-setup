@@ -1,6 +1,6 @@
 # CustomerLake Brand Guidelines
 
-**Version:** 2.3.0 — Updated 2026-10-07 by @designer (V48 Full Brand Sweep: v39.0.0 (5799 lines, 17 pages, 4514-line backend). APP-LTV-INTEGRITY reviewed — backend calibration PASS, frontend dual-ROI display PASS. V46 ghost-completion caught: V48-UX-FIX-1 filed (4 sub-fixes). V47-AMBER-CLEANUP closed (0 occurrences). 3 new diff-badges approved: CMO-156, DATA NOTE, PILOT HYPOTHESIS. 36 tables with 36 captions. 7/9 brand dimensions pass.)  
+**Version:** 2.5.0 — Updated 2026-10-08 by @designer (V55 Full Brand Sweep: v42.0.0 (5941 lines, 17 pages, 5008-line backend). APP-INTEGRITY-V42 reviewed — holdout contamination banner PASS, $1B talking point suppression PASS, spend disambiguation PASS, progressive disclosure pattern PASS. V54-UX-FIX-1 DRY pattern verified. 5 new diff-badge labels approved: CONTAMINATED, HOLDOUT SPEND, HOLDOUT RATIO, SPEND SOURCE, HOLDOUT-MEASURED. Semantic diff-badge override pattern documented. 9/9 brand dimensions pass. V55-UX-FIX-1 filed: version sync 41→42.)  
 **Status:** BINDING — All CustomerLake apps, dashboards, and demos MUST conform  
 **Scope:** Databricks App (`customerlake`), AI/BI dashboards, Genie spaces, demo materials  
 **Tag:** `customerlake_project: customerlake`
@@ -281,7 +281,8 @@ All spacing values MUST be multiples of 8px:
 ### Differentiator Badges
 - `.diff-badge`: 2px/6px padding, 4px radius, 10px, 600 weight
 - Color: `rgba(79,143,247,0.15)` bg, `--accent` text
-- Used for UNIQUE, DEDUP, RESOLVE, MULTI-CH, CONSENT, ATTRIBUTED, ENTITY-LEVEL, CTR, ROI, OMNICHANNEL, COST + ROI, OBSERVE, ALIGN, CHURN, PROTECT, DISPUTE, CHANNEL, COST/SAVE, DELIVERY, ENABLE, ENTITY, LOOP, OPTIMIZE, SAVE RATE, TRANSPARENT, vs ACQUIRE, HOLDOUT, TRUE ROI, RISK-TIER, SUPPRESS, CAUSAL, P-VALUE, CONFIDENCE-INTERVAL, STATISTICAL-POWER, CFO-READY, COMPETITOR COMPARISON, CONFLICT-AWARE, COST-PER-ENTITY, COUNTERFACTUAL, CROSS-SOURCE, IDENTITY-RESOLVED, LIVE DATA, LTV, ML-CHANNEL-WASTE, REVENUE-LINKED, TCO-TRANSPARENT, ZERO MARKETING CLAIMS, IN-PERIOD, ML-PROJECTED, EVERY NUMBER QUERYABLE, CAPABILITIES FIRST, TERMINOLOGY, CALIBRATED, NEEDS RECALIBRATION, CMO-156, DATA NOTE, PILOT HYPOTHESIS
+- Used for UNIQUE, DEDUP, RESOLVE, MULTI-CH, CONSENT, ATTRIBUTED, ENTITY-LEVEL, CTR, ROI, OMNICHANNEL, COST + ROI, OBSERVE, ALIGN, CHURN, PROTECT, DISPUTE, CHANNEL, COST/SAVE, DELIVERY, ENABLE, ENTITY, LOOP, OPTIMIZE, SAVE RATE, TRANSPARENT, vs ACQUIRE, HOLDOUT, TRUE ROI, RISK-TIER, SUPPRESS, CAUSAL, P-VALUE, CONFIDENCE-INTERVAL, STATISTICAL-POWER, CFO-READY, COMPETITOR COMPARISON, CONFLICT-AWARE, COST-PER-ENTITY, COUNTERFACTUAL, CROSS-SOURCE, IDENTITY-RESOLVED, LIVE DATA, LTV, ML-CHANNEL-WASTE, REVENUE-LINKED, TCO-TRANSPARENT, ZERO MARKETING CLAIMS, IN-PERIOD, ML-PROJECTED, EVERY NUMBER QUERYABLE, CAPABILITIES FIRST, TERMINOLOGY, CALIBRATED, NEEDS RECALIBRATION, CMO-156, DATA NOTE, PILOT HYPOTHESIS, DATA INTEGRITY, CONTAMINATED, HOLDOUT SPEND, HOLDOUT RATIO, SPEND SOURCE, HOLDOUT-MEASURED
+- **Semantic-override diff-badges** (v2.5.0): Diff-badges may use danger or warning palette overrides (e.g. `background:'rgba(248,113,113,0.15)', color:'var(--danger)'`) for integrity/methodology warnings. Approved semantic overrides: danger for CONTAMINATED, HOLDOUT SPEND; warning for HOLDOUT RATIO, SPEND SOURCE
 - **Pill badges** (capability feature tags): `var(--success-bg)` bg, `var(--success)` text, `4px 12px` padding, `borderRadius: 16px` (full pill), 12px, 500 weight
 
 ---
