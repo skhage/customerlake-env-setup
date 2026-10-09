@@ -16,7 +16,7 @@ resources:
       channel: PREVIEW
       libraries:
         - notebook:
-            path: ../src/pipelines/gold_views_pipeline
+            path: ../src/pipelines/gold_views_pipeline.py
       tags:
         customerlake_project: customerlake
       configuration:

@@ -5,8 +5,8 @@
 
 bundle:
   name: customerlake-env-setup
-  tags:
-    customerlake_project: customerlake
+  # Note: Project tagging is enforced at the resource level (jobs, pipelines).
+  # Bundle-level 'tags' is not a valid DAB field.
 
 include:
   - resources/*.yml
@@ -21,7 +21,7 @@ variables:
   warehouse_id:
     description: SQL warehouse ID for jobs and dashboards
     lookup:
-      warehouse: Shared SQL Warehouse
+      warehouse: Serverless Starter Warehouse
 
 # ──────────────────────────────────────────────
 # Targets: dev / test / prod
@@ -30,36 +30,31 @@ targets:
   dev:
     default: true
     mode: development
-    workspace:
-      host: https://e2-demo-field-eng.cloud.databricks.com
+    # workspace.host omitted — resolved from CLI profile or DATABRICKS_HOST env var.
+    # CI workflows set DATABRICKS_HOST via GitHub secrets.
     variables:
       catalog: cdm_tmforum
       schema: gold
-    tags:
-      environment: dev
-      customerlake_project: customerlake
 
   test:
     mode: development
-    workspace:
-      host: https://e2-demo-field-eng.cloud.databricks.com
     variables:
       catalog: cdm_tmforum
       schema: gold
-    tags:
-      environment: test
-      customerlake_project: customerlake
 
   prod:
     mode: production
     workspace:
-      host: https://e2-demo-field-eng.cloud.databricks.com
+      root_path: /Workspace/Users/stephen.hage@databricks.com/.bundle/${bundle.name}/${bundle.target}
     variables:
       catalog: cdm_tmforum
       schema: gold
-    tags:
-      environment: prod
-      customerlake_project: customerlake
     run_as:
       # Production runs as a service principal — update when provisioned
       user_name: stephen.hage@databricks.com
+    resources:
+      pipelines:
+        customerlake_gold_pipeline:
+          development: false
+        customerlake_audience_pipeline:
+          development: false
