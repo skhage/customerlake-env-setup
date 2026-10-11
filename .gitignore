@@ -246,6 +246,8 @@ bundle_artifacts/
 /DA-SYNTHETIC-*.ipynb
 /DA-CACHE-REFRESH-*.ipynb
 /DE-*.ipynb
+/ML-*.ipynb
+/churn_intervention_cost_model.ipynb
 /PM-*.ipynb
 /predemo_cache_warmup.ipynb
 /demo_walkthrough_15min.ipynb
@@ -256,7 +258,14 @@ bundle_artifacts/
 agent_evaluation/
 agent_evaluation
 
+# Root-level analysis/demo notebooks (agent scratch work, not canonical)
+/honest_board_narrative.ipynb
+/simpsons_paradox_demo.ipynb
+
 # DevOps utility notebooks (not canonical project code)
 src/notebooks/_devops_*.py
 src/notebooks/_devops_*.ipynb
 src/notebooks/_sync_*.py
+
+# Budget optimizer execution artifacts
+budget_optimizer/

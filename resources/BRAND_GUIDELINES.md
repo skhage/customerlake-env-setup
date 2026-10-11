@@ -1,6 +1,6 @@
 # CustomerLake Brand Guidelines
 
-**Version:** 2.3.0 — Updated 2026-10-07 by @designer (V48 Full Brand Sweep: v39.0.0 (5799 lines, 17 pages, 4514-line backend). APP-LTV-INTEGRITY reviewed — backend calibration PASS, frontend dual-ROI display PASS. V46 ghost-completion caught: V48-UX-FIX-1 filed (4 sub-fixes). V47-AMBER-CLEANUP closed (0 occurrences). 3 new diff-badges approved: CMO-156, DATA NOTE, PILOT HYPOTHESIS. 36 tables with 36 captions. 7/9 brand dimensions pass.)  
+**Version:** 2.9.0 — Updated 2026-10-11 by @designer (V71 Proactive Review: app at v54.0.0, index.html 7148 lines / 21 pages. 9/9 brand dimensions pass. V68-UX-FIX-1/2 and V70-UX-FIX-1 all verified fixed. 1 LOW fix filed: V71-UX-FIX-1 nav icon deduplication — trendingUp shared by 3 pages.)  
 **Status:** BINDING — All CustomerLake apps, dashboards, and demos MUST conform  
 **Scope:** Databricks App (`customerlake`), AI/BI dashboards, Genie spaces, demo materials  
 **Tag:** `customerlake_project: customerlake`
@@ -80,7 +80,7 @@ When coloring by channel (not by semantic meaning), use these non-semantic assig
 |---|---|---|
 | email | `--accent` (#4F8FF7) | Primary digital channel |
 | paid_social | `--info` (#818CF8) | Secondary digital channel |
-| sms | `#6B8CC7` | Muted blue — distinct but not semantic |
+| sms | `var(--channel-sms)` (#6B8CC7) | Muted blue — distinct but not semantic. **Must** be a separate CSS variable, NOT var(--info), to avoid collision with paid_social. |
 | push_notification | `#9498B0` | Neutral — text-secondary value |
 | direct_mail | `#6B6F88` | Neutral — text-muted value |
 
@@ -686,3 +686,13 @@ When creating AI/BI dashboards or Genie spaces tagged `customerlake_project: cus
 | 2026-10-02 | 1.9.3 | @designer | **V24 FULL BRAND SWEEP (v18.0).** APP-UNUSED-VIEWS (v17: ML Channel Propensity, Statistical Quality Disclosure, Holdout Data Quality) all 9/9 PASS. APP-STAT-CONFIDENCE (v18: new 11th page, 237 lines, 3 endpoints) 8/9 PASS. All V21/V22/V23 fixes verified holding. 2 low issues filed: V24-UX-FIX-1 (fontWeight:800→700 on Stat Confidence hero KPIs), V24-UX-FIX-2 (Channel Propensity grid auto-fill→auto-fit + 140→160px). 4 diff-badge terms added to §6: CAUSAL, P-VALUE, CONFIDENCE-INTERVAL, STATISTICAL-POWER. Version sync v18.0 = 18.0.0 PASS. 11/11 pages brand-compliant. |
 | 2026-10-04 | 1.9.6 | @designer | **V32 FULL BRAND SWEEP (v26.0.0, 4760 lines, 15 pages).** All 7 open V21-V24 fixes VERIFIED APPLIED (V21-UX-FIX-1/2/3/4, V22-UX-FIX-1, V24-UX-FIX-1/2). 4 new pages audited: Cost & ROI (9/9 PASS), Why CustomerLake (9/9 PASS), Dark Audience Explorer (7/9 PASS — 2 tables missing captions), Statistical Confidence updates (PASS). Version sync v26.0.0 = 26.0.0 PASS. Filed V32-UX-FIX-1/2 (Dark Audience table captions) to @app-developer. |
 | 2026-09-30 | 1.3.0 | @designer | **V10 COMPREHENSIVE AUDIT — FULL PASS.** 9-dimension review (Color, Typography, Iconography, Layout, Components, Responsive, Accessibility, Brand Voice, Security). All 2,310 lines of index.html and 78K of app.py verified against brand spec. WCAG 2.1 AA: all 16 compliance items (A1–A16) confirmed in code. All UX-FIX-1 through V8-UX-FIX-4 verified. 3 low-priority polish items filed: V10-UX-FIX-1 (footer version stale v7.0→v10.0), V10-UX-FIX-2 (attribution badge semantic color), V10-UX-FIX-3 (steward dismiss icon consistency). |
+| 2026-10-04 | 1.9.7 | @designer | **V33 APP-DARK-AUDIENCE + APP-TIERED-ROI + full brand sweep.** 4806 lines, 15 pages. 2 new pages audited. V32-FIX-1/2 verified. |
+| 2026-10-05 | 1.9.8 | @designer | **V34 APP-ROI-INTEGRITY (v28.0) + V33-fix verification.** 4908 lines, 15 pages. 2 issues filed (V34-UX-FIX-1 banner padding, V34-UX-FIX-2 diff-badges). |
+| 2026-10-05 | 2.0.0 | @designer | **V35 V34-fix verification + full brand sweep.** v28.0. V34-UX-FIX-1/2 PASS. V35-UX-FIX-1/2 filed (unapproved badge audit, padding). |
+| 2026-10-05 | 2.1.0 | @designer | **V37–V39 DEMO-WALKTHROUGH (v29.0) + APP-DUAL-ROI + APP-PERF-DEMO (v30.0).** 5257→5433 lines, 16 pages. V37-UX-FIX-1/2/3 filed and verified V38. New approved diff-badges: IN-PERIOD, ML-PROJECTED, EVERY NUMBER QUERYABLE. Zero issues at V39. |
+| 2026-10-06 | 2.2.0 | @designer | **V43–V45 APP-CACHE-HEALTH (v34.0), CMO59-PRESENTATION (v37.0).** 5700→5710 lines, 17 pages. V42 fixes verified. Full brand sweep PASS. |
+| 2026-10-07 | 2.3.0 | @designer | **V47–V49 V46-fix verification + APP-LTV-INTEGRITY (v39.0).** 5799→5800 lines, 17 pages. V46 ghost-completion caught (V48-UX-FIX-1 — 4 sub-fixes). 3 new diff-badges: CMO-156, DATA NOTE, PILOT HYPOTHESIS. |
+| 2026-10-08 | 2.4.0 | @designer | **V51–V56 APP-REVENUE-ATTRIBUTION (v40.0) through APP-INTEGRITY-V42 (v42.0).** 5874→5941 lines, 17 pages. Spend guard, integrity checks, deploy-gap verification. V55-UX-FIX-1 filed and verified V56. BRAND_GUIDELINES.md updated to v2.5.0 for new §10 Genie space standards. |
+| 2026-10-09 | 2.5.0 | @designer | **V58–V60 APP-VERSION-INTEGRITY + APP-ACTION-PLAYBOOK + APP-DATA-INTEGRITY-V45.** 5799→6148 lines, 17→18 pages. Action Playbook page added (+329 lines). V58/V59 fixes verified. Full 9-dimension sweep PASS. |
+| 2026-10-09 | 2.5.1 | @designer | **UX-REVIEW-GENIE-V1: CustomerLake Intelligence Hub Genie Space audit.** 15 tables, 8 sample questions. Brand voice, table naming, question phrasing all compliant. 2 low issues filed (table descriptions, question specificity). |
+| 2026-10-09 | 2.6.0 | @designer | **V61 PROACTIVE MAINTENANCE RUN.** App stable at v45.0.0 (6148/4822 lines). ZERO DELTA since V60. Changelog backfilled V33–V60 (this entry). 4 known deferred Low items acceptable for demo. All 30+ UX reviews complete. Brand fully compliant. |

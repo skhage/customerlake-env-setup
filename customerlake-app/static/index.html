@@ -29,6 +29,7 @@
       --danger-bg: rgba(248,113,113,0.12);
       --info: #818cf8;
       --info-bg: rgba(129,140,248,0.12);
+      --channel-sms: #6B8CC7;
       --radius: 8px;
       --radius-lg: 12px;
       --shadow: 0 2px 8px rgba(0,0,0,0.3);
@@ -60,7 +61,7 @@
     .sidebar-logo h1 {
       font-size: 18px;
       font-weight: 700;
-      background: linear-gradient(135deg, var(--accent), #818cf8);
+      background: linear-gradient(135deg, var(--accent), var(--info));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -365,7 +366,7 @@
     .mobile-header h1 {
       font-size: 16px;
       font-weight: 700;
-      background: linear-gradient(135deg, var(--accent), #818cf8);
+      background: linear-gradient(135deg, var(--accent), var(--info));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -517,7 +518,7 @@
     .demo-landing-hero h2 {
       font-size: 28px;
       font-weight: 700;
-      background: linear-gradient(135deg, var(--accent), #818cf8);
+      background: linear-gradient(135deg, var(--accent), var(--info));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       margin-bottom: 8px;
@@ -583,7 +584,7 @@
       gap: 8px;
       padding: 12px 32px;
       border-radius: var(--radius-lg);
-      background: linear-gradient(135deg, var(--accent), #818cf8);
+      background: linear-gradient(135deg, var(--accent), var(--info));
       color: #fff;
       font-size: 15px;
       font-weight: 600;
@@ -641,6 +642,14 @@
       checkCircle: 'M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3',
       clock: 'M12 12m-10 0a10 10 0 1 0 20 0 10 10 0 1 0-20 0 M12 6v6l4 2',
       award: 'M12 15l-3.5 6.5L10 17l-4 1L12 9l6 9-4-1 1.5 4.5L12 15z M12 9a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+      alertTriangle: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01',
+      clipboardList: 'M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2 M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z M12 11h4 M12 16h4 M8 11h.01 M8 16h.01',
+      settings: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z',
+      play: 'M5 3l14 9-14 9V3z',
+      send: 'M22 2L11 13 M22 2l-7 20-4-9-9-4z',
+      chevronUp: 'M18 15l-6-6-6 6',
+      chevronDown: 'M6 9l6 6 6-6',
+      chevronRight: 'M9 18l6-6-6-6',
     };
 
     // ---- Focus Trap Hook (UX-FIX-4) ----
@@ -860,7 +869,7 @@
                   <span className="diff-badge" style={{fontSize:9}}>IN-PERIOD</span>
                 </div>
                 <div className="kpi-value" style={{color:'var(--text-secondary)', fontSize:32}}>{dualRoi ? (dualRoi.portfolio.campaign_roi_x * 100).toFixed(0) + '%' : h.incremental_roi_x != null ? (h.incremental_roi_x * 100).toFixed(0) + '%' : '\u2014'}</div>
-                <div className="kpi-sub">{dualRoi ? dualRoi.portfolio.campaign_roi_x + 'x' : '0.43x'} on {fmtB(dualRoi ? dualRoi.portfolio.total_cost : 1463235)}</div>
+                <div className="kpi-sub">{dualRoi ? dualRoi.portfolio.campaign_roi_x + 'x' : h.incremental_roi_x != null ? h.incremental_roi_x + 'x' : '\u2014'} on {fmtB(dualRoi ? dualRoi.portfolio.total_cost : h.total_spend)}</div>
                 <div className="kpi-sub" style={{fontSize:10, marginTop:2}}>Revenue during campaign window only</div>
               </div>
               <div className="kpi-card" style={{borderLeft:'3px solid var(--warning)', background:'rgba(251,191,36,0.06)'}}>
@@ -905,7 +914,7 @@
                 </div>
                 {dualRoi.narrative.ltv_calibration_warning && (
                   <div style={{marginTop:6, padding:'6px 12px', background:'rgba(251,191,36,0.10)', borderRadius:'var(--radius)', fontSize:11, color:'var(--warning)', display:'flex', alignItems:'center', gap:6}}>
-                    <span style={{fontWeight:700}}>⚠ LTV CALIBRATION:</span> Model overpredicts by {dualRoi.narrative.ltv_calibration_warning.model_overprediction_factor}x — {dualRoi.narrative.ltv_calibration_warning.guidance}
+                    <Icon d={icons.alertTriangle} size={12} /><span style={{fontWeight:700}}> LTV CALIBRATION:</span> Model overpredicts by {dualRoi.narrative.ltv_calibration_warning.model_overprediction_factor}x — {dualRoi.narrative.ltv_calibration_warning.guidance}
                   </div>
                 )}
               </div>
@@ -986,7 +995,7 @@
                        <div style={{fontSize:11, color:'var(--text-secondary)'}}>{t.segment_count} segments · {t.description}</div>
                        {hasHoldoutIssue && (
                          <div style={{fontSize:10, color:'var(--danger)', marginTop:4, padding:'4px 6px', background:'rgba(248,113,113,0.08)', borderRadius:'var(--radius)'}}>
-                           \u26A0 {roiMethod.holdout_quality.sig_pos_zero_holdout}/{t.segment_count} segments have zero holdout conversions
+                           <Icon d={icons.alertTriangle} size={12} /> {roiMethod.holdout_quality.sig_pos_zero_holdout}/{t.segment_count} segments have zero holdout conversions
                          </div>
                        )}
                        {t.footnote && <div style={{fontSize:10, color:'var(--text-muted)', marginTop:4}}>{t.footnote}</div>}
@@ -1231,6 +1240,7 @@
       const [data, setData] = useState(null);
       const [ltv, setLtv] = useState(null);
       const [incr, setIncr] = useState(null);
+      const [boardBrief, setBoardBrief] = useState(null);
       const [loading, setLoading] = useState(true);
 
       useEffect(() => {
@@ -1238,7 +1248,8 @@
           api('/api/overview'),
           api('/api/intelligence/ltv').catch(() => null),
           api('/api/incrementality/overview').catch(() => null),
-        ]).then(([d, l, inc]) => { setData(d); setLtv(l); setIncr(inc); }).finally(() => setLoading(false));
+          api('/api/board-ready-brief').catch(() => null),
+        ]).then(([d, l, inc, bb]) => { setData(d); setLtv(l); setIncr(inc); setBoardBrief(bb); }).finally(() => setLoading(false));
       }, []);
 
       if (loading) return <div className="loading" role="status" aria-live="polite">Loading platform overview...</div>;
@@ -1302,6 +1313,44 @@
               <div className="kpi-sub">{fmt(accounts.unique_entities)} unique entities · {accounts.segment_count} segments</div>
             </div>
           </div>
+          {/* BOARD READY EVIDENCE BRIEF — CMO-234/244: tiered revenue claims with evidence levels */}
+          {boardBrief && boardBrief.tiers && boardBrief.tiers.length > 0 && (
+            <div className="card" style={{marginBottom:16}}>
+              <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:12}}>
+                <div className="card-title" style={{margin:0}}>Board Ready Evidence Brief</div>
+                <span className="diff-badge" style={{fontSize:9, background:'rgba(52,211,153,0.15)', color:'var(--success)'}}>V2</span>
+                <span className="diff-badge">UNIQUE</span>
+              </div>
+              <p style={{fontSize:12, color:'var(--text-secondary)', marginBottom:12}}>
+                {boardBrief.executive_headline}
+              </p>
+              <div className="table-scroll">
+                <table>
+                  <caption className="kpi-label" style={{captionSide:'top', textAlign:'left', marginBottom:8}}>
+                    Revenue claims by evidence tier — each with explicit methodology and CMO caveats
+                  </caption>
+                  <thead><tr>
+                    <th>Tier</th><th>Claim</th><th>Revenue</th><th>Evidence</th><th>CMO Caveat</th>
+                  </tr></thead>
+                  <tbody>
+                    {boardBrief.tiers.map((t, i) => (
+                      <tr key={i}>
+                        <td style={{fontWeight:600, color:'var(--text-primary)', whiteSpace:'nowrap'}}>{t.evidence_tier}</td>
+                        <td>{t.board_label}</td>
+                        <td style={{fontWeight:600, whiteSpace:'nowrap', color: t.evidence_level === 'BOARD_SAFE' ? 'var(--success)' : t.evidence_level === 'HYPOTHESIS' ? 'var(--text-muted)' : 'var(--warning)'}}>{fmtCur(t.canonical_revenue_usd)}</td>
+                        <td><span className={`badge ${t.evidence_level === 'BOARD_SAFE' ? 'badge-success' : t.evidence_level === 'HYPOTHESIS' ? 'badge-neutral' : 'badge-warning'}`}>{t.evidence_level}</span></td>
+                        <td style={{fontSize:11, color:'var(--text-muted)', maxWidth:300}}>{t.cmo_caveat}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{marginTop:8, fontSize:11, color:'var(--text-muted)'}}>
+                Supersedes V1 revenue_source_truth. Total BOARD_SAFE revenue: <strong style={{color:'var(--success)'}}>{fmtCur(boardBrief.total_board_safe_revenue_usd)}</strong>
+              </div>
+              <ProvenanceBadge />
+            </div>
+          )}
           <div className="grid-2">
             <div className="card">
               <div className="card-title">Identity Resolution Quality</div>
@@ -1543,7 +1592,7 @@
                                     type === 'activation' ? 'var(--success-bg)' :
                                     type === 'identity' ? 'var(--info-bg)' :
                                     type === 'campaign' ? 'var(--warning-bg)' :
-                                    type === 'consent' ? 'rgba(107,111,136,0.15)' : 'var(--bg-hover)',
+                                    type === 'consent' ? 'var(--bg-hover)' : 'var(--bg-hover)',
                         color: type === 'digital' ? 'var(--accent)' :
                                type === 'activation' ? 'var(--success)' :
                                type === 'identity' ? 'var(--info)' :
@@ -1993,7 +2042,7 @@
                     <div className="bar-chart-row" key={i} role="img" aria-label={`${c.channel}: ${fmtCur(c.total_revenue)} revenue`}>
                       <div className="bar-label" style={{width:'130px'}}>{c.channel}</div>
                       <div className="bar-track">
-                        <div className="bar-fill" style={{width: `${Math.max((c.total_revenue/maxRev*100), 8).toFixed(0)}%`, background: c.channel === 'email' ? 'var(--accent)' : c.channel === 'paid_social' ? 'var(--info)' : c.channel === 'sms' ? '#6B8CC7' : c.channel === 'push_notification' ? 'var(--text-secondary)' : 'var(--text-muted)'}}>{fmtCur(c.total_revenue)}</div>
+                        <div className="bar-fill" style={{width: `${Math.max((c.total_revenue/maxRev*100), 8).toFixed(0)}%`, background: c.channel === 'email' ? 'var(--accent)' : c.channel === 'paid_social' ? 'var(--info)' : c.channel === 'sms' ? 'var(--channel-sms)' : c.channel === 'push_notification' ? 'var(--text-secondary)' : 'var(--text-muted)'}}>{fmtCur(c.total_revenue)}</div>
                       </div>
                     </div>
                   ))}
@@ -2815,7 +2864,7 @@
                       <div className="bar-chart-row" key={i} role="img" aria-label={`${c.channel}/${c.platform}: ${fmtCur(c.total_revenue)} revenue`}>
                         <div className="bar-label" style={{width:'130px'}}>{c.channel}/{c.platform?.split('_')[0]}</div>
                         <div className="bar-track">
-                          <div className="bar-fill" style={{width: `${Math.max((c.total_revenue/maxActRev*100), 8).toFixed(0)}%`, background: c.channel === 'email' ? 'var(--accent)' : c.channel === 'paid_social' ? 'var(--info)' : c.channel === 'sms' ? '#6B8CC7' : c.channel === 'push_notification' ? 'var(--text-secondary)' : 'var(--text-muted)'}}>{fmtCur(c.total_revenue)}</div>
+                          <div className="bar-fill" style={{width: `${Math.max((c.total_revenue/maxActRev*100), 8).toFixed(0)}%`, background: c.channel === 'email' ? 'var(--accent)' : c.channel === 'paid_social' ? 'var(--info)' : c.channel === 'sms' ? 'var(--channel-sms)' : c.channel === 'push_notification' ? 'var(--text-secondary)' : 'var(--text-muted)'}}>{fmtCur(c.total_revenue)}</div>
                         </div>
                       </div>
                     ))}
@@ -3283,6 +3332,25 @@
             </p>
           </div>
 
+          {/* Holdout Architecture Caveat — CMO-225: Entity-level overlap is by design */}
+          {data.methodology && data.methodology.holdout_architecture && (
+            <div role="note" aria-label="Holdout architecture explanation" style={{
+              display:'flex', alignItems:'center', gap:12, padding:'12px 16px',
+              background:'rgba(79,143,247,0.08)', border:'1px solid var(--info)',
+              borderRadius:'var(--radius)', marginBottom:12, fontSize:13
+            }}>
+              <Icon d={icons.info} size={16} />
+              <div>
+                <strong style={{color:'var(--info)'}}>Holdout Architecture:</strong>{' '}
+                <span style={{color:'var(--text-secondary)'}}>
+                  Holdouts are per purpose/channel — an entity may be holdout for UPSELL but treatment for RETENTION.
+                  Entity-level overlap (95.5%) is architecturally correct. All incrementality claims are scoped to channel-level grain.
+                </span>
+              </div>
+              <span className="badge badge-info" style={{whiteSpace:'nowrap'}}>PER-CHANNEL</span>
+            </div>
+          )}
+
           {/* Statistical Quality Disclosure — CMO-51: disclose that most segments are LOW_SAMPLE */}
           {data.statistical_quality && (
             <div role="note" aria-label="Statistical quality disclosure" style={{
@@ -3461,7 +3529,7 @@
               <Icon d={icons.trendingUp} size={16} /> What Only CustomerLake Can Do
             </div>
             <div style={{fontSize:13, color:'var(--text-secondary)', lineHeight:1.6}}>
-              <span className="diff-badge">HOLDOUT</span> 10% entity-level holdout proves true incremental lift — no legacy CDP runs real experiments. <br/>
+              <span className="diff-badge">HOLDOUT</span> 10% per-purpose/channel holdout proves true incremental lift — no legacy CDP runs real experiments. Entity-level overlap is by design. <br/>
               <span className="diff-badge">RISK-TIER</span> ML churn predictions stratify incrementality by risk — CRITICAL entities show 5×+ lift vs holdout. <br/>
               <span className="diff-badge">TRUE ROI</span> Subtracts organic conversions to reveal honest ROI — naive metrics inflate by 10–50×. <br/>
               <span className="diff-badge">SUPPRESS</span> Identifies campaigns that DESTROY value (negative lift) — save budget by suppressing them.
@@ -3614,7 +3682,8 @@
 
           {/* Methodology Note */}
           <div role="note" style={{fontSize:11, color:'var(--text-muted)', marginTop:16, padding:'12px 16px', background:'var(--bg-card)', borderRadius:'var(--radius)', border:'1px solid var(--border)'}}>
-            <strong>Methodology:</strong> {data.methodology?.design}. Source: {data.methodology?.source}. {data.methodology?.note}
+            <strong>Methodology:</strong> {data.methodology?.design}. Source: {data.methodology?.source}. {data.methodology?.note}{' '}
+            {data.methodology?.holdout_architecture && <><br/><strong>Holdout Design:</strong> {data.methodology.holdout_architecture}</>}
           </div>
         </div>
       );
@@ -3692,7 +3761,7 @@
           {pipeline && (() => {
             const plH = pipeline.headline || {};
             const stageColors = ['var(--info)', 'var(--accent)', 'var(--warning)', 'var(--success)', 'var(--danger)', 'var(--info)'];
-            const stageIcons = ['\u2699', '\u25CE', '\u25B6', '\u2708', '\u2714', '\u27F3'];
+            const stageIcons = [icons.settings, icons.target, icons.play, icons.send, icons.checkCircle, icons.refreshCw];
             return (
               <div className="card" style={{padding:20, marginBottom:24, border:'1px solid var(--accent)', background:'linear-gradient(135deg, var(--bg-card) 0%, rgba(79,143,247,0.06) 100%)'}}>
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16, flexWrap:'wrap', gap:8}}>
@@ -3711,9 +3780,9 @@
                     <div key={i} style={{flex:'1 1 0', minWidth:130, position:'relative'}}>
                       <div style={{display:'flex', alignItems:'center', gap:4, marginBottom:8}}>
                         <div style={{width:32, height:32, borderRadius:'50%', background:stageColors[i] + '22', color:stageColors[i], display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, fontWeight:700, flexShrink:0}}>
-                          {stageIcons[i]}
+                          <Icon d={stageIcons[i]} size={16} />
                         </div>
-                        {i < 5 && <div style={{flex:1, height:2, background:'var(--border)', position:'relative'}}><div style={{position:'absolute', right:0, top:-3, color:'var(--text-muted)', fontSize:10}}>\u25B8</div></div>}
+                        {i < 5 && <div style={{flex:1, height:2, background:'var(--border)', position:'relative'}}><div style={{position:'absolute', right:0, top:-5, color:'var(--text-muted)'}}><Icon d={icons.chevronRight} size={10} /></div></div>}
                       </div>
                       <div style={{fontSize:12, fontWeight:600, color:stageColors[i], textTransform:'uppercase', letterSpacing:'0.3px', marginBottom:2}}>{s.stage}</div>
                       <div style={{fontSize:11, color:'var(--text-secondary)', marginBottom:6, minHeight:30}}>{s.stage_description}</div>
@@ -4113,7 +4182,7 @@
           <div className="card" style={{padding:24, marginBottom:24, border:'1px solid var(--success)', background:'linear-gradient(135deg, var(--bg-card) 0%, rgba(52,211,153,0.06) 100%)'}}>
             <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:16}}>
               <div style={{flex:'1 1 400px'}}>
-                <div style={{fontSize:11, color:'var(--success)', textTransform:'uppercase', letterSpacing:'1px', fontWeight:700, marginBottom:8}}>\u2714 CMO Board-Ready Soundbite</div>
+                <div style={{fontSize:11, color:'var(--success)', textTransform:'uppercase', letterSpacing:'1px', fontWeight:700, marginBottom:8}}><Icon d={icons.checkCircle} size={12} /> CMO Board-Ready Soundbite</div>
                 <p style={{fontSize:15, lineHeight:1.7, color:'var(--text-primary)'}}>{n.cmo_narrative || 'Loading narrative...'}</p>
               </div>
               <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(120px, 1fr))', gap:16, flex:'0 0 auto', minWidth:280}}>
@@ -4355,16 +4424,16 @@
             </div>
             <ul style={{listStyle:'none', padding:0, display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(260px, 1fr))', gap:8}}>
               <li style={{fontSize:12, color:'var(--text-secondary)', padding:'6px 0', borderBottom:'1px solid var(--border)'}}>
-                \u2714 <strong>Per-segment p-values</strong> \u2014 not just aggregate ROI, but segment-by-segment statistical proof
+                <Icon d={icons.checkCircle} size={12} /> <strong>Per-segment p-values</strong> \u2014 not just aggregate ROI, but segment-by-segment statistical proof
               </li>
               <li style={{fontSize:12, color:'var(--text-secondary)', padding:'6px 0', borderBottom:'1px solid var(--border)'}}>
-                \u2714 <strong>Confidence intervals</strong> \u2014 every lift estimate bounded, not a point estimate
+                <Icon d={icons.checkCircle} size={12} /> <strong>Confidence intervals</strong> \u2014 every lift estimate bounded, not a point estimate
               </li>
               <li style={{fontSize:12, color:'var(--text-secondary)', padding:'6px 0', borderBottom:'1px solid var(--border)'}}>
-                \u2714 <strong>Power analysis</strong> \u2014 shows where holdouts are too small to detect real effects
+                <Icon d={icons.checkCircle} size={12} /> <strong>Power analysis</strong> \u2014 shows where holdouts are too small to detect real effects
               </li>
               <li style={{fontSize:12, color:'var(--text-secondary)', padding:'6px 0'}}>
-                \u2714 <strong>5-scenario waterfall</strong> \u2014 from HIGHEST CONFIDENCE to WORST CASE, the ROI holds
+                <Icon d={icons.checkCircle} size={12} /> <strong>5-scenario waterfall</strong> \u2014 from HIGHEST CONFIDENCE to WORST CASE, the ROI holds
               </li>
             </ul>
           </div>
@@ -4423,7 +4492,7 @@
 
           /* HERO: Net Value Card */
           React.createElement('div', {className: 'card', style: {padding:24, marginBottom:24, border:'1px solid var(--success)', background:'linear-gradient(135deg, var(--bg-card) 0%, rgba(52,211,153,0.06) 100%)'}},
-            React.createElement('div', {style: {fontSize:11, color:'var(--success)', textTransform:'uppercase', letterSpacing:'1px', fontWeight:700, marginBottom:12}}, '\u2714 CFO Bottom Line'),
+            React.createElement('div', {style: {fontSize:11, color:'var(--success)', textTransform:'uppercase', letterSpacing:'1px', fontWeight:700, marginBottom:12}}, React.createElement(Icon, {d: icons.checkCircle, size: 12}), ' CFO Bottom Line'),
             React.createElement('div', {style: {display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:16}},
               React.createElement('div', null,
                 React.createElement('div', {style: {fontSize:36, fontWeight:700, color:'var(--success)'}}, fmtUsd(summary.net_incremental_value)),
@@ -4946,7 +5015,7 @@
                </div>
                {honestRev.ltv_warning && (
                  <div style={{marginTop:8, padding:'8px 12px', background:'rgba(251,191,36,0.06)', borderRadius:'var(--radius)', fontSize:11, color:'var(--warning)'}}>
-                   <strong>\u26a0 LTV Warning:</strong> Raw expected revenue {fmtB(honestRev.ltv_warning.raw_expected_revenue)} uses uncalibrated ML model ({honestRev.ltv_warning.overprediction_factor}x overpredict). Calibrated: {fmtB(honestRev.ltv_warning.calibrated_expected_revenue)}. {honestRev.ltv_warning.guidance}
+                   <Icon d={icons.alertTriangle} size={12} /> <strong>LTV Warning:</strong> Raw expected revenue {fmtB(honestRev.ltv_warning.raw_expected_revenue)} uses uncalibrated ML model ({honestRev.ltv_warning.overprediction_factor}x overpredict). Calibrated: {fmtB(honestRev.ltv_warning.calibrated_expected_revenue)}. {honestRev.ltv_warning.guidance}
                  </div>
                )}
              </div>
@@ -5613,7 +5682,7 @@
             'As of ' + fmtTime(dataTs)
           ),
           React.createElement('span', { style: { fontSize: 10, color: 'var(--text-muted)' } },
-            expanded ? '\u25B2' : '\u25BC'
+            expanded ? React.createElement(Icon, {d: icons.chevronUp, size: 12}) : React.createElement(Icon, {d: icons.chevronDown, size: 12})
           )
         ),
         expanded && React.createElement('div', {
@@ -5654,9 +5723,1276 @@
       );
     }
 
+    // ---- ACTION PLAYBOOK PAGE (v44.0.0 → v48.0.0 — CMO-221/222 Response) ----
+    function ActionPlaybookPage() {
+      const [data, setData] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      const [activeTab, setActiveTab] = useState('triage');
+       const [rxData, setRxData] = useState(null);
+        const [safetyData, setSafetyData] = useState(null);
+
+        useEffect(() => {
+          setLoading(true);
+          api('/api/action-playbook').then(d => { setData(d); setLoading(false); }).catch(e => { setError(e.message); setLoading(false); });
+          api('/api/channel-prescriptions').then(d => setRxData(d)).catch(() => {});
+          api('/api/playbook/safety-audit').then(d => setSafetyData(d)).catch(() => {});
+        }, []);
+
+      const fmtUsd = (v) => v == null ? '\u2014' : '$' + Number(v).toLocaleString(undefined, {maximumFractionDigits: 0});
+      const fmtX = (v) => v == null ? '\u2014' : Number(v).toFixed(2) + 'x';
+      const fmt = (v) => v == null ? '\u2014' : Number(v).toLocaleString();
+
+      if (loading) return React.createElement('div', {role:'status', 'aria-live':'polite', style:{padding:40, textAlign:'center', color:'var(--text-muted)'}}, 'Loading action playbook...');
+      if (error) return React.createElement(ErrorCard, {message: error, onRetry: () => window.location.reload()});
+
+      const triage = data?.portfolio_triage || {};
+      const restructure = data?.channel_restructure || {};
+      const suppress = data?.suppression_math || {};
+      const churn = data?.churn_intervention || {};
+      const narrative = data?.executive_narrative || {};
+
+      const tabs = [
+        {id: 'triage', label: 'Portfolio Triage'},
+        {id: 'restructure', label: 'Channel Restructure'},
+        {id: 'suppress', label: 'Suppression Math'},
+        {id: 'churn', label: 'Churn Intervention'},
+        {id: 'prescriptions', label: 'Channel Prescriptions'},
+        {id: 'safety', label: 'Safety Audit' + (safetyData?.safety_score?.contradictions_found ? ' (' + safetyData.safety_score.contradictions_found + ')' : '')},
+        ];
+
+      const killCount = (triage.summary || []).reduce((s, t) => t.kill_switch === 'KILL' ? s + (t.segment_count || 0) : s, 0);
+      const reviewCount = (triage.summary || []).reduce((s, t) => t.kill_switch === 'REVIEW' ? s + (t.segment_count || 0) : s, 0);
+      const keepCount = (triage.summary || []).reduce((s, t) => t.kill_switch === 'KEEP' ? s + (t.segment_count || 0) : s, 0);
+
+      return (
+        React.createElement('div', null,
+          React.createElement('div', {className:'page-header'},
+            React.createElement('h2', null, 'Action Playbook'),
+            React.createElement('p', null,
+              'Prescriptive recommendations: what to KEEP, KILL, RESTRUCTURE, and SUPPRESS \u2014 with projected ROI impact ',
+              React.createElement(ProvenanceBadge, {synthetic: true})
+            )
+          ),
+          React.createElement('div', {style:{display:'flex', gap:8, flexWrap:'wrap', marginBottom:16}},
+            React.createElement('span', {className:'diff-badge'}, 'PRESCRIPTIVE'),
+            React.createElement('span', {className:'diff-badge'}, 'INCREMENTALITY-BACKED'),
+            React.createElement('span', {className:'diff-badge'}, 'UNIQUE'),
+            React.createElement('span', {className:'diff-badge'}, 'ACTIONABLE')
+          ),
+
+          /* HERO: Action Summary */
+          React.createElement('div', {className:'card', style:{padding:24, marginBottom:24, border:'1px solid var(--accent)', background:'linear-gradient(135deg, var(--bg-card) 0%, rgba(79,143,247,0.06) 100%)'}},
+            React.createElement('div', {style:{fontSize:11, color:'var(--accent)', textTransform:'uppercase', letterSpacing:'1px', fontWeight:700, marginBottom:12}}, 'CMO ACTION SUMMARY'),
+            React.createElement('div', {style:{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:16}},
+              React.createElement('div', null,
+                React.createElement('div', {style:{fontSize:32, fontWeight:700, color:'var(--danger)'}}, fmtUsd(triage.actionable_waste_usd)),
+                React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Waste Identified'),
+                React.createElement('div', {style:{fontSize:12, color:'var(--text-secondary)', marginTop:4}}, killCount + ' KILL + ' + reviewCount + ' REVIEW segments')
+              ),
+              React.createElement('div', null,
+                React.createElement('div', {style:{fontSize:32, fontWeight:700, color:'var(--success)'}}, fmtUsd(suppress.total_waste_avoided_usd)),
+                React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Suppression Savings'),
+                React.createElement('div', {style:{fontSize:12, color:'var(--text-secondary)', marginTop:4}}, 'Proven value-destructive marketing')
+              ),
+              React.createElement('div', null,
+                React.createElement('div', {style:{fontSize:32, fontWeight:700, color:'var(--warning)'}}, fmtX(restructure.current?.roi_x)),
+                React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Current Portfolio ROI'),
+                React.createElement('div', {style:{fontSize:12, color:'var(--text-secondary)', marginTop:4}}, '3 restructure scenarios modeled')
+              ),
+              React.createElement('div', null,
+                React.createElement('div', {style:{fontSize:32, fontWeight:700, color:'var(--info)'}}, keepCount + '/' + (triage.total_segments || 0)),
+                React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Segments to Scale'),
+                React.createElement('div', {style:{fontSize:12, color:'var(--text-secondary)', marginTop:4}}, fmtUsd(triage.keep_revenue_usd) + ' incremental revenue')
+              )
+            )
+          ),
+
+          /* Methodology Banner */
+          React.createElement('div', {role:'note', style:{padding:'12px 16px', background:'var(--bg-hover)', borderRadius:'var(--radius)', marginBottom:16, fontSize:12, color:'var(--text-secondary)'}},
+            React.createElement(Icon, {d:icons.alertCircle, size:14}), ' ',
+            'Actions derived from holdout-controlled incrementality at the segment \u00D7 channel level. No legacy CDP can prescribe at this granularity because they lack holdout data. Recommendations are additive \u2014 apply triage, suppression, and restructure together for maximum impact.'
+          ),
+
+          /* SAFETY AUDIT BANNER (CMO-233/236/238) */
+          safetyData && safetyData.safety_score?.verdict !== 'OK' && React.createElement('div', {
+            role:'alert',
+            style:{
+              padding:'16px 20px', marginBottom:16,
+              background: safetyData.safety_score?.verdict === 'UNSAFE' ? 'rgba(248,113,113,0.08)' : 'rgba(251,191,36,0.08)',
+              border: '1px solid ' + (safetyData.safety_score?.verdict === 'UNSAFE' ? 'var(--danger)' : 'var(--warning)'),
+              borderRadius:'var(--radius)',
+              display:'flex', alignItems:'flex-start', gap:12
+            }
+          },
+            React.createElement(Icon, {d:icons.alertTriangle, size:18}),
+            React.createElement('div', null,
+              React.createElement('div', {style:{fontWeight:700, fontSize:13, marginBottom:4, color: safetyData.safety_score?.verdict === 'UNSAFE' ? 'var(--danger)' : 'var(--warning)'}},
+                'SAFETY AUDIT: ' + safetyData.safety_score?.contradictions_found + ' channel contradictions detected'
+              ),
+              React.createElement('div', {style:{fontSize:12, color:'var(--text-secondary)', lineHeight:'1.5'}},
+                'Playbook V2 uses holdout-incremental ROI with kill-switch enforcement. ',
+                safetyData.safety_score?.channels_negative_roi + ' channels show negative incremental ROI. ',
+                safetyData.safety_score?.kill_switch_gaps + ' negative-ROI channel(s) lack kill switches. ',
+                'See Cross-Validation tab for delivery vs fully-loaded ROI breakdown.'
+              )
+            )
+          ),
+
+          /* Tab Switcher */
+          React.createElement('div', {role:'tablist', 'aria-label':'Action playbook sections', style:{display:'flex', gap:8, flexWrap:'wrap', marginBottom:24}},
+            tabs.map(t => React.createElement('button', {
+              key: t.id, role:'tab', id:'tab-' + t.id,
+              'aria-selected': activeTab === t.id,
+              'aria-controls': 'panel-' + t.id,
+              className: 'nav-item' + (activeTab === t.id ? ' active' : ''),
+              style:{width:'auto', borderLeft:'none', padding:'8px 16px', borderRadius:'var(--radius)'},
+              onClick: () => setActiveTab(t.id)
+            }, t.label))
+          ),
+
+          /* TAB: Portfolio Triage */
+          activeTab === 'triage' && React.createElement('div', {id:'panel-triage', role:'tabpanel', 'aria-labelledby':'tab-triage'},
+            React.createElement('div', {className:'card', style:{padding:24, marginBottom:24}},
+              React.createElement('h3', {style:{fontSize:15, fontWeight:600, marginBottom:16}}, 'Segment Triage: KEEP / KILL / REVIEW'),
+              React.createElement('div', {style:{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:16, marginBottom:24}},
+                (triage.summary || []).map(s =>
+                  React.createElement('div', {key: s.kill_switch, style:{padding:16, background:'var(--bg-hover)', borderRadius:'var(--radius)', textAlign:'center'}},
+                    React.createElement('div', {style:{
+                      fontSize:28, fontWeight:700,
+                      color: s.kill_switch === 'KEEP' ? 'var(--success)' : s.kill_switch === 'KILL' ? 'var(--danger)' : 'var(--warning)'
+                    }}, s.segment_count),
+                    React.createElement('div', {style:{fontSize:11, fontWeight:600, textTransform:'uppercase', color:'var(--text-muted)', marginTop:4}}, s.kill_switch),
+                    React.createElement('div', {style:{fontSize:12, color:'var(--text-secondary)', marginTop:4}},
+                      s.kill_switch === 'KEEP' ? fmtUsd(s.total_incr_rev_usd) + ' revenue' : fmtUsd(s.total_waste_usd) + ' waste'
+                    )
+                  )
+                )
+              ),
+              React.createElement('div', {className:'table-scroll'},
+                React.createElement('table', null,
+                  React.createElement('caption', {className:'kpi-label', style:{captionSide:'top', textAlign:'left', marginBottom:8}}, 'Top actionable segments by waste'),
+                  React.createElement('thead', null,
+                    React.createElement('tr', null,
+                      ['Purpose','Channel','Risk Tier','Action','Waste','Spend','Incr. Rev','Quality','Priority'].map(h =>
+                        React.createElement('th', {key:h}, h)
+                      )
+                    )
+                  ),
+                  React.createElement('tbody', null,
+                    (triage.top_actions || []).map((a, i) =>
+                      React.createElement('tr', {key: i},
+                        React.createElement('td', null, a.purpose),
+                        React.createElement('td', null, a.channel),
+                        React.createElement('td', null,
+                          React.createElement('span', {className:'badge ' + (a.churn_risk_tier === 'CRITICAL' ? 'badge-danger' : a.churn_risk_tier === 'HIGH' ? 'badge-warning' : 'badge-info')}, a.churn_risk_tier)
+                        ),
+                        React.createElement('td', null,
+                          React.createElement('span', {className:'badge ' + (a.kill_switch === 'KILL' ? 'badge-danger' : 'badge-warning')}, a.kill_switch + ': ' + a.recommended_action)
+                        ),
+                        React.createElement('td', {style:{fontWeight:600, color:'var(--danger)'}}, fmtUsd(a.waste_usd)),
+                        React.createElement('td', null, fmtUsd(a.spend_usd)),
+                        React.createElement('td', {style:{color: Number(a.incr_rev_usd) < 0 ? 'var(--danger)' : 'var(--success)'}}, fmtUsd(a.incr_rev_usd)),
+                        React.createElement('td', null,
+                          React.createElement('span', {className:'badge ' + (a.statistical_quality === 'MEASURABLE' ? 'badge-success' : 'badge-warning')}, a.statistical_quality)
+                        ),
+                        React.createElement('td', null,
+                          React.createElement('span', {className:'badge badge-danger'}, a.kill_priority)
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          ),
+
+          /* TAB: Channel Restructure */
+          activeTab === 'restructure' && React.createElement('div', {id:'panel-restructure', role:'tabpanel', 'aria-labelledby':'tab-restructure'},
+            React.createElement('div', {className:'card', style:{padding:24, marginBottom:24}},
+              React.createElement('h3', {style:{fontSize:15, fontWeight:600, marginBottom:16}}, 'Budget Reallocation Scenarios'),
+              React.createElement('div', {style:{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:16}},
+                (restructure.scenarios || []).map(s =>
+                  React.createElement('div', {key:s.id, className:'card', style:{padding:16, background:'var(--bg-hover)'}},
+                    React.createElement('div', {style:{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12}},
+                      React.createElement('span', {style:{fontSize:14, fontWeight:600, color:'var(--accent)'}}, 'Scenario ' + s.id),
+                      React.createElement('span', {style:{fontSize:14, fontWeight:700, color: s.roi_x > restructure.current?.roi_x ? 'var(--success)' : 'var(--warning)'}}, fmtX(s.roi_x) + ' ROI')
+                    ),
+                    React.createElement('div', {style:{fontSize:13, color:'var(--text-secondary)', marginBottom:12, lineHeight:'1.5'}}, s.description),
+                    React.createElement('div', {style:{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8}},
+                      React.createElement('div', null,
+                        React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Spend'),
+                        React.createElement('div', {style:{fontSize:14, fontWeight:600}}, fmtUsd(s.spend_usd))
+                      ),
+                      React.createElement('div', null,
+                        React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'vs Current'),
+                        React.createElement('div', {style:{fontSize:14, fontWeight:600, color: s.incremental_usd > 0 ? 'var(--success)' : 'var(--danger)'}},
+                          (s.incremental_usd > 0 ? '+' : '') + fmtUsd(s.incremental_usd)
+                        )
+                      )
+                    )
+                  )
+                )
+              ),
+              restructure.methodology_caveat && React.createElement('div', {role:'note', style:{marginTop:16, padding:'8px 16px', background:'var(--bg-card)', borderRadius:'var(--radius)', fontSize:12, color:'var(--text-muted)'}},
+                React.createElement(Icon, {d:icons.alertCircle, size:12}), ' ', restructure.methodology_caveat
+              )
+            )
+          ),
+
+          /* TAB: Suppression Math */
+          activeTab === 'suppress' && React.createElement('div', {id:'panel-suppress', role:'tabpanel', 'aria-labelledby':'tab-suppress'},
+            React.createElement('div', {className:'card', style:{padding:24, marginBottom:24}},
+              React.createElement('h3', {style:{fontSize:15, fontWeight:600, marginBottom:16}}, 'Suppression Impact: Stop Value-Destructive Marketing'),
+              React.createElement('div', {style:{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:16, marginBottom:24}},
+                React.createElement('div', null,
+                  React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--success)'}}, fmtUsd(suppress.total_waste_avoided_usd)),
+                  React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Total Waste Avoided')
+                ),
+                React.createElement('div', null,
+                  React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--warning)'}}, fmtX(suppress.current_portfolio_roi)),
+                  React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Current ROI')
+                ),
+                React.createElement('div', null,
+                  React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--accent)'}}, fmtX(suppress.projected_portfolio_roi_post_suppress)),
+                  React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Projected ROI Post-Suppress')
+                )
+              ),
+              React.createElement('div', {className:'table-scroll'},
+                React.createElement('table', null,
+                  React.createElement('caption', {className:'kpi-label', style:{captionSide:'top', textAlign:'left', marginBottom:8}}, 'Suppression recommendations by risk tier'),
+                  React.createElement('thead', null,
+                    React.createElement('tr', null,
+                      ['Risk Tier','Entities','Verdict','Recommendation','Waste Avoided','Organic CVR','Marketed CVR','Diff (pp)','Significant?'].map(h =>
+                        React.createElement('th', {key:h}, h)
+                      )
+                    )
+                  ),
+                  React.createElement('tbody', null,
+                    (suppress.tiers || []).map((t, i) =>
+                      React.createElement('tr', {key:i},
+                        React.createElement('td', null, React.createElement('span', {className:'badge badge-info'}, t.risk_tier)),
+                        React.createElement('td', null, fmt(t.total_entities_in_tier)),
+                        React.createElement('td', null,
+                          React.createElement('span', {className:'badge ' + (t.measurement_verdict === 'PROVEN' ? 'badge-success' : 'badge-warning')}, t.measurement_verdict)
+                        ),
+                        React.createElement('td', {style:{maxWidth:240, fontSize:12}}, t.gated_recommendation),
+                        React.createElement('td', {style:{fontWeight:600, color:'var(--success)'}}, fmtUsd(t.waste_avoided_usd)),
+                        React.createElement('td', null, (t.organic_cvr_pct || 0) + '%'),
+                        React.createElement('td', null, (t.marketed_cvr_pct || 0) + '%'),
+                        React.createElement('td', {style:{color: Number(t.rate_diff_pp) > 0 ? 'var(--danger)' : 'var(--success)'}}, (t.rate_diff_pp || 0) + 'pp'),
+                        React.createElement('td', null,
+                          React.createElement('span', {className:'badge ' + (!t.ci_includes_zero ? 'badge-success' : 'badge-warning')}, !t.ci_includes_zero ? 'YES' : 'NO')
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          ),
+
+          /* TAB: Churn Intervention Economics */
+          activeTab === 'churn' && React.createElement('div', {id:'panel-churn', role:'tabpanel', 'aria-labelledby':'tab-churn'},
+            /* Churn Hero */
+            React.createElement('div', {className:'card', style:{padding:24, marginBottom:24, border:'1px solid var(--success)', background:'linear-gradient(135deg, var(--bg-card) 0%, rgba(52,211,153,0.06) 100%)'}},
+              React.createElement('div', {style:{fontSize:11, color:'var(--success)', textTransform:'uppercase', letterSpacing:'1px', fontWeight:700, marginBottom:12}}, 'CHURN INTERVENTION ECONOMICS (CMO-222)'),
+              React.createElement('div', {style:{fontSize:13, color:'var(--text-secondary)', marginBottom:16}}, churn.differentiator),
+              React.createElement('div', {style:{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:16}},
+                React.createElement('div', null,
+                  React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--accent)'}}, fmt(churn.incremental_churners_detected)),
+                  React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Churners Detected'),
+                  React.createElement('div', {style:{fontSize:12, color:'var(--text-secondary)', marginTop:4}}, 'Invisible to billing-only models')
+                ),
+                React.createElement('div', null,
+                  React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--danger)'}}, fmtUsd(churn.gross_revenue_at_risk_usd)),
+                  React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Gross Revenue at Risk'),
+                  React.createElement('div', {style:{fontSize:12, color:'var(--text-secondary)', marginTop:4}}, 'ABLATION_PROVEN cross-source lift')
+                ),
+                React.createElement('div', null,
+                  React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--warning)'}}, fmtUsd(churn.intervention_cost_per_entity_usd)),
+                  React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Cost Per Intervention'),
+                  React.createElement('div', {style:{fontSize:12, color:'var(--text-secondary)', marginTop:4}}, 'Industry benchmark retention offer')
+                )
+              )
+            ),
+
+            /* Sensitivity Analysis */
+            React.createElement('div', {className:'card', style:{padding:24, marginBottom:24}},
+              React.createElement('h3', {style:{fontSize:15, fontWeight:600, marginBottom:16}}, 'Sensitivity Analysis: Save Rate Impact'),
+              React.createElement('div', {style:{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:16, marginBottom:24}},
+                (churn.sensitivity_analysis || []).map(s =>
+                  React.createElement('div', {key:s.save_rate_pct, className:'card', style:{padding:16, background: s.save_rate_pct === 30 ? 'rgba(79,143,247,0.08)' : 'var(--bg-hover)', border: s.save_rate_pct === 30 ? '1px solid var(--accent)' : '1px solid transparent'}},
+                    React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase', marginBottom:8}}, s.save_rate_pct + '% SAVE RATE' + (s.save_rate_pct === 30 ? ' (BASE CASE)' : '')),
+                    React.createElement('div', {style:{fontSize:24, fontWeight:700, color:'var(--success)', marginBottom:4}}, fmtUsd(s.net_revenue_retained_usd)),
+                    React.createElement('div', {style:{fontSize:12, color:'var(--text-secondary)'}}, 'Net revenue retained'),
+                    React.createElement('div', {style:{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:12}},
+                      React.createElement('div', null,
+                        React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)'}}, 'ROI'),
+                        React.createElement('div', {style:{fontSize:14, fontWeight:600, color:'var(--accent)'}}, s.roi_on_intervention_x + 'x')
+                      ),
+                      React.createElement('div', null,
+                        React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)'}}, 'Cost'),
+                        React.createElement('div', {style:{fontSize:14, fontWeight:600}}, fmtUsd(s.intervention_cost_usd))
+                      )
+                    )
+                  )
+                )
+              ),
+              /* Channel Performance Table */
+              React.createElement('h3', {style:{fontSize:15, fontWeight:600, marginBottom:12}}, 'Retention Channel Performance'),
+              React.createElement('div', {className:'table-scroll'},
+                React.createElement('table', null,
+                  React.createElement('caption', {className:'kpi-label', style:{captionSide:'top', textAlign:'left', marginBottom:8}}, 'Churn retention performance by channel and destination system'),
+                  React.createElement('thead', null,
+                    React.createElement('tr', null,
+                      ['Channel','System','Activations','Saves','Save Rate','Cost/Save','Revenue/$ Spent','Net Revenue'].map(h =>
+                        React.createElement('th', {key:h}, h)
+                      )
+                    )
+                  ),
+                  React.createElement('tbody', null,
+                    (churn.channel_performance || []).map((c, i) =>
+                      React.createElement('tr', {key:i},
+                        React.createElement('td', null, c.channel_type),
+                        React.createElement('td', null, c.destination_system),
+                        React.createElement('td', null, fmt(c.total_activations)),
+                        React.createElement('td', null, fmt(c.total_conversions)),
+                        React.createElement('td', null, (c.save_rate_pct || 0) + '%'),
+                        React.createElement('td', null, fmtUsd(c.cost_per_save_usd)),
+                        React.createElement('td', {style:{color:'var(--success)', fontWeight:600}}, fmtUsd(c.revenue_per_dollar)),
+                        React.createElement('td', {style:{color:'var(--success)', fontWeight:600}}, fmtUsd(c.net_revenue_usd))
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          ),
+
+          /* TAB: Channel Prescriptions (APP-ADD-PLAYBOOK-PAGE / CMO-221) */
+           activeTab === 'prescriptions' && React.createElement('div', {id:'panel-prescriptions', role:'tabpanel', 'aria-labelledby':'tab-prescriptions'},
+             !rxData ? React.createElement('div', {role:'status', 'aria-live':'polite', style:{padding:24, color:'var(--text-muted)', textAlign:'center'}}, 'Loading channel prescriptions...') :
+             React.createElement('div', null,
+               /* Summary Hero */
+               React.createElement('div', {className:'card', style:{padding:24, marginBottom:24, border:'1px solid var(--accent)', background:'linear-gradient(135deg, var(--bg-card) 0%, rgba(79,143,247,0.06) 100%)'}},
+                 React.createElement('div', {style:{fontSize:11, color:'var(--accent)', textTransform:'uppercase', letterSpacing:'1px', fontWeight:700, marginBottom:12}}, 'CHANNEL PRESCRIPTION SUMMARY'),
+                 React.createElement('div', {style:{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:16}},
+                   React.createElement('div', null,
+                     React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--accent)'}}, rxData.summary?.total_channels || 0),
+                     React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Channels Analyzed')
+                   ),
+                   React.createElement('div', null,
+                     React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--success)'}}, fmtUsd(rxData.summary?.total_incremental_revenue_usd)),
+                      React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Incremental Revenue')
+                    ),
+                    React.createElement('div', null,
+                      React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--warning)'}}, fmtUsd(rxData.summary?.total_delivery_cost_usd)),
+                      React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Delivery Cost')
+                    ),
+                    React.createElement('div', null,
+                      React.createElement('div', {style:{fontSize:28, fontWeight:700, color: (rxData.summary?.total_delivery_pnl_usd || 0) >= 0 ? 'var(--success)' : 'var(--danger)'}}, fmtUsd(rxData.summary?.total_delivery_pnl_usd)),
+                      React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Delivery PnL')
+                    ),
+                    React.createElement('div', null,
+                      React.createElement('div', {style:{fontSize:28, fontWeight:700, color: (rxData.summary?.kill_switch_channels || 0) > 0 ? 'var(--danger)' : 'var(--success)'}}, rxData.summary?.kill_switch_channels || 0),
+                      React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Kill Switches')
+                   )
+                 )
+               ),
+               /* Per-Channel Prescription Cards */
+               React.createElement('div', {style:{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(340px, 1fr))', gap:16, marginBottom:24}},
+                 (rxData.channels || []).map((ch, i) => {
+                    const killTriggered = ch.kill_switch_triggered;
+                     const actionColor = killTriggered ? 'var(--danger)' : ({
+                       'EXIT_CHANNEL': 'var(--danger)', 'REDUCE_50PCT': 'var(--warning)',
+                       'HOLD_AND_OPTIMIZE_OVERHEAD': 'var(--info)',
+                       'SCALE_2X': 'var(--success)', 'HOLD_AND_TEST': 'var(--text-muted)'
+                     }[ch.prescribed_action] || 'var(--text-secondary)');
+                     const deliveryPnl = (ch.incremental_revenue_usd || 0) - (ch.delivery_cost_usd || 0);
+                     return React.createElement('div', {key:i, className:'card', style:{padding:20, borderLeft:'4px solid ' + actionColor}},
+                       /* Kill switch banner */
+                       killTriggered && React.createElement('div', {role:'alert', style:{
+                         padding:'8px 12px', marginBottom:12, background:'rgba(248,113,113,0.06)',
+                         borderRadius:'var(--radius)', border:'1px solid rgba(248,113,113,0.2)',
+                         display:'flex', alignItems:'center', gap:8, fontSize:11
+                       }},
+                         React.createElement(Icon, {d:icons.alertTriangle, size:12}),
+                         React.createElement('span', {style:{color:'var(--danger)', fontWeight:600}},
+                           'KILL SWITCH: Value-destructive channel (delivery ROI: ' + fmtX(ch.delivery_roi_x) + ')'
+                         )
+                       ),
+                      React.createElement('div', {style:{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12}},
+                        React.createElement('div', {style:{fontSize:14, fontWeight:700, textTransform:'uppercase'}}, (ch.channel_type || '').replace(/_/g, ' ')),
+                        React.createElement('div', {style:{display:'flex', gap:6}},
+                          React.createElement('span', {className:'diff-badge', style:{background: actionColor, color:'#fff', fontSize:9}}, (ch.prescribed_action || '').replace(/_/g, ' ')),
+                          killTriggered && React.createElement('span', {className:'diff-badge', style:{fontSize:9, background:'var(--danger)', color:'#fff'}}, 'KILL SWITCH')
+                        )
+                      ),
+                      /* Dual ROI Row */
+                      React.createElement('div', {style:{display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, marginBottom:12}},
+                        React.createElement('div', null,
+                          React.createElement('div', {style:{fontSize:10, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Incr. Revenue'),
+                          React.createElement('div', {style:{fontSize:16, fontWeight:700, color: (ch.incremental_revenue_usd || 0) >= 0 ? 'var(--success)' : 'var(--danger)'}}, fmtUsd(ch.incremental_revenue_usd))
+                        ),
+                        React.createElement('div', null,
+                          React.createElement('div', {style:{fontSize:10, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Delivery ROI'),
+                          React.createElement('div', {style:{fontSize:16, fontWeight:700, color: (ch.delivery_roi_x || 0) >= 0 ? 'var(--success)' : 'var(--danger)'}}, fmtX(ch.delivery_roi_x))
+                        ),
+                        React.createElement('div', null,
+                          React.createElement('div', {style:{fontSize:10, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Fully-Loaded ROI'),
+                          React.createElement('div', {style:{fontSize:16, fontWeight:700, color: (ch.fully_loaded_roi_x || 0) >= 0 ? 'var(--success)' : 'var(--danger)'}}, fmtX(ch.fully_loaded_roi_x))
+                        ),
+                        React.createElement('div', null,
+                          React.createElement('div', {style:{fontSize:10, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Delivery PnL'),
+                          React.createElement('div', {style:{fontSize:16, fontWeight:700, color: deliveryPnl >= 0 ? 'var(--success)' : 'var(--danger)'}}, fmtUsd(deliveryPnl))
+                        )
+                      ),
+                      /* CPA + Evidence Row */
+                      React.createElement('div', {style:{display:'flex', gap:8, flexWrap:'wrap', marginBottom:12}},
+                        React.createElement('span', {className:'diff-badge', style:{fontSize:9}}, ch.evidence_strength),
+                        React.createElement('span', {style:{fontSize:10, color:'var(--text-muted)'}}, (ch.holdout_evidence_n || 0) + ' holdout conv.'),
+                        React.createElement('span', {style:{fontSize:10, color:'var(--text-muted)'}}, '+' + (ch.avg_incremental_lift_pct || 0) + 'pp lift'),
+                        ch.cpa_incremental_delivery_usd != null && React.createElement('span', {style:{fontSize:10, color:'var(--accent)'}}, 'CPA (delivery): $' + ch.cpa_incremental_delivery_usd),
+                        ch.cpa_incremental_fully_loaded_usd != null && React.createElement('span', {style:{fontSize:10, color:'var(--text-muted)'}}, 'CPA (loaded): $' + ch.cpa_incremental_fully_loaded_usd)
+                      ),
+                      /* Board Narrative */
+                      ch.board_narrative && React.createElement('div', {style:{padding:'10px 12px', background: killTriggered ? 'rgba(248,113,113,0.04)' : 'rgba(52,211,153,0.04)', borderRadius:'var(--radius)', border:'1px solid ' + (killTriggered ? 'rgba(248,113,113,0.15)' : 'rgba(52,211,153,0.15)'), marginBottom:8}},
+                        React.createElement('div', {style:{fontSize:10, fontWeight:700, color: killTriggered ? 'var(--danger)' : 'var(--success)', textTransform:'uppercase', marginBottom:4}}, 'BOARD NARRATIVE'),
+                        React.createElement('div', {style:{fontSize:11, color:'var(--text-secondary)', lineHeight:'1.5'}}, ch.board_narrative)
+                      ),
+                      /* V3 Holdout Transparency (replaces V2 implementation_playbook) */
+                      React.createElement('div', {style:{padding:'10px 12px', background:'var(--bg-hover)', borderRadius:'var(--radius)'}},
+                        React.createElement('div', {style:{fontSize:10, fontWeight:700, color:'var(--accent)', textTransform:'uppercase', marginBottom:4}}, 'HOLDOUT EVIDENCE'),
+                        React.createElement('div', {style:{display:'flex', gap:16, flexWrap:'wrap', fontSize:11, color:'var(--text-secondary)'}},
+                          React.createElement('span', null, 'Treatment CVR: ', React.createElement('strong', null, (ch.treatment_cvr_pct || 0) + '%')),
+                          React.createElement('span', null, 'Holdout CVR: ', React.createElement('strong', null, (ch.holdout_cvr_pct || 0) + '%')),
+                          React.createElement('span', null, 'True Lift: ', React.createElement('strong', {style:{color: (ch.true_lift_ppt || 0) >= 0 ? 'var(--success)' : 'var(--danger)'}}, (ch.true_lift_ppt || 0) + 'ppt')),
+                          React.createElement('span', null, 'V3 Incr: ', React.createElement('strong', null, ch.incremental_conversions)),
+                          ch.v2_buggy_raw_incremental != null && React.createElement('span', {style:{color:'var(--danger)'}}, 'V2 Bug: ', React.createElement('strong', null, ch.v2_buggy_raw_incremental))
+                        ),
+                        ch.playbook_version && React.createElement('div', {style:{fontSize:10, color:'var(--text-muted)', marginTop:4}}, 'Source: ' + ch.playbook_version + ' (rate-normalized holdout)')
+                     )
+                   );
+                 })
+               ),
+               /* Methodology Note */
+               React.createElement('div', {role:'note', style:{padding:'12px 16px', background:'var(--bg-hover)', borderRadius:'var(--radius)', fontSize:12, color:'var(--text-secondary)'}},
+                 React.createElement(Icon, {d:icons.alertCircle, size:14}), ' ', rxData.methodology
+               )
+             )
+           ),
+
+           /* TAB: Safety Audit (APP-PLAYBOOK-SAFETY / CMO-233/236/238/239) */
+           activeTab === 'safety' && React.createElement('div', {id:'panel-safety', role:'tabpanel', 'aria-labelledby':'tab-safety'},
+             !safetyData ? React.createElement('div', {role:'status', 'aria-live':'polite', style:{padding:24, color:'var(--text-muted)', textAlign:'center'}}, 'Loading safety audit...') :
+             React.createElement('div', null,
+               /* Safety Score Hero */
+               React.createElement('div', {className:'card', style:{
+                 padding:24, marginBottom:24,
+                 border: '1px solid ' + (safetyData.safety_score?.verdict === 'UNSAFE' ? 'var(--danger)' : safetyData.safety_score?.verdict === 'WARNING' ? 'var(--warning)' : 'var(--success)'),
+                 background: safetyData.safety_score?.verdict === 'UNSAFE' ? 'rgba(248,113,113,0.04)' : 'linear-gradient(135deg, var(--bg-card) 0%, rgba(79,143,247,0.06) 100%)'
+               }},
+                 React.createElement('div', {style:{fontSize:11, textTransform:'uppercase', letterSpacing:'1px', fontWeight:700, marginBottom:12,
+                   color: safetyData.safety_score?.verdict === 'UNSAFE' ? 'var(--danger)' : 'var(--warning)'
+                 }}, 'PLAYBOOK SAFETY CROSS-VALIDATION'),
+                 React.createElement('div', {style:{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:16}},
+                   React.createElement('div', null,
+                     React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--danger)'}}, safetyData.safety_score?.contradictions_found || 0),
+                     React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Contradictions')
+                   ),
+                   React.createElement('div', null,
+                     React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--danger)'}}, safetyData.safety_score?.kill_switch_gaps || 0),
+                     React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Kill Switch Gaps')
+                   ),
+                   React.createElement('div', null,
+                     React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--danger)'}}, safetyData.safety_score?.channels_negative_roi || 0),
+                     React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Channels Negative ROI')
+                   ),
+                   React.createElement('div', null,
+                     React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--danger)'}}, fmtUsd(safetyData.safety_score?.total_contradiction_spend_usd)),
+                     React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Spend at Risk')
+                   )
+                 )
+               ),
+               /* Per-Channel Cross-Validation Table */
+               React.createElement('div', {className:'card', style:{padding:24, marginBottom:24}},
+                 React.createElement('h3', {style:{fontSize:15, fontWeight:600, marginBottom:4}}, 'Per-Channel: Playbook V3_FIXED vs Channel Strategy Cross-Check'),
+                  React.createElement('p', {style:{fontSize:12, color:'var(--text-secondary)', marginBottom:16}},
+                    'V3 playbook uses rate-normalized holdout-incremental ROI (fixes V2 bug). Cross-validated against channel_strategy for consistency. Red rows indicate action disagreements between sources.'
+                 ),
+                 React.createElement('div', {className:'table-scroll'},
+                   React.createElement('table', null,
+                     React.createElement('caption', {className:'kpi-label', style:{captionSide:'top', textAlign:'left', marginBottom:8}}, 'Playbook vs honest incrementality per channel'),
+                     React.createElement('thead', null,
+                       React.createElement('tr', null,
+                         ['Channel', 'Playbook Action', 'Kill Switch', 'Delivery ROI', 'Fully-Loaded ROI', 'Strategy ROI', 'Waste', 'Delivery CPA', 'Board Narrative', 'Severity'].map(h =>
+                           React.createElement('th', {key:h}, h)
+                         )
+                       )
+                     ),
+                     React.createElement('tbody', null,
+                       (safetyData.channels || []).map((ch, i) => {
+                         const rowBg = ch.severity === 'critical' ? 'rgba(248,113,113,0.06)' : ch.severity === 'high' ? 'rgba(251,191,36,0.06)' : ch.severity === 'medium' ? 'rgba(251,191,36,0.03)' : 'transparent';
+                          return React.createElement('tr', {key: i, style:{background: rowBg}},
+                            React.createElement('td', {style:{fontWeight:600, textTransform:'uppercase'}}, (ch.channel || '').replace(/_/g, ' ')),
+                            React.createElement('td', null,
+                              React.createElement('span', {className:'diff-badge', style:{fontSize:9,
+                                background: ch.playbook_prescribed_action === 'EXIT_CHANNEL' ? 'var(--danger)' : ch.playbook_prescribed_action === 'HOLD_AND_OPTIMIZE_OVERHEAD' ? 'var(--info)' : 'var(--success)',
+                                color:'#fff'
+                              }}, (ch.playbook_prescribed_action || '').replace(/_/g, ' '))
+                            ),
+                            React.createElement('td', null,
+                              ch.kill_switch_triggered ?
+                                React.createElement('span', {className:'diff-badge', style:{fontSize:9, background:'var(--danger)', color:'#fff'}}, 'TRIGGERED') :
+                                React.createElement('span', {style:{fontSize:10, color:'var(--text-muted)'}}, '\u2014')
+                            ),
+                            React.createElement('td', {style:{fontWeight:700, color: (ch.delivery_roi_x || 0) < 0 ? 'var(--danger)' : 'var(--success)'}}, fmtX(ch.delivery_roi_x)),
+                            React.createElement('td', {style:{fontWeight:700, color: (ch.fully_loaded_roi_x || 0) < 0 ? 'var(--danger)' : 'var(--success)'}}, fmtX(ch.fully_loaded_roi_x)),
+                            React.createElement('td', {style:{color:'var(--text-muted)'}}, fmtX(ch.strategy_true_roi_x)),
+                            React.createElement('td', {style:{color:'var(--danger)'}}, ch.waste_usd ? fmtUsd(ch.waste_usd) : '\u2014'),
+                            React.createElement('td', null, ch.delivery_cpa_usd != null ? '$' + ch.delivery_cpa_usd : '\u2014'),
+                            React.createElement('td', {style:{fontSize:10, maxWidth:180, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}, ch.board_narrative || '\u2014'),
+                           React.createElement('td', null,
+                             ch.severity !== 'none' ?
+                               React.createElement('span', {className:'diff-badge', style:{fontSize:9, background: ch.severity === 'critical' ? 'var(--danger)' : 'var(--warning)', color:'#fff'}}, ch.severity.toUpperCase()) :
+                               React.createElement('span', {style:{fontSize:10, color:'var(--text-muted)'}}, 'OK')
+                           )
+                         );
+                       })
+                     )
+                   )
+                 )
+               ),
+               /* Kill Switch Gaps */
+               safetyData.kill_switch_gaps?.length > 0 && React.createElement('div', {className:'card', style:{padding:24, marginBottom:24, borderLeft:'4px solid var(--danger)'}},
+                 React.createElement('h3', {style:{fontSize:15, fontWeight:600, marginBottom:12, color:'var(--danger)'}}, 'Kill Switch Gaps'),
+                 React.createElement('p', {style:{fontSize:12, color:'var(--text-secondary)', marginBottom:16}},
+                   'Channels with negative holdout-measured ROI that are NOT flagged for EXIT in the action playbook. These channels actively destroy value with every activation.'
+                 ),
+                 (safetyData.kill_switch_gaps || []).map((g, i) =>
+                   React.createElement('div', {key:i, style:{padding:'12px 16px', background:'rgba(248,113,113,0.04)', borderRadius:'var(--radius)', marginBottom:8, display:'flex', justifyContent:'space-between', alignItems:'center'}},
+                     React.createElement('div', null,
+                       React.createElement('span', {style:{fontWeight:700, textTransform:'uppercase'}}, (g.channel || '').replace(/_/g, ' ')),
+                       React.createElement('span', {style:{marginLeft:12, color:'var(--danger)', fontWeight:600}}, 'Delivery ROI: ' + fmtX(g.delivery_roi_x)),
+                       React.createElement('span', {style:{marginLeft:12, color:'var(--text-muted)', fontSize:11}}, 'Playbook says: ' + (g.prescribed_action || '').replace(/_/g, ' '))
+                     ),
+                     React.createElement('div', null,
+                       React.createElement('span', {className:'diff-badge', style:{background:'var(--danger)', color:'#fff', fontSize:10}}, 'SHOULD BE: EXIT'),
+                       React.createElement('span', {style:{marginLeft:8, fontSize:11, color:'var(--text-muted)'}}, fmtUsd(g.spend_at_risk_usd) + ' at risk')
+                     )
+                   )
+                 )
+               ),
+               /* Methodology */
+               React.createElement('div', {role:'note', style:{padding:'12px 16px', background:'var(--bg-hover)', borderRadius:'var(--radius)', fontSize:12, color:'var(--text-secondary)'}},
+                 React.createElement(Icon, {d:icons.alertCircle, size:14}), ' ', safetyData.methodology
+               )
+             )
+           ),
+
+            /* CMO Talking Point Footer */
+           React.createElement('div', {className:'card', style:{padding:16, marginTop:24, background:'var(--bg-hover)'}},
+             React.createElement('div', {style:{fontSize:11, color:'var(--accent)', fontWeight:600, textTransform:'uppercase', marginBottom:8}}, 'CMO TALKING POINT'),
+             React.createElement('div', {style:{fontSize:13, color:'var(--text-secondary)', lineHeight:'1.6'}}, narrative.cmo_talking_point)
+           )
+        )
+      );
+    }
+
+    function ChurnInterventionPage() {
+       const [data, setData] = useState(null);
+       const [loading, setLoading] = useState(true);
+       const [error, setError] = useState(null);
+
+       useEffect(() => {
+         setLoading(true);
+         api('/api/churn-intervention-model').then(d => { setData(d); setLoading(false); }).catch(e => { setError(e.message); setLoading(false); });
+       }, []);
+
+       const fmtUsd = (v) => v == null ? '\u2014' : '$' + Number(v).toLocaleString(undefined, {maximumFractionDigits: 0});
+       const fmtPct = (v) => v == null ? '\u2014' : Number(v).toFixed(1) + '%';
+       const fmt = (v) => v == null ? '\u2014' : Number(v).toLocaleString();
+
+       if (loading) return React.createElement('div', {role:'status', 'aria-live':'polite', style:{padding:40, textAlign:'center', color:'var(--text-muted)'}}, 'Loading intervention economics...');
+       if (error) return React.createElement(ErrorCard, {message: error, onRetry: () => window.location.reload()});
+
+       const tiers = data?.tiers || [];
+       const summary = data?.summary || {};
+
+       const verdictStyle = (v) => {
+         if (!v) return {};
+         if (v.includes('PROFITABLE')) return {background:'rgba(52,211,153,0.08)', color:'var(--success)', border:'1px solid rgba(52,211,153,0.3)'};
+         if (v.includes('DELIVERY_COST')) return {background:'rgba(251,191,36,0.08)', color:'var(--warning)', border:'1px solid rgba(251,191,36,0.3)'};
+         return {background:'rgba(248,113,113,0.08)', color:'var(--danger)', border:'1px solid rgba(248,113,113,0.3)'};
+       };
+       const verdictLabel = (v) => {
+         if (!v) return 'UNKNOWN';
+         if (v.includes('PROFITABLE')) return 'PROFITABLE';
+         if (v.includes('DELIVERY_COST')) return 'MARGINAL';
+         return 'DO NOT INTERVENE';
+       };
+       const tierColor = (t) => ({
+         'CRITICAL': 'var(--danger)', 'HIGH': 'var(--warning)',
+         'MEDIUM': 'var(--info)', 'LOW': 'var(--text-muted)', 'MINIMAL': 'var(--text-muted)'
+       })[t] || 'var(--text-secondary)';
+
+       return (
+         React.createElement('div', null,
+           React.createElement('div', {className:'page-header'},
+             React.createElement('h2', null, 'Churn Intervention Economics'),
+             React.createElement('p', null,
+               'Per-tier intervention cost model: what it costs to save customers vs. what you protect ',
+               React.createElement(ProvenanceBadge, {synthetic: true})
+             )
+           ),
+           React.createElement('div', {style:{display:'flex', gap:8, flexWrap:'wrap', marginBottom:16}},
+             React.createElement('span', {className:'diff-badge'}, 'CMO-222 RESPONSE'),
+             React.createElement('span', {className:'diff-badge'}, 'HOLDOUT-PROVEN'),
+             React.createElement('span', {className:'diff-badge'}, 'UNIQUE'),
+             React.createElement('span', {className:'diff-badge'}, 'ACTIONABLE')
+           ),
+
+           /* HERO: Summary KPIs */
+           React.createElement('div', {className:'card', style:{padding:24, marginBottom:24, border:'1px solid var(--accent)', background:'linear-gradient(135deg, var(--bg-card) 0%, rgba(79,143,247,0.06) 100%)'}},
+             React.createElement('div', {style:{fontSize:11, color:'var(--accent)', textTransform:'uppercase', letterSpacing:'1px', fontWeight:700, marginBottom:12}}, 'INTERVENTION PORTFOLIO SUMMARY'),
+             React.createElement('div', {style:{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:16}},
+               React.createElement('div', null,
+                 React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--danger)'}}, fmt(summary.total_at_risk_entities)),
+                 React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Entities at Risk')
+               ),
+               React.createElement('div', null,
+                 React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--danger)'}}, fmtUsd(summary.total_annual_revenue_at_stake_usd)),
+                 React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Revenue at Stake')
+               ),
+               React.createElement('div', null,
+                 React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--warning)'}}, fmtUsd(summary.total_delivery_cost_usd)),
+                 React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Total Delivery Cost')
+               ),
+               React.createElement('div', null,
+                 React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--success)'}}, fmtUsd(summary.total_holdout_proven_revenue_usd)),
+                 React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Holdout-Proven Revenue')
+               ),
+               React.createElement('div', null,
+                 React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--success)'}}, (summary.profitable_tiers || []).length + '/' + tiers.length),
+                 React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Profitable Tiers')
+               )
+             )
+           ),
+
+           /* Methodology Banner */
+           React.createElement('div', {role:'note', style:{padding:'12px 16px', background:'var(--bg-hover)', borderRadius:'var(--radius)', marginBottom:24, fontSize:12, color:'var(--text-secondary)'}},
+             React.createElement(Icon, {d:icons.alertCircle, size:14}), ' ', data?.methodology
+           ),
+
+           /* Per-Tier Cards */
+           React.createElement('div', {style:{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(340px, 1fr))', gap:16, marginBottom:24}},
+             tiers.map((t, i) => React.createElement('div', {key:i, className:'card', style:{padding:20, borderLeft:'4px solid ' + tierColor(t.churn_risk_tier)}},
+               /* Header: Tier + Verdict Badge */
+               React.createElement('div', {style:{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16}},
+                 React.createElement('div', null,
+                   React.createElement('div', {style:{fontSize:16, fontWeight:700, color: tierColor(t.churn_risk_tier)}}, t.churn_risk_tier),
+                   React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)'}}, fmt(t.detected_at_risk_entities) + ' entities \u00B7 ' + fmtPct(t.avg_churn_probability ? t.avg_churn_probability * 100 : null) + ' avg churn prob.')
+                 ),
+                 React.createElement('span', {
+                   className:'diff-badge',
+                   style:{...verdictStyle(t.intervention_verdict), fontSize:10, fontWeight:700, padding:'4px 10px'}
+                 }, verdictLabel(t.intervention_verdict))
+               ),
+               /* Economics Grid */
+               React.createElement('div', {style:{display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:8, marginBottom:12}},
+                 React.createElement('div', {style:{padding:8, background:'var(--bg-hover)', borderRadius:'var(--radius)'}},
+                   React.createElement('div', {style:{fontSize:9, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Revenue at Stake'),
+                   React.createElement('div', {style:{fontSize:15, fontWeight:700, color:'var(--danger)'}}, fmtUsd(t.annual_revenue_at_stake_usd))
+                 ),
+                 React.createElement('div', {style:{padding:8, background:'var(--bg-hover)', borderRadius:'var(--radius)'}},
+                   React.createElement('div', {style:{fontSize:9, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Delivery Cost'),
+                   React.createElement('div', {style:{fontSize:15, fontWeight:700}}, fmtUsd(t.total_delivery_cost_usd))
+                 ),
+                 React.createElement('div', {style:{padding:8, background:'var(--bg-hover)', borderRadius:'var(--radius)'}},
+                   React.createElement('div', {style:{fontSize:9, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Incremental Saves'),
+                   React.createElement('div', {style:{fontSize:15, fontWeight:700, color:'var(--success)'}}, fmt(t.truly_incremental_saves))
+                 ),
+                 React.createElement('div', {style:{padding:8, background:'var(--bg-hover)', borderRadius:'var(--radius)'}},
+                   React.createElement('div', {style:{fontSize:9, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Proven Revenue'),
+                   React.createElement('div', {style:{fontSize:15, fontWeight:700, color:'var(--success)'}}, fmtUsd(t.holdout_proven_incremental_revenue_usd))
+                 )
+               ),
+               /* ROI + Breakeven Row */
+               React.createElement('div', {style:{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:8, marginBottom:12}},
+                 React.createElement('div', {style:{textAlign:'center', padding:8, background:'var(--bg-hover)', borderRadius:'var(--radius)'}},
+                   React.createElement('div', {style:{fontSize:9, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Delivery ROI'),
+                   React.createElement('div', {style:{fontSize:18, fontWeight:700, color: (t.delivery_roi_pct || 0) > 0 ? 'var(--success)' : 'var(--danger)'}}, fmtPct(t.delivery_roi_pct))
+                 ),
+                 React.createElement('div', {style:{textAlign:'center', padding:8, background:'var(--bg-hover)', borderRadius:'var(--radius)'}},
+                   React.createElement('div', {style:{fontSize:9, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Fully Loaded ROI'),
+                   React.createElement('div', {style:{fontSize:18, fontWeight:700, color: (t.fullyloaded_roi_pct || 0) > 0 ? 'var(--success)' : 'var(--danger)'}}, fmtPct(t.fullyloaded_roi_pct))
+                 ),
+                 React.createElement('div', {style:{textAlign:'center', padding:8, background:'var(--bg-hover)', borderRadius:'var(--radius)'}},
+                   React.createElement('div', {style:{fontSize:9, color:'var(--text-muted)', textTransform:'uppercase'}}, 'Cost/Save'),
+                   React.createElement('div', {style:{fontSize:18, fontWeight:700}}, fmtUsd(t.delivery_cost_per_save_usd))
+                 )
+               ),
+               /* Breakeven */
+               React.createElement('div', {style:{padding:'8px 12px', background:'rgba(79,143,247,0.04)', borderRadius:'var(--radius)', marginBottom:8, border:'1px solid rgba(79,143,247,0.15)'}},
+                 React.createElement('div', {style:{fontSize:10, fontWeight:700, color:'var(--accent)', textTransform:'uppercase', marginBottom:4}}, 'BREAKEVEN ANALYSIS'),
+                 React.createElement('div', {style:{fontSize:11, color:'var(--text-secondary)'}},
+                   'Delivery: ' + fmtPct(t.breakeven_save_rate_delivery_pct) + ' save rate needed \u00B7 Fully loaded: ' + fmtPct(t.breakeven_save_rate_fullyloaded_pct)
+                 )
+               ),
+               /* CMO Action */
+               React.createElement('div', {style:{padding:'8px 12px', background:'var(--bg-hover)', borderRadius:'var(--radius)', fontSize:11, color:'var(--text-secondary)', lineHeight:'1.5'}},
+                 React.createElement('span', {style:{fontWeight:700, color:'var(--accent)'}}, 'CMO ACTION: '), t.cmo_action_recommendation
+               )
+             ))
+           ),
+
+           /* Detailed Economics Table */
+           React.createElement('div', {className:'card', style:{padding:24, marginBottom:24}},
+             React.createElement('h3', {style:{fontSize:15, fontWeight:600, marginBottom:16}}, 'Full Intervention Economics'),
+             React.createElement('div', {className:'table-scroll'},
+               React.createElement('table', null,
+                 React.createElement('caption', {className:'kpi-label', style:{captionSide:'top', textAlign:'left', marginBottom:8}}, 'Per-tier intervention cost, ROI, and breakeven analysis'),
+                 React.createElement('thead', null,
+                   React.createElement('tr', null,
+                     ['Tier','At Risk','Expected Loss','Delivery Cost','Incr. Saves','Proven Rev.','Net PnL','Del. ROI','Verdict'].map(h =>
+                       React.createElement('th', {key:h}, h)
+                     )
+                   )
+                 ),
+                 React.createElement('tbody', null,
+                   tiers.map((t, i) =>
+                     React.createElement('tr', {key:i},
+                       React.createElement('td', {style:{fontWeight:700, color: tierColor(t.churn_risk_tier)}}, t.churn_risk_tier),
+                       React.createElement('td', null, fmt(t.detected_at_risk_entities)),
+                       React.createElement('td', {style:{color:'var(--danger)'}}, fmtUsd(t.expected_revenue_loss_usd)),
+                       React.createElement('td', null, fmtUsd(t.total_delivery_cost_usd)),
+                       React.createElement('td', {style:{color:'var(--success)'}}, fmt(t.truly_incremental_saves)),
+                       React.createElement('td', {style:{color:'var(--success)'}}, fmtUsd(t.holdout_proven_incremental_revenue_usd)),
+                       React.createElement('td', {style:{color: (t.net_intervention_pnl_delivery_usd || 0) >= 0 ? 'var(--success)' : 'var(--danger)', fontWeight:600}}, fmtUsd(t.net_intervention_pnl_delivery_usd)),
+                       React.createElement('td', {style:{color: (t.delivery_roi_pct || 0) > 0 ? 'var(--success)' : 'var(--danger)', fontWeight:600}}, fmtPct(t.delivery_roi_pct)),
+                       React.createElement('td', null,
+                         React.createElement('span', {className:'diff-badge', style:{...verdictStyle(t.intervention_verdict), fontSize:9}}, verdictLabel(t.intervention_verdict))
+                       )
+                     )
+                   )
+                 )
+               )
+             )
+           ),
+
+           /* CustomerLake Differentiator */
+           React.createElement('div', {className:'card', style:{padding:16, background:'var(--bg-hover)'}},
+             React.createElement('div', {style:{fontSize:11, color:'var(--accent)', fontWeight:600, textTransform:'uppercase', marginBottom:8}}, 'CUSTOMERLAKE DIFFERENTIATOR'),
+             React.createElement('div', {style:{fontSize:13, color:'var(--text-secondary)', lineHeight:'1.6'}},
+               'This intervention cost model requires three data streams that no legacy CDP provides in one platform: ',
+               '(1) cross-source ML churn detection across billing, digital, and CRM signals, ',
+               '(2) holdout-controlled incremental save rates by risk tier, ',
+               '(3) per-channel fully-loaded cost data from activation_log. ',
+               'Only CustomerLake unifies all three to compute true intervention ROI.'
+             )
+           )
+         )
+       );
+     }
+
+    // ---- Waste Exposure Truth Gap Page (CMO-261/259: waste IS the value) ----
+    function ReoptimizationPage() {
+      const [data, setData] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(false);
+      const [activeScenario, setActiveScenario] = useState('C');
+
+      useEffect(() => {
+        api('/api/reoptimization/scenarios')
+          .then(d => setData(d))
+          .catch(() => setError(true))
+          .finally(() => setLoading(false));
+      }, []);
+
+      if (loading) return (
+        React.createElement('div', {role:'status', 'aria-live':'polite', 'aria-label':'Loading reoptimization scenarios'},
+          React.createElement('div', {className:'page-header'},
+            React.createElement('div', {className:'skeleton skeleton-text long', style:{height:24,width:'50%',marginBottom:8}}),
+            React.createElement('div', {className:'skeleton skeleton-text', style:{height:14,width:'60%'}})
+          ),
+          React.createElement('div', {className:'kpi-grid', style:{gridTemplateColumns:'repeat(4, 1fr)'}},
+            React.createElement('div', {className:'skeleton skeleton-kpi'}),
+            React.createElement('div', {className:'skeleton skeleton-kpi'}),
+            React.createElement('div', {className:'skeleton skeleton-kpi'}),
+            React.createElement('div', {className:'skeleton skeleton-kpi'})
+          ),
+          React.createElement('div', {className:'skeleton skeleton-table', style:{marginTop:16}})
+        )
+      );
+      if (error && !data) return React.createElement(ErrorCard, {message:'Failed to load reoptimization scenarios', onRetry: () => window.location.reload()});
+
+      const fp = data.forward_projection || {};
+      const cur = fp.current || {};
+      const opt = fp.optimized || {};
+      const imp = fp.improvement || {};
+      const scenarios = data.reallocation_scenarios || [];
+      const channels = data.channel_prescriptions || [];
+      const paidSocial = data.paid_social_exit || {};
+      const meth = data.methodology || {};
+
+      const fmt = (v) => {
+        if (v == null) return '\u2014';
+        const n = Number(v);
+        if (Math.abs(n) >= 1e6) return (n < 0 ? '-' : '') + '$' + (Math.abs(n) / 1e6).toFixed(1) + 'M';
+        if (Math.abs(n) >= 1e3) return (n < 0 ? '-' : '') + '$' + (Math.abs(n) / 1e3).toFixed(0) + 'K';
+        return '$' + n.toLocaleString();
+      };
+      const fmtRoi = (v) => v != null ? (Number(v) * 100).toFixed(0) + '%' : '\u2014';
+      const fmtX = (v) => v != null ? Number(v).toFixed(2) + 'x' : '\u2014';
+
+      const actionColor = (a) => {
+        if (!a) return 'var(--text-muted)';
+        if (a.includes('EXIT') || a.includes('KILL')) return 'var(--danger)';
+        if (a.includes('SUPPRESS')) return 'var(--warning)';
+        if (a.includes('HOLD') || a.includes('OPTIMIZE')) return 'var(--success)';
+        if (a.includes('KEEP') || a.includes('SCALE')) return 'var(--accent)';
+        return 'var(--text-secondary)';
+      };
+      const actionBg = (a) => {
+        if (!a) return 'var(--bg-hover)';
+        if (a.includes('EXIT') || a.includes('KILL')) return 'rgba(248,113,113,0.12)';
+        if (a.includes('SUPPRESS')) return 'rgba(251,191,36,0.12)';
+        if (a.includes('HOLD') || a.includes('OPTIMIZE')) return 'rgba(52,211,153,0.12)';
+        if (a.includes('KEEP') || a.includes('SCALE')) return 'rgba(79,143,247,0.12)';
+        return 'var(--bg-hover)';
+      };
+
+      const selScen = scenarios.find(s => s.id === activeScenario) || {};
+
+      return (
+        React.createElement('div', null,
+          React.createElement('div', {className:'page-header'},
+            React.createElement('h2', null, React.createElement(Icon, {d:icons.trendingUp, size:20}), ' Reoptimization Scenarios'),
+            React.createElement('p', null, 'Forward projection: what happens when you follow the prescriptions')
+          ),
+
+          // FORWARD PROJECTION HERO
+          React.createElement('div', {className:'card', style:{borderLeft:'3px solid var(--success)', background:'rgba(52,211,153,0.04)', marginBottom:16}},
+            React.createElement('div', {style:{display:'flex', alignItems:'center', gap:8, marginBottom:12}},
+              React.createElement('span', {className:'diff-badge', style:{fontSize:10, background:'rgba(52,211,153,0.15)', color:'var(--success)'}}, 'FORWARD PROJECTION'),
+              React.createElement('span', {className:'diff-badge', style:{fontSize:9}}, 'CMO-263 RESPONSE')
+            ),
+            React.createElement('div', {style:{fontSize:14, lineHeight:1.6, color:'var(--text-primary)'}}, fp.headline)
+          ),
+
+          // CURRENT vs OPTIMIZED KPIs
+          React.createElement('div', {style:{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16}},
+            // CURRENT STATE
+            React.createElement('div', {className:'card', style:{borderLeft:'3px solid var(--danger)', background:'rgba(248,113,113,0.03)'}},
+              React.createElement('div', {style:{display:'flex', alignItems:'center', gap:8, marginBottom:12}},
+                React.createElement(Icon, {d:icons.alertCircle, size:16}),
+                React.createElement('span', {style:{fontWeight:700, fontSize:13, textTransform:'uppercase', letterSpacing:'0.5px'}}, 'Current Portfolio'),
+                React.createElement('span', {className:'diff-badge', style:{fontSize:9, background:'rgba(248,113,113,0.15)', color:'var(--danger)'}}, 'BACKWARD-LOOKING')
+              ),
+              React.createElement('div', {className:'kpi-grid', style:{gridTemplateColumns:'repeat(2, 1fr)', gap:12}},
+                React.createElement('div', null,
+                  React.createElement('div', {className:'kpi-label'}, 'Total Spend'),
+                  React.createElement('div', {className:'kpi-value', style:{fontSize:22}}, fmt(cur.spend_usd))
+                ),
+                React.createElement('div', null,
+                  React.createElement('div', {className:'kpi-label'}, 'Incremental Revenue'),
+                  React.createElement('div', {className:'kpi-value', style:{fontSize:22}}, fmt(cur.revenue_usd))
+                ),
+                React.createElement('div', null,
+                  React.createElement('div', {className:'kpi-label'}, 'Net Profit'),
+                  React.createElement('div', {className:'kpi-value', style:{fontSize:22, color: cur.net_profit_usd < 0 ? 'var(--danger)' : 'var(--success)'}}, fmt(cur.net_profit_usd))
+                ),
+                React.createElement('div', null,
+                  React.createElement('div', {className:'kpi-label'}, 'Portfolio ROI'),
+                  React.createElement('div', {className:'kpi-value', style:{fontSize:22, color: cur.roi_x < 0 ? 'var(--danger)' : 'var(--success)'}}, fmtRoi(cur.roi_x))
+                )
+              ),
+              React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', marginTop:8}}, cur.channel_count + ' channels, unoptimized')
+            ),
+            // OPTIMIZED STATE
+            React.createElement('div', {className:'card', style:{borderLeft:'3px solid var(--success)', background:'rgba(52,211,153,0.03)'}},
+              React.createElement('div', {style:{display:'flex', alignItems:'center', gap:8, marginBottom:12}},
+                React.createElement(Icon, {d:icons.checkCircle, size:16}),
+                React.createElement('span', {style:{fontWeight:700, fontSize:13, textTransform:'uppercase', letterSpacing:'0.5px'}}, 'Optimized Portfolio'),
+                React.createElement('span', {className:'diff-badge', style:{fontSize:9, background:'rgba(52,211,153,0.15)', color:'var(--success)'}}, 'FORWARD PROJECTION')
+              ),
+              React.createElement('div', {className:'kpi-grid', style:{gridTemplateColumns:'repeat(2, 1fr)', gap:12}},
+                React.createElement('div', null,
+                  React.createElement('div', {className:'kpi-label'}, 'Optimized Spend'),
+                  React.createElement('div', {className:'kpi-value', style:{fontSize:22}}, fmt(opt.spend_usd))
+                ),
+                React.createElement('div', null,
+                  React.createElement('div', {className:'kpi-label'}, 'Projected Revenue'),
+                  React.createElement('div', {className:'kpi-value', style:{fontSize:22}}, fmt(opt.revenue_usd))
+                ),
+                React.createElement('div', null,
+                  React.createElement('div', {className:'kpi-label'}, 'Projected Net'),
+                  React.createElement('div', {className:'kpi-value', style:{fontSize:22, color: opt.net_profit_usd < 0 ? 'var(--danger)' : 'var(--success)'}}, fmt(opt.net_profit_usd))
+                ),
+                React.createElement('div', null,
+                  React.createElement('div', {className:'kpi-label'}, 'Projected ROI'),
+                  React.createElement('div', {className:'kpi-value', style:{fontSize:22, color:'var(--success)'}}, fmtRoi(opt.roi_x))
+                )
+              ),
+              React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', marginTop:8}}, opt.keep_channels + ' channels retained, ' + opt.exit_channels + ' exited')
+            )
+          ),
+
+          // IMPROVEMENT BANNER
+          React.createElement('div', {className:'kpi-grid', style:{gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', marginBottom:16}},
+            React.createElement('div', {className:'kpi-card', style:{borderLeft:'3px solid var(--success)'}},
+              React.createElement('div', {className:'kpi-label'}, 'Net Improvement'),
+              React.createElement('div', {className:'kpi-value', style:{color:'var(--success)', fontSize:28, fontWeight:700}}, fmt(imp.net_improvement_usd)),
+              React.createElement('div', {className:'kpi-sub'}, 'Better than current portfolio')
+            ),
+            React.createElement('div', {className:'kpi-card', style:{borderLeft:'3px solid var(--warning)'}},
+              React.createElement('div', {className:'kpi-label'}, 'Waste Eliminated'),
+              React.createElement('div', {className:'kpi-value', style:{color:'var(--warning)', fontSize:28, fontWeight:700}}, fmt(imp.waste_eliminated_usd)),
+              React.createElement('div', {className:'kpi-sub'}, 'Spend stopped on underwater channels')
+            ),
+            React.createElement('div', {className:'kpi-card', style:{borderLeft:'3px solid var(--danger)'}},
+              React.createElement('div', {className:'kpi-label'}, 'Loss Eliminated'),
+              React.createElement('div', {className:'kpi-value', style:{color:'var(--danger)', fontSize:28, fontWeight:700}}, fmt(imp.loss_eliminated_usd)),
+              React.createElement('div', {className:'kpi-sub'}, 'Value-destructive revenue stopped')
+            ),
+            React.createElement('div', {className:'kpi-card', style:{borderLeft:'3px solid var(--accent)'}},
+              React.createElement('div', {className:'kpi-label'}, 'ROI Improvement'),
+              React.createElement('div', {className:'kpi-value', style:{color:'var(--accent)', fontSize:28, fontWeight:700}}, (imp.roi_improvement > 0 ? '+' : '') + fmtRoi(imp.roi_improvement)),
+              React.createElement('div', {className:'kpi-sub'}, 'From ' + fmtRoi(cur.roi_x) + ' to ' + fmtRoi(opt.roi_x))
+            )
+          ),
+
+          // CHANNEL PRESCRIPTION TABLE
+          React.createElement('div', {className:'card', style:{marginBottom:16}},
+            React.createElement('div', {className:'card-title'}, 'Channel Prescriptions \u2014 Action Plan'),
+            React.createElement('table', null,
+              React.createElement('caption', {style:{captionSide:'top', textAlign:'left', fontSize:11, color:'var(--text-muted)', padding:'0 0 8px'}}, 'Per-channel action from V3_FIXED holdout-incremental playbook'),
+              React.createElement('thead', null,
+                React.createElement('tr', null,
+                  React.createElement('th', null, 'Channel'),
+                  React.createElement('th', null, 'Action'),
+                  React.createElement('th', {style:{textAlign:'right'}}, 'Incr. Revenue'),
+                  React.createElement('th', {style:{textAlign:'right'}}, 'Delivery Cost'),
+                  React.createElement('th', {style:{textAlign:'right'}}, 'ROI'),
+                  React.createElement('th', null, 'Evidence')
+                )
+              ),
+              React.createElement('tbody', null,
+                channels.map((ch, i) =>
+                  React.createElement('tr', {key: i},
+                    React.createElement('td', {style:{fontWeight:500, color:'var(--text-primary)'}}, (ch.channel || '').replace(/_/g, ' ')),
+                    React.createElement('td', null,
+                      React.createElement('span', {className:'badge', style:{background: actionBg(ch.action), color: actionColor(ch.action)}}, ch.action)
+                    ),
+                    React.createElement('td', {style:{textAlign:'right', color: ch.revenue_usd < 0 ? 'var(--danger)' : 'var(--success)'}}, fmt(ch.revenue_usd)),
+                    React.createElement('td', {style:{textAlign:'right'}}, fmt(ch.cost_usd)),
+                    React.createElement('td', {style:{textAlign:'right', color: ch.roi_x < 0 ? 'var(--danger)' : 'var(--success)'}}, fmtX(ch.roi_x)),
+                    React.createElement('td', null,
+                      React.createElement('span', {className:'badge badge-' + (ch.evidence === 'STRONG' ? 'success' : ch.evidence === 'MODERATE' ? 'warning' : 'neutral')}, ch.evidence || 'N/A')
+                    )
+                  )
+                )
+              )
+            )
+          ),
+
+          // REALLOCATION SCENARIOS
+          React.createElement('div', {className:'card', style:{marginBottom:16}},
+            React.createElement('div', {className:'card-title'}, 'Reallocation Scenarios'),
+            React.createElement('div', {style:{display:'flex', gap:8, marginBottom:16}, role:'tablist', 'aria-label':'Reallocation scenarios'},
+              scenarios.map(sc =>
+                React.createElement('button', {
+                  key: sc.id,
+                  role: 'tab',
+                  'aria-selected': activeScenario === sc.id,
+                  className: 'btn ' + (activeScenario === sc.id ? 'btn-primary' : 'btn-ghost'),
+                  onClick: () => setActiveScenario(sc.id)
+                }, 'Scenario ' + sc.id + ': ' + sc.label)
+              )
+            ),
+            React.createElement('div', {role:'tabpanel', 'aria-label':'Scenario ' + activeScenario + ' details'},
+              React.createElement('div', {style:{fontSize:13, color:'var(--text-secondary)', marginBottom:12}}, selScen.description),
+              React.createElement('div', {className:'kpi-grid', style:{gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))'}},
+                React.createElement('div', null,
+                  React.createElement('div', {className:'kpi-label'}, 'Spend'),
+                  React.createElement('div', {className:'kpi-value', style:{fontSize:20}}, fmt(selScen.spend_usd))
+                ),
+                React.createElement('div', null,
+                  React.createElement('div', {className:'kpi-label'}, 'Projected Revenue'),
+                  React.createElement('div', {className:'kpi-value', style:{fontSize:20}}, fmt(selScen.revenue_usd))
+                ),
+                React.createElement('div', null,
+                  React.createElement('div', {className:'kpi-label'}, 'Net Profit'),
+                  React.createElement('div', {className:'kpi-value', style:{fontSize:20, color: selScen.net_profit_usd < 0 ? 'var(--danger)' : 'var(--success)'}}, fmt(selScen.net_profit_usd))
+                ),
+                React.createElement('div', null,
+                  React.createElement('div', {className:'kpi-label'}, 'ROI'),
+                  React.createElement('div', {className:'kpi-value', style:{fontSize:20, color: selScen.roi_x < 0 ? 'var(--danger)' : 'var(--success)'}}, fmtRoi(selScen.roi_x))
+                ),
+                React.createElement('div', null,
+                  React.createElement('div', {className:'kpi-label'}, 'Uplift vs Current'),
+                  React.createElement('div', {className:'kpi-value', style:{fontSize:20, color:'var(--success)'}}, fmt(selScen.uplift_usd))
+                )
+              )
+            )
+          ),
+
+          // PAID SOCIAL EXIT DETAIL
+          paidSocial.current_spend_usd > 0 && React.createElement('div', {className:'card', style:{borderLeft:'3px solid var(--danger)', marginBottom:16, background:'rgba(248,113,113,0.03)'}},
+            React.createElement('div', {style:{display:'flex', alignItems:'center', gap:8, marginBottom:8}},
+              React.createElement(Icon, {d:icons.alertTriangle, size:16}),
+              React.createElement('span', {style:{fontWeight:700, fontSize:13, color:'var(--text-primary)'}}, 'Paid Social Exit Detail (CMO-264)')
+            ),
+            React.createElement('div', {style:{display:'grid', gridTemplateColumns:'1fr 1fr 2fr', gap:16, alignItems:'center'}},
+              React.createElement('div', null,
+                React.createElement('div', {className:'kpi-label'}, 'Current Spend'),
+                React.createElement('div', {className:'kpi-value', style:{fontSize:20}}, fmt(paidSocial.current_spend_usd))
+              ),
+              React.createElement('div', null,
+                React.createElement('div', {className:'kpi-label'}, 'Period Loss'),
+                React.createElement('div', {className:'kpi-value', style:{fontSize:20, color:'var(--danger)'}}, fmt(paidSocial.loss_usd))
+              ),
+              React.createElement('div', {style:{fontSize:12, color:'var(--text-secondary)', lineHeight:1.5, padding:'8px 12px', background:'var(--bg-hover)', borderRadius:'var(--radius)'}},
+                paidSocial.breakeven_narrative
+              )
+            )
+          ),
+
+          // METHODOLOGY DISCLOSURE
+          React.createElement('div', {className:'card', role:'note', style:{borderLeft:'3px solid var(--border)', background:'var(--bg-secondary)', padding:'12px 16px'}},
+            React.createElement('div', {style:{display:'flex', alignItems:'center', gap:8, marginBottom:4}},
+              React.createElement(Icon, {d:icons.lock, size:14}),
+              React.createElement('span', {style:{fontWeight:700, fontSize:11, textTransform:'uppercase', letterSpacing:'0.5px', color:'var(--text-muted)'}}, 'Methodology')
+            ),
+            React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', lineHeight:1.5}}, meth.disclaimer),
+            React.createElement('div', {style:{fontSize:10, color:'var(--text-muted)', marginTop:4}},
+              'Projection: ' + meth.projection_assumption + ' \u00B7 Data: ' + meth.data_origin
+            )
+          ),
+
+          // CUSTOMERLAKE DIFFERENTIATOR
+          React.createElement('div', {className:'card', style:{borderLeft:'3px solid var(--accent)', background:'var(--accent-light)', marginTop:16, padding:'12px 16px'}},
+            React.createElement('div', {style:{display:'flex', alignItems:'center', gap:8, marginBottom:4}},
+              React.createElement(Icon, {d:icons.zap, size:14}),
+              React.createElement('span', {style:{fontWeight:700, fontSize:11, textTransform:'uppercase', letterSpacing:'0.5px', color:'var(--accent)'}}, 'CustomerLake Differentiator')
+            ),
+            React.createElement('div', {style:{fontSize:12, color:'var(--text-secondary)', lineHeight:1.5}},
+              'Legacy CDPs show backward-looking campaign totals. CustomerLake is the only platform that models forward portfolio optimization from holdout-proven prescriptions \u2014 showing exactly what happens when you follow the data.'
+            )
+          )
+        )
+      );
+    }
+
+    function WasteExposurePage() {
+      const [data, setData] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(false);
+
+      useEffect(() => {
+        api('/api/waste-exposure/truth-gap')
+          .then(d => setData(d))
+          .catch(() => setError(true))
+          .finally(() => setLoading(false));
+      }, []);
+
+      if (loading) return (
+        React.createElement('div', {role:'status', 'aria-live':'polite', 'aria-label':'Loading waste exposure analysis'},
+          React.createElement('div', {className:'page-header'},
+            React.createElement('div', {className:'skeleton skeleton-text long', style:{height:24,width:'50%',marginBottom:8}}),
+            React.createElement('div', {className:'skeleton skeleton-text', style:{height:14,width:'60%'}})
+          ),
+          React.createElement('div', {className:'kpi-grid', style:{gridTemplateColumns:'repeat(3, 1fr)'}},
+            React.createElement('div', {className:'skeleton skeleton-kpi'}),
+            React.createElement('div', {className:'skeleton skeleton-kpi'}),
+            React.createElement('div', {className:'skeleton skeleton-kpi'})
+          ),
+          React.createElement('div', {className:'skeleton skeleton-banner', style:{marginTop:16}}),
+          React.createElement('div', {className:'skeleton skeleton-table', style:{marginTop:16}})
+        )
+      );
+      if (error && !data) return React.createElement(ErrorCard, {message:'Failed to load waste exposure analysis', onRetry: () => window.location.reload()});
+
+      const hero = data.truth_gap_hero || {};
+      const channels = data.channel_truth || {};
+      const value = data.honest_value_story || {};
+      const reframe = data.demo_reframe || {};
+      const measured = value.measured || {};
+      const optPotential = value.optimization_potential || {};
+      const components = optPotential.components || [];
+
+      const fmtB = (v) => {
+        if (v == null) return '\u2014';
+        const n = Number(v);
+        if (n >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B';
+        if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+        if (n >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
+        return '$' + n.toLocaleString();
+      };
+
+      return (
+        React.createElement('div', null,
+          React.createElement('div', {className:'page-header'},
+            React.createElement('h2', null, React.createElement(Icon, {d:icons.alertCircle, size:20}), ' Waste Exposure \u2014 The Truth Gap'),
+            React.createElement('p', null, 'CustomerLake\u2019s strongest differentiator: exposing what legacy CDPs hide')
+          ),
+
+          // TRUTH GAP HERO
+          React.createElement('div', {className:'card', style:{borderLeft:'3px solid var(--danger)', background:'rgba(248,113,113,0.04)', marginBottom:16}},
+            React.createElement('div', {style:{display:'flex', alignItems:'center', gap:8, marginBottom:12}},
+              React.createElement('span', {className:'diff-badge', style:{fontSize:10, background:'rgba(248,113,113,0.15)', color:'var(--danger)'}}, 'THE TRUTH GAP'),
+              React.createElement('span', {className:'diff-badge', style:{fontSize:9}}, 'CMO-261 REFRAME')
+            ),
+            React.createElement('div', {style:{fontSize:14, lineHeight:1.6, color:'var(--text-primary)', marginBottom:16}}, hero.headline),
+            React.createElement('div', {style:{fontSize:12, color:'var(--text-secondary)', fontStyle:'italic'}}, hero.sub_headline)
+          ),
+
+          // SPEND ANALYSIS BANNER (CMO-261: $2.74M fully-loaded spend for $210K return)
+          React.createElement('div', {className:'card', style:{borderLeft:'3px solid var(--warning)', marginBottom:16, background:'rgba(251,191,36,0.04)', padding:'12px 16px'}},
+            React.createElement('div', {style:{display:'flex', alignItems:'center', gap:12, flexWrap:'wrap'}},
+              React.createElement(Icon, {d:icons.dollarSign, size:16}),
+              React.createElement('span', {style:{fontWeight:700, fontSize:13, color:'var(--text-primary)'}}, 'Fully-Loaded Spend Analysis:'),
+              React.createElement('span', {style:{fontSize:13, color:'var(--text-secondary)'}},
+                fmtB(hero.fully_loaded_cost_usd) + ' total spend \u2192 ' + fmtB(hero.customerlake_truth_usd) + ' incremental return = ',
+                React.createElement('span', {style:{fontWeight:700, color:'var(--danger)'}}, fmtB(hero.spend_waste_gap_usd) + ' in non-incremental spend')
+              )
+            )
+          ),
+
+          // 3 HERO KPIs
+          React.createElement('div', {className:'kpi-grid', style:{gridTemplateColumns:'repeat(3, 1fr)', marginBottom:16}},
+            React.createElement('div', {className:'kpi-card', style:{borderLeft:'3px solid var(--danger)', background:'rgba(248,113,113,0.04)'}},
+              React.createElement('div', {style:{display:'flex', alignItems:'center', gap:8, marginBottom:4}},
+                React.createElement('div', {className:'kpi-label'}, 'Legacy CDP Headline'),
+                React.createElement('span', {className:'diff-badge', style:{fontSize:9, background:'rgba(248,113,113,0.15)', color:'var(--danger)'}}, 'MISLEADING')
+              ),
+              React.createElement('div', {className:'kpi-value', style:{color:'var(--danger)', fontSize:32, textDecoration:'line-through', opacity:0.7}}, fmtB(hero.legacy_headline_usd)),
+              React.createElement('div', {className:'kpi-sub'}, 'What your legacy CDP reports as marketing revenue'),
+              React.createElement('div', {className:'kpi-sub', style:{fontSize:10, color:'var(--danger)', marginTop:4}}, hero.inflation_factor + ' Simpson Paradox inflation')
+            ),
+            React.createElement('div', {className:'kpi-card', style:{borderLeft:'3px solid var(--success)', background:'rgba(52,211,153,0.04)'}},
+              React.createElement('div', {style:{display:'flex', alignItems:'center', gap:8, marginBottom:4}},
+                React.createElement('div', {className:'kpi-label'}, 'CustomerLake Truth'),
+                React.createElement('span', {className:'diff-badge', style:{fontSize:9, background:'rgba(52,211,153,0.15)', color:'var(--success)'}}, 'PROVEN')
+              ),
+              React.createElement('div', {className:'kpi-value', style:{color:'var(--success)', fontSize:32}}, fmtB(hero.customerlake_truth_usd)),
+              React.createElement('div', {className:'kpi-sub'}, 'CPA-normalized, holdout-controlled, no Simpson Paradox'),
+              React.createElement('div', {className:'kpi-sub', style:{fontSize:10, marginTop:4}}, 'Delivery ROI: ' + ((hero.delivery_roi_x || 0) * 100).toFixed(0) + '%')
+            ),
+            React.createElement('div', {className:'kpi-card', style:{borderLeft:'3px solid var(--warning)', background:'rgba(251,191,36,0.06)'}},
+              React.createElement('div', {style:{display:'flex', alignItems:'center', gap:8, marginBottom:4}},
+                React.createElement('div', {className:'kpi-label'}, 'Waste Exposed'),
+                React.createElement('span', {className:'diff-badge', style:{fontSize:9, background:'rgba(251,191,36,0.15)', color:'var(--warning)'}}, 'REALLOCATION OPPORTUNITY')
+              ),
+              React.createElement('div', {className:'kpi-value', style:{color:'var(--warning)', fontSize:32}}, fmtB(hero.waste_exposed_usd)),
+              React.createElement('div', {className:'kpi-sub'}, 'The gap between what you thought and what\u2019s real'),
+              React.createElement('div', {className:'kpi-sub', style:{fontSize:10, marginTop:4}}, 'Fully-loaded ROI: ' + ((hero.fully_loaded_roi_x || 0) * 100).toFixed(0) + '% (underwater)')
+            )
+          ),
+
+          // DEMO REFRAME BOX
+          React.createElement('div', {className:'card', style:{borderLeft:'3px solid var(--accent)', background:'var(--accent-light)', marginBottom:16}},
+            React.createElement('div', {style:{display:'flex', alignItems:'center', gap:8, marginBottom:8}},
+              React.createElement(Icon, {d:icons.megaphone, size:16}),
+              React.createElement('span', {style:{fontWeight:700, fontSize:13, color:'var(--text-primary)'}}, 'Demo Narrative Reframe')
+            ),
+            React.createElement('div', {style:{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16}},
+              React.createElement('div', null,
+                React.createElement('div', {style:{fontSize:10, textTransform:'uppercase', letterSpacing:'1px', color:'var(--text-muted)', marginBottom:4, fontWeight:700}}, 'OLD STORY'),
+                React.createElement('div', {style:{fontSize:13, color:'var(--text-secondary)', fontStyle:'italic', padding:'8px 12px', background:'rgba(107,111,136,0.06)', borderRadius:6}}, reframe.old_story)
+              ),
+              React.createElement('div', null,
+                React.createElement('div', {style:{fontSize:10, textTransform:'uppercase', letterSpacing:'1px', color:'var(--success)', marginBottom:4, fontWeight:700}}, 'NEW STORY'),
+                React.createElement('div', {style:{fontSize:13, color:'var(--text-primary)', padding:'8px 12px', background:'rgba(52,211,153,0.04)', borderRadius:6, borderLeft:'2px solid var(--success)'}}, reframe.new_story)
+              )
+            ),
+            React.createElement('div', {style:{marginTop:12, padding:'8px 12px', background:'rgba(79,143,247,0.06)', borderRadius:6, fontSize:12, color:'var(--accent)', fontWeight:600}},
+              React.createElement(Icon, {d:icons.zap, size:12}), ' One-Liner: ', reframe.one_liner
+            )
+          ),
+
+          // CHANNEL TRUTH
+          React.createElement('div', {style:{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16}},
+            React.createElement('div', {className:'card'},
+              React.createElement('div', {className:'card-title', style:{margin:0, marginBottom:12}}, React.createElement(Icon, {d:icons.alertCircle, size:16}), ' EXIT Channels (Value Destroying)'),
+              (channels.exit_channels || []).map((c, i) =>
+                React.createElement('div', {key:i, style:{padding:'8px 0', borderBottom: i < (channels.exit_channels || []).length - 1 ? '1px solid var(--border)' : 'none'}},
+                  React.createElement('div', {style:{display:'flex', alignItems:'center', gap:8, marginBottom:4}},
+                    React.createElement('span', {style:{fontWeight:700, fontSize:13, color:'var(--danger)'}}, c.channel),
+                    React.createElement('span', {className:'diff-badge', style:{fontSize:9, background:'rgba(248,113,113,0.15)', color:'var(--danger)'}}, 'EXIT')
+                  ),
+                  React.createElement('div', {style:{fontSize:11, color:'var(--text-secondary)'}}, c.detail)
+                )
+              )
+            ),
+            React.createElement('div', {className:'card'},
+              React.createElement('div', {className:'card-title', style:{margin:0, marginBottom:12}}, React.createElement(Icon, {d:icons.trendingUp, size:16}), ' HOLD Channels (Fix Overhead)'),
+              (channels.hold_channels || []).map((c, i) =>
+                React.createElement('div', {key:i, style:{padding:'8px 0', borderBottom: i < (channels.hold_channels || []).length - 1 ? '1px solid var(--border)' : 'none'}},
+                  React.createElement('div', {style:{display:'flex', alignItems:'center', gap:8, marginBottom:4}},
+                    React.createElement('span', {style:{fontWeight:700, fontSize:13, color:'var(--warning)'}}, c.channel),
+                    React.createElement('span', {className:'diff-badge', style:{fontSize:9, background:'rgba(251,191,36,0.15)', color:'var(--warning)'}}, 'HOLD')
+                  ),
+                  React.createElement('div', {style:{fontSize:11, color:'var(--text-secondary)'}}, c.detail)
+                )
+              )
+            )
+          ),
+
+          // HONEST VALUE STORY (CMO-259 FIX)
+          React.createElement('div', {className:'card', style:{marginBottom:16}},
+            React.createElement('div', {style:{display:'flex', alignItems:'center', gap:8, marginBottom:4}},
+              React.createElement('div', {className:'card-title', style:{margin:0}}, React.createElement(Icon, {d:icons.shieldCheck, size:16}), ' Honest Value Story'),
+              React.createElement('span', {className:'diff-badge', style:{fontSize:9}}, 'CMO-259 FIX: NO ADDITIVITY')
+            ),
+            React.createElement('div', {style:{fontSize:11, color:'var(--text-muted)', marginBottom:16}}, value.cmo_259_fix),
+
+            // Tier 1: Measured
+            React.createElement('div', {style:{padding:16, borderRadius:8, border:'1px solid var(--success)', background:'rgba(52,211,153,0.04)', marginBottom:12}},
+              React.createElement('div', {style:{display:'flex', alignItems:'center', gap:8, marginBottom:8}},
+                React.createElement('span', {style:{background:'var(--success)', color:'#fff', padding:'2px 8px', borderRadius:4, fontSize:10, fontWeight:700}}, 'TIER 1: MEASURED'),
+                React.createElement('span', {style:{fontSize:12, fontWeight:600, color:'var(--text-primary)'}}, measured.label)
+              ),
+              React.createElement('div', {style:{fontSize:28, fontWeight:700, color:'var(--success)', marginBottom:4}}, fmtB(measured.amount_usd)),
+              React.createElement('div', {style:{fontSize:11, color:'var(--text-secondary)'}}, measured.includes),
+              React.createElement('div', {style:{fontSize:10, color:'var(--text-muted)', marginTop:4}}, measured.methodology)
+            ),
+
+            // Tier 2: Optimization Potential
+            React.createElement('div', {style:{padding:16, borderRadius:8, border:'1px solid var(--border)', background:'rgba(251,191,36,0.03)'}},
+              React.createElement('div', {style:{display:'flex', alignItems:'center', gap:8, marginBottom:8}},
+                React.createElement('span', {style:{background:'var(--warning)', color:'#000', padding:'2px 8px', borderRadius:4, fontSize:10, fontWeight:700}}, 'TIER 2: OPTIMIZATION POTENTIAL'),
+                React.createElement('span', {style:{fontSize:12, fontWeight:600, color:'var(--text-primary)'}}, optPotential.label)
+              ),
+              React.createElement('div', {style:{fontSize:11, color:'var(--warning)', marginBottom:12, fontStyle:'italic'}}, optPotential.note),
+              components.map((c, i) =>
+                React.createElement('div', {key:i, style:{padding:'10px 12px', background:'var(--bg-card)', borderRadius:6, marginBottom: i < components.length - 1 ? 8 : 0, borderLeft:'2px solid var(--warning)'}},
+                  React.createElement('div', {style:{fontWeight:600, fontSize:12, color:'var(--text-primary)', marginBottom:4}}, c.action),
+                  React.createElement('div', {style:{fontSize:12, color:'var(--text-secondary)'}},
+                    c.spend_saved_usd ? 'Spend saved: ' + fmtB(c.spend_saved_usd) + (c.revenue_preserved_usd ? ' + Revenue preserved: ' + fmtB(c.revenue_preserved_usd) : '') : '',
+                    c.waste_avoided_usd ? 'Waste avoided: ' + fmtB(c.waste_avoided_usd) : '',
+                    c.revenue_potential_usd ? 'Revenue potential: ' + fmtB(c.revenue_potential_usd) : ''
+                  ),
+                  React.createElement('div', {style:{fontSize:10, color:'var(--text-muted)', marginTop:2}}, c.evidence)
+                )
+              )
+            )
+          ),
+
+          // DIFFERENTIATOR
+          React.createElement('div', {className:'card', style:{borderLeft:'3px solid var(--accent)', background:'var(--accent-light)'}},
+            React.createElement('div', {className:'card-title', style:{margin:0, marginBottom:8}}, React.createElement(Icon, {d:icons.zap, size:16}), ' What Only CustomerLake Can Do'),
+            React.createElement('div', {style:{fontSize:13, lineHeight:1.6, color:'var(--text-primary)'}}, data.differentiator)
+          )
+        )
+      );
+    }
+
     function App() {
       const [page, setPage] = useState('demo');
       const [mobileNavOpen, setMobileNavOpen] = useState(false);
+      const [appVersion, setAppVersion] = useState('');
       const [demoMode, setDemoMode] = useState(false);
       const [demoStep, setDemoStep] = useState(1);
 
@@ -5704,12 +7040,21 @@
         { id: 'channel-maturity', label: 'Channel Maturity', icon: icons.trendingUp },
         { id: 'tco', label: 'Cost & ROI', icon: icons.dollarSign },
         { id: 'comparison', label: 'Why CustomerLake', icon: icons.zap },
-      ];
+        { id: 'playbook', label: 'Action Playbook', icon: icons.clipboardList },
+        { id: 'intervention', label: 'Intervention Econ.', icon: icons.shieldCheck },
+        { id: 'waste-exposure', label: 'Waste Exposure', icon: icons.alertCircle },
+        { id: 'reoptimization', label: 'Reoptimization', icon: icons.settings },
+       ];
 
       const navigate = (id) => {
         setPage(id);
         setMobileNavOpen(false);
       };
+
+      // Fetch app version from backend (DRY — single source of truth: APP_VERSION in app.py)
+      useEffect(() => {
+        fetch('/api/health').then(r => r.json()).then(d => { if (d.version) setAppVersion(d.version); }).catch(() => {});
+      }, []);
 
       // Close mobile nav on Escape
       useEffect(() => {
@@ -5737,7 +7082,11 @@
           case 'channel-maturity': return <ChannelMaturityPage />;
           case 'tco': return <CostRoiPage />;
           case 'comparison': return <ComparisonPage />;
-          default: return <OverviewPage />;
+          case 'playbook': return <ActionPlaybookPage />;
+          case 'intervention': return <ChurnInterventionPage />;
+          case 'waste-exposure': return <WasteExposurePage />;
+          case 'reoptimization': return <ReoptimizationPage />;
+           default: return <OverviewPage />;
         }
       };
 
@@ -5778,7 +7127,7 @@
             </nav>
             <div style={{marginTop:'auto', padding:'16px 20px', borderTop:'1px solid var(--border)'}}>
               <div style={{fontSize:'11px', color:'var(--text-muted)'}}>Powered by Databricks</div>
-              <div style={{fontSize:'10px', color:'var(--text-muted)', marginTop:'2px'}}>cdm_tmforum · Lakebase · Unity Catalog · v39.0.0</div>
+              <div style={{fontSize:'10px', color:'var(--text-muted)', marginTop:'2px'}}>cdm_tmforum · Lakebase · Unity Catalog{appVersion ? ` · v${appVersion}` : ''}</div>
             </div>
           </div>
           <main className="main-content">
