@@ -249,6 +249,7 @@ bundle_artifacts/
 /PM-*.ipynb
 /ML-*.ipynb
 /CMO-*.ipynb
+/APP-*.ipynb
 /predemo_cache_warmup.ipynb
 /demo_walkthrough_15min.ipynb
 /cache_refresh_*.ipynb
