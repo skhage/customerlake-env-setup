@@ -32,6 +32,9 @@ _pg_conn = None
 
 CATALOG = "cdm_tmforum"
 
+# Single source of truth for app version (DRY pattern)
+APP_VERSION = "56.0.0"
+
 # ---------------------------------------------------------------------------
 # Materialized table aliases (CMO-138 / APP-CACHED-VIEWS + V2 performance fix)
 # ---------------------------------------------------------------------------
@@ -239,7 +242,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="CustomerLake",
     description="AI-Driven Customer Intelligence Platform",
-    version="39.0.0",
+    version=APP_VERSION,
     lifespan=lifespan,
 )
 
@@ -4507,8 +4510,261 @@ async def demo_cache_status():
 
 
 # ---------------------------------------------------------------------------
+# 25. ACTION PLAYBOOK — CMO-233/236/238 Response (APP-RESTORE-CRITICAL-PAGES)
+# ---------------------------------------------------------------------------
+VIEW_ACTION_PLAYBOOK = f"{CATALOG}._metrics.customerlake_action_playbook_v3_fixed"
+
+
+@app.get("/api/action-playbook")
+async def action_playbook():
+    """Channel-level prescriptions from V3_FIXED playbook.
+
+    CPA-attributed incremental ROI with kill-switch detection.
+    Shows: prescribed action, delivery vs fully-loaded ROI, evidence strength.
+    Source: customerlake_action_playbook_v3_fixed
+    """
+    cached = cache_get("action_playbook")
+    if cached:
+        return cached
+    try:
+        channels = sql_query(f"""
+            SELECT channel_type, prescribed_action, action_priority_score,
+                   kill_switch_triggered, incremental_revenue_usd,
+                   delivery_cost_usd, fully_loaded_cost_usd,
+                   delivery_roi_x, fully_loaded_roi_x,
+                   cpa_incremental_delivery_usd, cpa_incremental_fully_loaded_usd,
+                   revenue_per_incremental_conv_usd,
+                   incremental_conversions, treatment_conversions, holdout_conversions,
+                   treatment_cvr_pct, holdout_cvr_pct, true_lift_ppt,
+                   evidence_strength, measurable_segments, total_segments,
+                   board_narrative, customerlake_differentiator,
+                   playbook_version, roi_methodology
+            FROM {VIEW_ACTION_PLAYBOOK}
+            ORDER BY action_priority_score DESC
+        """)
+
+        exit_channels = [c for c in channels if c.get("prescribed_action") == "EXIT_CHANNEL"]
+        scale_channels = [c for c in channels if "SCALE" in (c.get("prescribed_action") or "")]
+        optimize_channels = [c for c in channels if "OPTIMIZE" in (c.get("prescribed_action") or "")]
+
+        total_incr_rev = sum(float(c.get("incremental_revenue_usd") or 0) for c in channels)
+        total_delivery_cost = sum(float(c.get("delivery_cost_usd") or 0) for c in channels)
+        total_fl_cost = sum(float(c.get("fully_loaded_cost_usd") or 0) for c in channels)
+        waste_from_exits = sum(
+            abs(float(c.get("incremental_revenue_usd") or 0)) + float(c.get("delivery_cost_usd") or 0)
+            for c in exit_channels
+        )
+
+        result = {
+            "playbook_version": channels[0].get("playbook_version") if channels else "V3_FIXED",
+            "methodology": channels[0].get("roi_methodology") if channels else "HOLDOUT_NORMALIZED",
+            "summary": {
+                "total_channels": len(channels),
+                "exit_count": len(exit_channels),
+                "scale_count": len(scale_channels),
+                "optimize_count": len(optimize_channels),
+                "total_incremental_revenue_usd": round(total_incr_rev, 2),
+                "total_delivery_cost_usd": round(total_delivery_cost, 2),
+                "total_fully_loaded_cost_usd": round(total_fl_cost, 2),
+                "waste_from_exit_channels_usd": round(waste_from_exits, 2),
+            },
+            "channels": [
+                {
+                    "channel": c.get("channel_type"),
+                    "action": c.get("prescribed_action"),
+                    "priority_score": c.get("action_priority_score"),
+                    "kill_switch": c.get("kill_switch_triggered"),
+                    "incremental_revenue_usd": float(c.get("incremental_revenue_usd") or 0),
+                    "delivery_cost_usd": float(c.get("delivery_cost_usd") or 0),
+                    "fully_loaded_cost_usd": float(c.get("fully_loaded_cost_usd") or 0),
+                    "delivery_roi_x": float(c.get("delivery_roi_x") or 0),
+                    "fully_loaded_roi_x": float(c.get("fully_loaded_roi_x") or 0),
+                    "incremental_conversions": c.get("incremental_conversions"),
+                    "treatment_cvr_pct": float(c.get("treatment_cvr_pct") or 0),
+                    "holdout_cvr_pct": float(c.get("holdout_cvr_pct") or 0),
+                    "true_lift_ppt": float(c.get("true_lift_ppt") or 0),
+                    "evidence_strength": c.get("evidence_strength"),
+                    "board_narrative": c.get("board_narrative"),
+                    "differentiator": c.get("customerlake_differentiator"),
+                }
+                for c in channels
+            ],
+            "narrative": {
+                "headline": f"{len(exit_channels)} channels to EXIT, {len(optimize_channels)} to OPTIMIZE overhead, {len(scale_channels)} to SCALE.",
+                "differentiator": (
+                    "Legacy CDPs report channel-level ROI on attributed revenue. "
+                    "CustomerLake measures TRUE incremental conversions via holdout, computes CPA on incrementals, "
+                    "and detects when marketing destroys value. This playbook cannot be built without holdout controls."
+                ),
+            },
+        }
+        return cache_set("action_playbook", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# 26. WASTE EXPOSURE TRUTH GAP — CMO-261/259 Response
+# ---------------------------------------------------------------------------
+VIEW_WASTE_EXPOSURE = f"{CATALOG}._metrics.customerlake_waste_exposure_board_narrative"
+
+
+@app.get("/api/waste-exposure/truth-gap")
+async def waste_exposure_truth_gap():
+    """Board narrative: waste identified by CustomerLake vs legacy CDP.
+
+    8-slide narrative from headline reframe through board ask.
+    Source: customerlake_waste_exposure_board_narrative
+    """
+    cached = cache_get("waste_exposure")
+    if cached:
+        return cached
+    try:
+        slides = sql_query(f"""
+            SELECT slide_order, narrative_section, board_headline, board_subheadline,
+                   legacy_cdp_number_usd, customerlake_proven_number_usd,
+                   waste_exposed_usd, legacy_overstatement_x,
+                   fully_loaded_cost_usd, fully_loaded_roi_x,
+                   delivery_cost_usd, delivery_roi_x,
+                   channels_exit, channels_profitable,
+                   destructive_channel_waste_usd, suppression_savings_usd,
+                   platform_value_of_truth_usd,
+                   confidence, methodology, data_origin
+            FROM {VIEW_WASTE_EXPOSURE}
+            ORDER BY slide_order
+        """)
+
+        # Extract hero KPIs from slides
+        headline = next((s for s in slides if s.get("narrative_section") == "HEADLINE_REFRAME"), {})
+        truth = next((s for s in slides if s.get("narrative_section") == "FULLY_LOADED_TRUTH"), {})
+        destruction = next((s for s in slides if s.get("narrative_section") == "VALUE_DESTRUCTION_DETECTED"), {})
+
+        result = {
+            "hero": {
+                "legacy_revenue_usd": float(headline.get("legacy_cdp_number_usd") or 0),
+                "proven_revenue_usd": float(headline.get("customerlake_proven_number_usd") or 0),
+                "waste_gap_usd": float(headline.get("waste_exposed_usd") or 0),
+                "fully_loaded_roi_x": float(truth.get("fully_loaded_roi_x") or 0),
+                "delivery_roi_x": float(truth.get("delivery_roi_x") or 0),
+                "channels_exit": destruction.get("channels_exit"),
+                "channels_profitable": destruction.get("channels_profitable"),
+                "value_destroyed_usd": float(destruction.get("destructive_channel_waste_usd") or 0),
+            },
+            "slides": [
+                {
+                    "order": s.get("slide_order"),
+                    "section": s.get("narrative_section"),
+                    "headline": s.get("board_headline"),
+                    "subheadline": s.get("board_subheadline"),
+                    "legacy_usd": float(s.get("legacy_cdp_number_usd") or 0) if s.get("legacy_cdp_number_usd") else None,
+                    "proven_usd": float(s.get("customerlake_proven_number_usd") or 0) if s.get("customerlake_proven_number_usd") else None,
+                    "waste_usd": float(s.get("waste_exposed_usd") or 0) if s.get("waste_exposed_usd") else None,
+                    "confidence": s.get("confidence"),
+                }
+                for s in slides
+            ],
+            "data_origin": slides[0].get("data_origin") if slides else "SYNTHETIC_MODELED",
+            "methodology": slides[0].get("methodology") if slides else "CPA-CHANNEL-HOLDOUT-NORMALIZED",
+        }
+        return cache_set("waste_exposure", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# 27. REOPTIMIZATION FORWARD PROJECTION — CMO-272 Response (THE CLOSER)
+# ---------------------------------------------------------------------------
+VIEW_REOPT_PROJECTION = f"{CATALOG}._metrics.customerlake_reoptimization_forward_projection"
+
+
+@app.get("/api/reoptimization/scenarios")
+async def reoptimization_scenarios():
+    """4-scenario forward projection: Current → Conservative → Recommended → Aggressive.
+
+    This is THE closer for the board deck. Shows:
+    - CURRENT: -92% ROI (status quo)
+    - S1: Exit destructive channels (-56% ROI, save $1.99M)
+    - S2: Purpose-optimized (+33% ROI — the CustomerLake play)
+    - S3: Fully-loaded profitable only (+132% ROI, zero overhead drag)
+
+    Source: customerlake_reoptimization_forward_projection
+    CMO-272: "The 4-scenario forward projection is the single most compelling board artifact."
+    """
+    cached = cache_get("reoptimization")
+    if cached:
+        return cached
+    try:
+        scenarios = sql_query(f"""
+            SELECT scenario, scenario_order, scenario_description,
+                   incremental_conversions, incremental_revenue_usd,
+                   delivery_cost_usd, fully_loaded_cost_usd,
+                   net_delivery_profit_usd, net_fully_loaded_profit_usd,
+                   delivery_roi_x, fully_loaded_roi_x,
+                   spend_eliminated_usd, profit_improvement_usd,
+                   winning_sub_channels, projection_type,
+                   cmo_one_liner, what_customerlake_enables,
+                   revenue_methodology
+            FROM {VIEW_REOPT_PROJECTION}
+            ORDER BY scenario_order
+        """)
+
+        current = next((s for s in scenarios if s.get("scenario") == "CURRENT"), {})
+        recommended = next((s for s in scenarios if s.get("scenario") == "S2_PURPOSE_OPTIMIZED"), {})
+
+        result = {
+            "hero": {
+                "current_roi_x": float(current.get("fully_loaded_roi_x") or 0),
+                "current_revenue_usd": float(current.get("incremental_revenue_usd") or 0),
+                "recommended_roi_x": float(recommended.get("fully_loaded_roi_x") or 0),
+                "recommended_revenue_usd": float(recommended.get("incremental_revenue_usd") or 0),
+                "roi_swing_ppt": round(
+                    (float(recommended.get("fully_loaded_roi_x") or 0) - float(current.get("fully_loaded_roi_x") or 0)) * 100, 1
+                ),
+                "waste_eliminated_usd": float(recommended.get("spend_eliminated_usd") or 0),
+                "profit_improvement_usd": float(recommended.get("profit_improvement_usd") or 0),
+                "winning_sub_channels": recommended.get("winning_sub_channels"),
+            },
+            "scenarios": [
+                {
+                    "id": s.get("scenario"),
+                    "order": s.get("scenario_order"),
+                    "description": s.get("scenario_description"),
+                    "conversions": s.get("incremental_conversions"),
+                    "revenue_usd": float(s.get("incremental_revenue_usd") or 0),
+                    "delivery_cost_usd": float(s.get("delivery_cost_usd") or 0) if s.get("delivery_cost_usd") else None,
+                    "fully_loaded_cost_usd": float(s.get("fully_loaded_cost_usd") or 0),
+                    "delivery_roi_x": float(s.get("delivery_roi_x") or 0) if s.get("delivery_roi_x") else None,
+                    "fully_loaded_roi_x": float(s.get("fully_loaded_roi_x") or 0),
+                    "spend_eliminated_usd": float(s.get("spend_eliminated_usd") or 0),
+                    "profit_improvement_usd": float(s.get("profit_improvement_usd") or 0),
+                    "winning_sub_channels": s.get("winning_sub_channels"),
+                    "cmo_one_liner": s.get("cmo_one_liner"),
+                    "differentiator": s.get("what_customerlake_enables"),
+                    "projection_type": s.get("projection_type"),
+                }
+                for s in scenarios
+            ],
+            "narrative": {
+                "headline": (
+                    f"From -92% ROI to +{round(float(recommended.get('fully_loaded_roi_x') or 0) * 100)}% ROI. "
+                    f"CustomerLake sees inside destructive channels to find {recommended.get('winning_sub_channels', 'N/A')} winning sub-channels."
+                ),
+                "the_play": (
+                    "Legacy CDPs can only exit entire channels. CustomerLake's purpose-level holdout segmentation "
+                    "finds winners INSIDE destructive channels — email overall is EXIT, but email+RETENTION is profitable. "
+                    "That precision is the product."
+                ),
+            },
+            "methodology": scenarios[0].get("revenue_methodology") if scenarios else "CPA_HOLDOUT_NORMALIZED",
+        }
+        return cache_set("reoptimization", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
 # Health check
 # ---------------------------------------------------------------------------
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "app": "CustomerLake", "version": "39.0.0"}
+    return {"status": "ok", "app": "CustomerLake", "version": APP_VERSION}

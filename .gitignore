@@ -247,10 +247,17 @@ bundle_artifacts/
 /DA-CACHE-REFRESH-*.ipynb
 /DE-*.ipynb
 /PM-*.ipynb
+/ML-*.ipynb
+/CMO-*.ipynb
 /predemo_cache_warmup.ipynb
 /demo_walkthrough_15min.ipynb
 /cache_refresh_*.ipynb
 /cache-refresh-*.ipynb
+/honest_board_narrative.ipynb
+/simpsons_paradox_demo.ipynb
+/churn_intervention_cost_model.ipynb
+/budget_optimizer
+/budget_optimizer/
 
 # MLflow experiment artifacts (tracked by MLflow, not Git)
 agent_evaluation/

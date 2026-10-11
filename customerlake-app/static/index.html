@@ -641,6 +641,9 @@
       checkCircle: 'M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3',
       clock: 'M12 12m-10 0a10 10 0 1 0 20 0 10 10 0 1 0-20 0 M12 6v6l4 2',
       award: 'M12 15l-3.5 6.5L10 17l-4 1L12 9l6 9-4-1 1.5 4.5L12 15z M12 9a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+      scissors: 'M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M20 4L8.12 15.88 M14.47 14.48L20 20 M8.12 8.12L12 12',
+      clipboardList: 'M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2 M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z M12 11h4 M12 16h4 M8 11h.01 M8 16h.01',
+      rocket: 'M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z M9 12H4s.55-3.03 2-4c1.62-1.08 3 0 3 0 M12 15v5s3.03-.55 4-2c1.08-1.62 0-3 0-3',
     };
 
     // ---- Focus Trap Hook (UX-FIX-4) ----
@@ -5654,6 +5657,246 @@
       );
     }
 
+    // ---- Action Playbook Page (APP-RESTORE-CRITICAL-PAGES) ----
+    function ActionPlaybookPage() {
+      const [data, setData] = useState(null);
+      const [error, setError] = useState(null);
+      useEffect(() => { api('/api/action-playbook').then(setData).catch(e => setError(e.message)); }, []);
+      if (error) return <ErrorCard message={error} onRetry={() => { setError(null); api('/api/action-playbook').then(setData).catch(e => setError(e.message)); }} />;
+      if (!data) return <div className="loading-card">Loading Action Playbook...</div>;
+
+      const actionColor = (action) => {
+        if (action === 'EXIT_CHANNEL') return 'var(--danger)';
+        if (action && action.includes('SCALE')) return 'var(--success)';
+        return 'var(--warning)';
+      };
+      const fmtK = (v) => v == null ? '\u2014' : (Math.abs(v) >= 1000 ? (v < 0 ? '-' : '') + '$' + (Math.abs(v)/1000).toFixed(0) + 'K' : '$' + v.toFixed(0));
+
+      return (
+        <div className="page-content">
+          <div className="page-header">
+            <h2>Action Playbook</h2>
+            <p className="page-subtitle">V3_FIXED: CPA-attributed channel prescriptions with kill-switch detection</p>
+          </div>
+
+          {/* Hero KPIs */}
+          <div className="kpi-grid" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:16, marginBottom:24}}>
+            <div className="card" style={{padding:16, textAlign:'center'}}>
+              <div style={{fontSize:28, fontWeight:700, color:'var(--danger)'}}>{data.summary.exit_count}</div>
+              <div className="kpi-label">Channels to EXIT</div>
+            </div>
+            <div className="card" style={{padding:16, textAlign:'center'}}>
+              <div style={{fontSize:28, fontWeight:700, color:'var(--warning)'}}>{data.summary.optimize_count}</div>
+              <div className="kpi-label">Optimize Overhead</div>
+            </div>
+            <div className="card" style={{padding:16, textAlign:'center'}}>
+              <div style={{fontSize:28, fontWeight:700, color:'var(--success)'}}>{data.summary.scale_count}</div>
+              <div className="kpi-label">Ready to Scale</div>
+            </div>
+            <div className="card" style={{padding:16, textAlign:'center'}}>
+              <div style={{fontSize:28, fontWeight:700, color:'var(--danger)'}}>{fmtK(data.summary.waste_from_exit_channels_usd)}</div>
+              <div className="kpi-label">Waste from Exit Channels</div>
+            </div>
+          </div>
+
+          {/* Channel Cards */}
+          {data.channels.map((ch, i) => (
+            <div key={i} className="card" style={{marginBottom:16, padding:20, borderLeft: `4px solid ${actionColor(ch.action)}`}}>
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12}}>
+                <div>
+                  <span style={{fontSize:18, fontWeight:700, textTransform:'uppercase'}}>{ch.channel}</span>
+                  <span className="badge" style={{marginLeft:12, background: actionColor(ch.action), color:'#fff', padding:'4px 10px', borderRadius:4, fontSize:11}}>
+                    {ch.action}
+                  </span>
+                  {ch.kill_switch && <span className="badge badge-danger" style={{marginLeft:8, fontSize:11}}>KILL SWITCH</span>}
+                </div>
+                <div style={{textAlign:'right'}}>
+                  <span className={`badge ${ch.evidence_strength === 'STRONG' ? 'badge-success' : ch.evidence_strength === 'MODERATE' ? 'badge-warning' : 'badge-danger'}`}>
+                    {ch.evidence_strength}
+                  </span>
+                </div>
+              </div>
+              <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))', gap:12, marginBottom:12}}>
+                <div><div className="kpi-label">Incremental Rev</div><div style={{fontWeight:600, color: ch.incremental_revenue_usd < 0 ? 'var(--danger)' : 'var(--success)'}}>{fmtK(ch.incremental_revenue_usd)}</div></div>
+                <div><div className="kpi-label">Incr. Conversions</div><div style={{fontWeight:600, color: ch.incremental_conversions < 0 ? 'var(--danger)' : 'var(--text-primary)'}}>{ch.incremental_conversions}</div></div>
+                <div><div className="kpi-label">Delivery ROI</div><div style={{fontWeight:600}}>{ch.delivery_roi_x ? ch.delivery_roi_x.toFixed(2) + 'x' : '\u2014'}</div></div>
+                <div><div className="kpi-label">Fully Loaded ROI</div><div style={{fontWeight:600, color: ch.fully_loaded_roi_x < 0 ? 'var(--danger)' : 'var(--success)'}}>{ch.fully_loaded_roi_x.toFixed(2)}x</div></div>
+                <div><div className="kpi-label">True Lift</div><div style={{fontWeight:600, color: ch.true_lift_ppt < 0 ? 'var(--danger)' : 'var(--success)'}}>{ch.true_lift_ppt > 0 ? '+' : ''}{ch.true_lift_ppt.toFixed(3)} ppt</div></div>
+              </div>
+              <div style={{fontSize:13, color:'var(--text-secondary)', lineHeight:1.5}}>{ch.board_narrative}</div>
+              <div style={{fontSize:12, color:'var(--accent)', marginTop:8, fontStyle:'italic'}}>
+                <strong>CustomerLake:</strong> {ch.differentiator}
+              </div>
+            </div>
+          ))}
+
+          {/* Differentiator */}
+          <div className="card" style={{padding:16, background:'var(--accent-light)', marginTop:16}}>
+            <strong style={{color:'var(--accent)'}}>Why only CustomerLake:</strong>
+            <span style={{color:'var(--text-secondary)', marginLeft:8}}>{data.narrative.differentiator}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // ---- Waste Exposure Truth Gap Page (APP-RESTORE-CRITICAL-PAGES) ----
+    function WasteExposurePage() {
+      const [data, setData] = useState(null);
+      const [error, setError] = useState(null);
+      useEffect(() => { api('/api/waste-exposure/truth-gap').then(setData).catch(e => setError(e.message)); }, []);
+      if (error) return <ErrorCard message={error} onRetry={() => { setError(null); api('/api/waste-exposure/truth-gap').then(setData).catch(e => setError(e.message)); }} />;
+      if (!data) return <div className="loading-card">Loading Waste Exposure...</div>;
+
+      const fmtUsd = (v) => v == null ? '\u2014' : '$' + Number(v).toLocaleString(undefined, {maximumFractionDigits:0});
+      const fmtPct = (v) => v == null ? '\u2014' : (v * 100).toFixed(1) + '%';
+
+      return (
+        <div className="page-content">
+          <div className="page-header">
+            <h2>Waste Exposure: Truth Gap</h2>
+            <p className="page-subtitle">What legacy CDPs hide vs what CustomerLake proves</p>
+          </div>
+
+          {/* Hero — the reframe */}
+          <div className="card" style={{padding:24, marginBottom:24, background:'linear-gradient(135deg, var(--bg-card) 0%, var(--accent-light) 100%)', borderLeft:'4px solid var(--accent)'}}>
+            <div style={{fontSize:13, color:'var(--accent)', fontWeight:600, marginBottom:8}}>THE HEADLINE</div>
+            <div style={{fontSize:22, fontWeight:700, color:'var(--text-primary)', lineHeight:1.3, marginBottom:16}}>
+              Legacy CDP says {fmtUsd(data.hero.legacy_revenue_usd)}. CustomerLake proved {fmtUsd(data.hero.proven_revenue_usd)}.
+            </div>
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:16}}>
+              <div><div className="kpi-label">Fully Loaded ROI</div><div style={{fontSize:24, fontWeight:700, color:'var(--danger)'}}>{fmtPct(data.hero.fully_loaded_roi_x)}</div></div>
+              <div><div className="kpi-label">Delivery ROI</div><div style={{fontSize:24, fontWeight:700, color:'var(--success)'}}>+{(data.hero.delivery_roi_x * 100).toFixed(0)}%</div></div>
+              <div><div className="kpi-label">Channels to Exit</div><div style={{fontSize:24, fontWeight:700, color:'var(--danger)'}}>{data.hero.channels_exit}</div></div>
+              <div><div className="kpi-label">Value Destroyed</div><div style={{fontSize:24, fontWeight:700, color:'var(--danger)'}}>{fmtUsd(data.hero.value_destroyed_usd)}</div></div>
+            </div>
+          </div>
+
+          {/* Board Narrative Slides */}
+          <div style={{display:'grid', gap:16}}>
+            {data.slides.map((s, i) => (
+              <div key={i} className="card" style={{padding:20}}>
+                <div style={{display:'flex', alignItems:'center', gap:12, marginBottom:8}}>
+                  <span style={{background:'var(--accent)', color:'#fff', borderRadius:'50%', width:28, height:28, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, flexShrink:0}}>{s.order}</span>
+                  <span style={{fontSize:11, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:1}}>{s.section}</span>
+                  {s.confidence && <span className="badge badge-info" style={{marginLeft:'auto', fontSize:10}}>{s.confidence}</span>}
+                </div>
+                <div style={{fontSize:16, fontWeight:700, color:'var(--text-primary)', lineHeight:1.4, marginBottom:8}}>{s.headline}</div>
+                <div style={{fontSize:13, color:'var(--text-secondary)', lineHeight:1.5}}>{s.subheadline}</div>
+                {(s.legacy_usd || s.proven_usd || s.waste_usd) && (
+                  <div style={{display:'flex', gap:24, marginTop:12, flexWrap:'wrap'}}>
+                    {s.legacy_usd != null && <div><span className="kpi-label">Legacy CDP</span><div style={{fontWeight:600, color:'var(--danger)'}}>{fmtUsd(s.legacy_usd)}</div></div>}
+                    {s.proven_usd != null && <div><span className="kpi-label">Proven</span><div style={{fontWeight:600, color:'var(--success)'}}>{fmtUsd(s.proven_usd)}</div></div>}
+                    {s.waste_usd != null && <div><span className="kpi-label">Waste / Gap</span><div style={{fontWeight:600, color:'var(--warning)'}}>{fmtUsd(s.waste_usd)}</div></div>}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div style={{fontSize:11, color:'var(--text-secondary)', marginTop:16, textAlign:'right'}}>
+            Methodology: {data.methodology} | Data: {data.data_origin}
+          </div>
+        </div>
+      );
+    }
+
+    // ---- Reoptimization Forward Projection Page (CMO-272 — THE CLOSER) ----
+    function ReoptimizationPage() {
+      const [data, setData] = useState(null);
+      const [error, setError] = useState(null);
+      useEffect(() => { api('/api/reoptimization/scenarios').then(setData).catch(e => setError(e.message)); }, []);
+      if (error) return <ErrorCard message={error} onRetry={() => { setError(null); api('/api/reoptimization/scenarios').then(setData).catch(e => setError(e.message)); }} />;
+      if (!data) return <div className="loading-card">Loading Reoptimization Scenarios...</div>;
+
+      const fmtUsd = (v) => v == null ? '\u2014' : '$' + Number(v).toLocaleString(undefined, {maximumFractionDigits:0});
+      const fmtPct = (v) => v == null ? '\u2014' : (v * 100).toFixed(1) + '%';
+      const roiColor = (v) => v == null ? 'var(--text-secondary)' : v < 0 ? 'var(--danger)' : 'var(--success)';
+
+      const scenarioLabels = {
+        'CURRENT': { label: 'Current State', color: 'var(--danger)', tag: 'STATUS QUO' },
+        'S1_EXIT_DESTRUCTIVE': { label: 'Conservative', color: 'var(--warning)', tag: 'EXIT DESTRUCTIVE' },
+        'S2_PURPOSE_OPTIMIZED': { label: 'Recommended', color: 'var(--success)', tag: 'CUSTOMERLAKE PLAY' },
+        'S3_FL_PROFITABLE_ONLY': { label: 'Aggressive', color: 'var(--accent)', tag: 'ZERO DRAG' },
+      };
+
+      return (
+        <div className="page-content">
+          <div className="page-header">
+            <h2><Icon d={icons.rocket} size={22} /> Reoptimization: Forward Projection</h2>
+            <p className="page-subtitle">4-scenario path from -92% to +132% ROI — the board closer</p>
+          </div>
+
+          {/* Hero — the swing */}
+          <div className="card" style={{padding:24, marginBottom:24, background:'linear-gradient(135deg, var(--bg-card) 0%, var(--accent-light) 100%)', borderLeft:'4px solid var(--success)'}}>
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:20}}>
+              <div style={{textAlign:'center'}}>
+                <div className="kpi-label">Current ROI</div>
+                <div style={{fontSize:32, fontWeight:800, color:'var(--danger)'}}>{fmtPct(data.hero.current_roi_x)}</div>
+                <div style={{fontSize:12, color:'var(--text-secondary)'}}>{fmtUsd(data.hero.current_revenue_usd)} revenue</div>
+              </div>
+              <div style={{textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                <div style={{fontSize:32, color:'var(--accent)'}}>\u2192</div>
+              </div>
+              <div style={{textAlign:'center'}}>
+                <div className="kpi-label">Recommended ROI</div>
+                <div style={{fontSize:32, fontWeight:800, color:'var(--success)'}}>+{fmtPct(data.hero.recommended_roi_x)}</div>
+                <div style={{fontSize:12, color:'var(--text-secondary)'}}>{fmtUsd(data.hero.recommended_revenue_usd)} revenue</div>
+              </div>
+              <div style={{textAlign:'center'}}>
+                <div className="kpi-label">ROI Swing</div>
+                <div style={{fontSize:32, fontWeight:800, color:'var(--success)'}}>+{data.hero.roi_swing_ppt} ppt</div>
+                <div style={{fontSize:12, color:'var(--text-secondary)'}}>{data.hero.winning_sub_channels} winning sub-channels</div>
+              </div>
+            </div>
+            <div style={{textAlign:'center', marginTop:16, fontSize:13, color:'var(--text-secondary)', fontStyle:'italic'}}>
+              {fmtUsd(data.hero.waste_eliminated_usd)} waste eliminated \u2022 {fmtUsd(data.hero.profit_improvement_usd)} profit improvement
+            </div>
+          </div>
+
+          {/* Scenario Cards */}
+          {data.scenarios.map((s, i) => {
+            const meta = scenarioLabels[s.id] || { label: s.id, color: 'var(--text-secondary)', tag: '' };
+            return (
+              <div key={i} className="card" style={{marginBottom:16, padding:20, borderLeft: `4px solid ${meta.color}`, position:'relative'}}>
+                {s.id === 'S2_PURPOSE_OPTIMIZED' && (
+                  <div style={{position:'absolute', top:0, right:0, background:'var(--success)', color:'#fff', padding:'4px 12px', borderRadius:'0 8px 0 8px', fontSize:11, fontWeight:700}}>RECOMMENDED</div>
+                )}
+                <div style={{display:'flex', alignItems:'center', gap:12, marginBottom:12}}>
+                  <span style={{background: meta.color, color:'#fff', borderRadius:'50%', width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:700}}>{s.order}</span>
+                  <div>
+                    <div style={{fontSize:16, fontWeight:700}}>{meta.label}</div>
+                    <span className="badge" style={{background: meta.color, color:'#fff', fontSize:10, padding:'2px 8px', borderRadius:4}}>{meta.tag}</span>
+                  </div>
+                </div>
+                <div style={{fontSize:13, color:'var(--text-secondary)', marginBottom:12}}>{s.description}</div>
+                <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(130px, 1fr))', gap:12, marginBottom:12}}>
+                  <div><div className="kpi-label">Revenue</div><div style={{fontWeight:600}}>{fmtUsd(s.revenue_usd)}</div></div>
+                  <div><div className="kpi-label">FL Cost</div><div style={{fontWeight:600}}>{fmtUsd(s.fully_loaded_cost_usd)}</div></div>
+                  <div><div className="kpi-label">FL ROI</div><div style={{fontWeight:700, fontSize:18, color: roiColor(s.fully_loaded_roi_x)}}>{fmtPct(s.fully_loaded_roi_x)}</div></div>
+                  <div><div className="kpi-label">Conversions</div><div style={{fontWeight:600}}>{s.conversions}</div></div>
+                  <div><div className="kpi-label">Waste Cut</div><div style={{fontWeight:600, color:'var(--success)'}}>{fmtUsd(s.spend_eliminated_usd)}</div></div>
+                  {s.winning_sub_channels && <div><div className="kpi-label">Sub-Channels</div><div style={{fontWeight:600}}>{s.winning_sub_channels} winners</div></div>}
+                </div>
+                <div style={{fontSize:14, fontWeight:600, color:'var(--text-primary)', lineHeight:1.4, marginBottom:8}}>
+                  \u201C{s.cmo_one_liner}\u201D
+                </div>
+                <div style={{fontSize:12, color:'var(--accent)', fontStyle:'italic'}}>
+                  <strong>CustomerLake enables:</strong> {s.differentiator}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* The Play */}
+          <div className="card" style={{padding:20, background:'var(--accent-light)', marginTop:8}}>
+            <div style={{fontSize:15, fontWeight:700, color:'var(--accent)', marginBottom:8}}>{data.narrative.headline}</div>
+            <div style={{fontSize:13, color:'var(--text-secondary)', lineHeight:1.5}}>{data.narrative.the_play}</div>
+          </div>
+          <div style={{fontSize:11, color:'var(--text-secondary)', marginTop:12, textAlign:'right'}}>Methodology: {data.methodology}</div>
+        </div>
+      );
+    }
+
     function App() {
       const [page, setPage] = useState('demo');
       const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -5704,6 +5947,9 @@
         { id: 'channel-maturity', label: 'Channel Maturity', icon: icons.trendingUp },
         { id: 'tco', label: 'Cost & ROI', icon: icons.dollarSign },
         { id: 'comparison', label: 'Why CustomerLake', icon: icons.zap },
+        { id: 'action-playbook', label: 'Action Playbook', icon: icons.clipboardList },
+        { id: 'waste-exposure', label: 'Waste Exposure', icon: icons.scissors },
+        { id: 'reoptimization', label: 'Reoptimization', icon: icons.rocket },
       ];
 
       const navigate = (id) => {
@@ -5737,6 +5983,9 @@
           case 'channel-maturity': return <ChannelMaturityPage />;
           case 'tco': return <CostRoiPage />;
           case 'comparison': return <ComparisonPage />;
+          case 'action-playbook': return <ActionPlaybookPage />;
+          case 'waste-exposure': return <WasteExposurePage />;
+          case 'reoptimization': return <ReoptimizationPage />;
           default: return <OverviewPage />;
         }
       };
