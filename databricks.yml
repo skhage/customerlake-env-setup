@@ -52,9 +52,3 @@ targets:
     run_as:
       # Production runs as a service principal — update when provisioned
       user_name: stephen.hage@databricks.com
-    resources:
-      pipelines:
-        customerlake_gold_pipeline:
-          development: false
-        customerlake_audience_pipeline:
-          development: false

@@ -1,6 +1,6 @@
 # CustomerLake Brand Guidelines
 
-**Version:** 2.3.0 — Updated 2026-10-07 by @designer (V48 Full Brand Sweep: v39.0.0 (5799 lines, 17 pages, 4514-line backend). APP-LTV-INTEGRITY reviewed — backend calibration PASS, frontend dual-ROI display PASS. V46 ghost-completion caught: V48-UX-FIX-1 filed (4 sub-fixes). V47-AMBER-CLEANUP closed (0 occurrences). 3 new diff-badges approved: CMO-156, DATA NOTE, PILOT HYPOTHESIS. 36 tables with 36 captions. 7/9 brand dimensions pass.)  
+**Version:** 3.12.0 — Updated 2026-10-14 by @designer (V94 Full Brand Sweep: v65.0.0 audit. index.html 7,570 lines, app.py 6,095 lines/85+ endpoints, 28 pages. V93-UX-FIX-1 VERIFIED: Spend Less, Get More heading now has icons.trendingDown. ZERO EMOJI. 1 BINDING: V94-UX-FIX-1 Production Path heading (L6839) missing icons.calendar. ADVISORY: Board Ready heading missing icons.checkCircle (low priority, API-driven title). Score: 8.5/9.)  
 **Status:** BINDING — All CustomerLake apps, dashboards, and demos MUST conform  
 **Scope:** Databricks App (`customerlake`), AI/BI dashboards, Genie spaces, demo materials  
 **Tag:** `customerlake_project: customerlake`
@@ -131,8 +131,8 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
 ## 4. Iconography
 
-### Current State: RESOLVED (v1.1)
-Emoji nav icons replaced with Lucide SVG Icon component (UX-FIX-1, completed 2026-09-29). 11 SVG paths, 18px default, 1.5px stroke, currentColor, aria-hidden.
+### Current State: ZERO EMOJI DEBT — ALL CLEAR (v3.11, v65.0.0)
+36 unique Lucide SVG icon paths across 28 pages. V92-UX-FIX-1 VERIFIED (V93): CLTV Impact heading at L7013 now includes icons.heart. NEW: icons.trendingDown added for Spend Less, Get More page (L7466 nav). ZERO EMOJI in entire 7,570-line codebase. 1 OPEN: V93-UX-FIX-1 — Spend Less, Get More heading (L7207) missing icons.trendingDown; 7 of 28 headings include their nav icon (newer pages). All icons compliant: 18px default, 1.5px stroke, currentColor, aria-hidden. Utility icons: menu (mobile nav), x (close), checkCircle (success states + Board Ready nav), clock (timestamps), activity (Learning Loop), fileText (Spend Transparency), calendar (Production Path), percent (CPA Sensitivity), heart (CLTV Impact), trendingDown (Spend Less nav).
 
 ### Required Standard
 - **Icon system:** Use inline SVG icons or a lightweight icon font (Lucide, Phosphor, or similar)
@@ -141,14 +141,38 @@ Emoji nav icons replaced with Lucide SVG Icon component (UX-FIX-1, completed 202
 - **Icon weight:** 1.5px stroke for line icons
 - **Nav icons:** Fixed 24px width, center-aligned
 
-### Recommended Icon Mapping
-| Page | Current (Emoji) | Required (SVG/Icon) |
+### Implemented Icon Mapping (v64.0.0 — 27 pages, all Lucide SVG)
+| Page | Icon | Lucide Name |
 |---|---|---|
-| Overview | ⌂ | `home` or `layout-dashboard` |
-| Profile Search | 👤 | `user-search` or `users` |
-| Audience Builder | 🎯 | `target` or `crosshair` |
-| Campaigns | 📊 | `bar-chart-3` or `trending-up` |
-| Identity Steward | 🔗 | `git-merge` or `link-2` |
+| Demo Walkthrough | megaphone | `icons.megaphone` |
+| Exec Summary | award | `icons.award` |
+| Overview | home | `icons.home` |
+| Intelligence | brain | `icons.brain` |
+| Profile Search | user-search | `icons.userSearch` |
+| Audience Builder | target | `icons.target` |
+| Campaigns | bar-chart | `icons.barChart` |
+| Identity Steward | git-merge | `icons.gitMerge` |
+| Dark Audience | alert-circle | `icons.alertCircle` |
+| Data Health | shield-check | `icons.shieldCheck` |
+| ML Predictions | sparkles | `icons.sparkles` |
+| Incrementality | trending-up | `icons.trendingUp` |
+| Closed Loop | refresh-cw | `icons.refreshCw` |
+| Stat. Confidence | lock | `icons.lock` |
+| Channel Maturity | layers | `icons.layers` |
+| Cost & ROI | dollar-sign | `icons.dollarSign` |
+| Why CustomerLake | zap | `icons.zap` |
+| Action Playbook | clipboard-list | `icons.clipboardList` |
+| Waste Exposure | scissors | `icons.scissors` |
+| Reoptimization | rocket | `icons.rocket` |
+| Learning Loop | activity | `icons.activity` |
+| Board Ready | check-circle | `icons.checkCircle` |
+| Spend Transparency | file-text | `icons.fileText` |
+| Lifecycle | users | `icons.users` |
+| Lifecycle (cohort) | calendar | `icons.calendar` |
+| Production Path | calendar | `icons.calendar` |
+| CPA Sensitivity | percent | `icons.percent` (nav + heading — V91-UX-ADVISORY-1 RESOLVED in v64.0.0) |
+| CLTV Impact | heart | `icons.heart` (nav + heading — V92-UX-FIX-1 VERIFIED in V93) |
+| Spend Less, Get More | trending-down | `icons.trendingDown` (nav only — heading missing, V93-UX-FIX-1 filed) |
 
 ### Icon Rules
 1. **NEVER use emoji in production UI** — rendering varies across OS/browser
@@ -281,7 +305,7 @@ All spacing values MUST be multiples of 8px:
 ### Differentiator Badges
 - `.diff-badge`: 2px/6px padding, 4px radius, 10px, 600 weight
 - Color: `rgba(79,143,247,0.15)` bg, `--accent` text
-- Used for UNIQUE, DEDUP, RESOLVE, MULTI-CH, CONSENT, ATTRIBUTED, ENTITY-LEVEL, CTR, ROI, OMNICHANNEL, COST + ROI, OBSERVE, ALIGN, CHURN, PROTECT, DISPUTE, CHANNEL, COST/SAVE, DELIVERY, ENABLE, ENTITY, LOOP, OPTIMIZE, SAVE RATE, TRANSPARENT, vs ACQUIRE, HOLDOUT, TRUE ROI, RISK-TIER, SUPPRESS, CAUSAL, P-VALUE, CONFIDENCE-INTERVAL, STATISTICAL-POWER, CFO-READY, COMPETITOR COMPARISON, CONFLICT-AWARE, COST-PER-ENTITY, COUNTERFACTUAL, CROSS-SOURCE, IDENTITY-RESOLVED, LIVE DATA, LTV, ML-CHANNEL-WASTE, REVENUE-LINKED, TCO-TRANSPARENT, ZERO MARKETING CLAIMS, IN-PERIOD, ML-PROJECTED, EVERY NUMBER QUERYABLE, CAPABILITIES FIRST, TERMINOLOGY, CALIBRATED, NEEDS RECALIBRATION, CMO-156, DATA NOTE, PILOT HYPOTHESIS
+- Used for UNIQUE, DEDUP, RESOLVE, MULTI-CH, CONSENT, ATTRIBUTED, ENTITY-LEVEL, CTR, ROI, OMNICHANNEL, COST + ROI, OBSERVE, ALIGN, CHURN, PROTECT, DISPUTE, CHANNEL, COST/SAVE, DELIVERY, ENABLE, ENTITY, LOOP, OPTIMIZE, SAVE RATE, TRANSPARENT, vs ACQUIRE, HOLDOUT, TRUE ROI, RISK-TIER, SUPPRESS, CAUSAL, P-VALUE, CONFIDENCE-INTERVAL, STATISTICAL-POWER, CFO-READY, COMPETITOR COMPARISON, CONFLICT-AWARE, COST-PER-ENTITY, COUNTERFACTUAL, CROSS-SOURCE, IDENTITY-RESOLVED, LIVE DATA, LTV, ML-CHANNEL-WASTE, REVENUE-LINKED, TCO-TRANSPARENT, ZERO MARKETING CLAIMS, IN-PERIOD, ML-PROJECTED, EVERY NUMBER QUERYABLE, CAPABILITIES FIRST, TERMINOLOGY, CALIBRATED, NEEDS RECALIBRATION, CMO-156, DATA NOTE, PILOT HYPOTHESIS, CFO-READY, CLOSED-LOOP, PRESCRIPTIVE, INCREMENTALITY-BACKED, ACTIONABLE, SPEND SOURCE, CONTAMINATED, HOLDOUT SPEND, HOLDOUT RATIO
 - **Pill badges** (capability feature tags): `var(--success-bg)` bg, `var(--success)` text, `4px 12px` padding, `borderRadius: 16px` (full pill), 12px, 500 weight
 
 ---
@@ -351,21 +375,28 @@ All spacing values MUST be multiples of 8px:
 
 ## 9. UX Audit Findings
 
-### Strengths
-- Clean, professional dark theme with good information density
-- Consistent use of CSS custom properties — easy to theme
-- KPI cards effectively surface key metrics at a glance
-- Source system color coding is distinctive and scannable
-- Differentiator badges (UNIQUE, DEDUP, etc.) effectively communicate CustomerLake value
+### Strengths (v56.0.0 — 20 pages, 6,055 lines, 68 endpoints)
+- Clean, professional dark theme with high information density across 20 specialized pages
+- 21 CSS custom properties (all on-palette) — zero off-palette hardcoded hex in entire codebase
+- KPI cards effectively surface key metrics (revenue-first hero row, dual-ROI, tiered confidence)
+- Source system color coding is distinctive and scannable (TMF/Salesforce/Oracle ERP)
+- 89 differentiator badges across 48+ unique labels communicate CustomerLake value
 - Detail panel slide-out is a good pattern for drill-down without losing context
-- Good separation of concerns: 5 focused pages, each with clear purpose
+- 20 pages organized into clear categories: Demo, Executive, Core (6 pages), Analytics (5 pages), Measurement (4 pages), Strategic (3 pages)
+- Full WCAG 2.1 AA compliance: 36 captions, 93 role attributes, 63 aria-labels, 23 aria-live, prefers-reduced-motion
+- Code consolidation: app reduced from 7,148 to 6,055 lines (-15.3%) while adding 2 pages — evidence of engineering discipline
+- 24 unique Lucide SVG icons — zero emoji, zero font-icon dependencies
 
-### Issues Requiring Remediation
+### Issues Requiring Remediation — ALL RESOLVED (v56.0.0)
 
-| # | Finding | Priority | Assigned To |
+| # | Finding | Priority | Status |
 |---|---|---|---|
-| UX-1 | **Emoji navigation icons** — inconsistent rendering across OS/browser. Replace with SVG icon system (Lucide recommended). | High | @app-developer |
-| UX-2 | **No mobile navigation** — sidebar is `display:none` on mobile with no hamburger menu or alternative nav. Users on mobile are stranded. | Critical | @app-developer |
+| UX-1 | **Emoji navigation icons** — replaced with 24 Lucide SVG icons | ~~High~~ RESOLVED | V76 verified |
+| UX-2 | **No mobile navigation** — hamburger menu + sidebar overlay + Escape handler | ~~Critical~~ RESOLVED | V76 verified |
+| UX-3 | **Keyboard navigation** — `<button>` nav items, aria-current, focus-visible | ~~Critical~~ RESOLVED | V76 verified |
+| UX-4 | **Semantic landmarks** — `<nav>`, `<main>`, focus trap, aria-labels | ~~High~~ RESOLVED | V76 verified |
+| UX-5 | **Table accessibility** — 36 captions, table-scroll wrappers, headers | ~~Medium~~ RESOLVED | V76 verified |
+| UX-6 | **Loading/error states** — aria-live, ErrorCard with retry, role="status" | ~~Medium~~ RESOLVED | V76 verified |er |
 | UX-3 | **No keyboard navigation** — nav items are plain `<div>` elements, not focusable. Must be `<button>` or `role="button"` with `tabindex="0"` and keyboard handlers. | Critical | @app-developer |
 | UX-4 | **Missing semantic landmarks** — no `<nav>`, `<main>`, `<section>` elements. Screen readers cannot navigate structure. | High | @app-developer |
 | UX-5 | **No focus indicators** — CSS has no `:focus-visible` styles. Add `outline: 2px solid var(--accent); outline-offset: 2px` for all interactive elements. | High | @app-developer |
@@ -621,6 +652,8 @@ When creating AI/BI dashboards or Genie spaces tagged `customerlake_project: cus
 
 | Date | Version | Author | Changes |
 |---|---|---|---|
+| 2026-10-12 | 3.0.0 | @designer | **MAJOR UPDATE.** App v56.0.0 (6,055 lines, 20 pages, 4,770 backend, 68 endpoints). Updated §4 Icon Mapping to actual 20-page Lucide SVG table. Updated §9 Strengths to reflect 20 pages, 21 CSS vars, 89 diff-badges, full WCAG stats. Marked all §9 remediation items RESOLVED (V76 verified). 76 UX reviews completed (V5–V76), 9/9 brand dimensions PASS. Code consolidated -15.3% (7,148→6,055) with +2 pages recovered. |
+| 2026-10-07 | 2.3.0 | @designer | V48 Full Brand Sweep: v39.0.0 (5799 lines, 17 pages, 4514 backend). V46 ghost-completion caught. 3 new diff-badges approved. |
 | 2026-09-29 | 1.1 | @designer | V3/V4 review: marked A1-A11 RESOLVED, added A12 (bar chart a11y), added channel data-viz palette, added OMNICHANNEL/COST+ROI diff-badges, added legacy warning banner component, updated implementation checklist |
 | 2026-09-29 | 1.0 | @designer | Initial brand guidelines, full UX audit of CustomerLake app |
 | 2026-09-29 | 1.2.1 | @designer | V7 review: marked A13/A14/A16 RESOLVED, updated §11 checklist (V4-UX-FIX-1/2/3/4, prefers-reduced-motion all checked), filed V7-UX-FIX-1/2/3 |

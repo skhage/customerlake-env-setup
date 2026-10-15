@@ -33,7 +33,7 @@ _pg_conn = None
 CATALOG = "cdm_tmforum"
 
 # Single source of truth for app version (DRY pattern)
-APP_VERSION = "56.0.0"
+APP_VERSION = "65.1.0"
 
 # ---------------------------------------------------------------------------
 # Materialized table aliases (CMO-138 / APP-CACHED-VIEWS + V2 performance fix)
@@ -66,6 +66,43 @@ VIEW_RISK_BASED_TARGETING = f"{CATALOG}._metrics.customerlake_risk_based_targeti
 # --- V3 cached tables (APP-BREAKEVEN-HERO) ---
 VIEW_HONEST_REVENUE = f"{CATALOG}._metrics.customerlake_dark_audience_honest_revenue_cached"
 VIEW_EXEC_SUMMARY_V2 = f"{CATALOG}._metrics.customerlake_exec_summary_v2_cached"
+
+# --- Campaign Learning Loop views (ML-CAMPAIGN-LEARNING, CMO-280/288) ---
+VIEW_LEARNING_CONVERGENCE = f"{CATALOG}._metrics.customerlake_campaign_learning_convergence"
+VIEW_LEARNING_MODEL = f"{CATALOG}._metrics.customerlake_campaign_learning_model"
+VIEW_LEARNING_CHANNEL_DETAIL = f"{CATALOG}._metrics.customerlake_campaign_learning_channel_detail"
+VIEW_LEARNING_CURVE = f"{CATALOG}._metrics.customerlake_campaign_learning_curve"
+# --- Siloed vs Unified platform comparison (DA-ADD-SILOED-HERO, CMO-281/286) ---
+VIEW_SILOED_VS_UNIFIED = f"{CATALOG}._metrics.customerlake_siloed_vs_unified"
+# --- Board-Ready Single Source (CMO-267/276/291 — canonical revenue numbers) ---
+VIEW_BOARD_SINGLE_SOURCE = f"{CATALOG}._metrics.customerlake_board_single_source_v2"
+VIEW_CPA_VALUE_STORY = f"{CATALOG}._metrics.customerlake_cpa_value_story"
+# --- Spend Crosswalk (CFO-ready spend reconciliation, CMO-252) ---
+VIEW_SPEND_CROSSWALK = f"{CATALOG}._metrics.customerlake_spend_crosswalk"
+
+# --- Customer Lifecycle views (DA-LIFECYCLE-METRICS / CMO-300) ---
+VIEW_LIFECYCLE_STAGES = f"{CATALOG}._metrics.customerlake_lifecycle_stage_distribution"
+VIEW_CROSS_SOURCE_RETENTION = f"{CATALOG}._metrics.customerlake_cross_source_retention"
+VIEW_RETENTION_COHORT = f"{CATALOG}._metrics.customerlake_retention_cohort_analysis"
+
+# --- Production Path views (CMO-312/314 — simulation-to-reality roadmap) ---
+VIEW_PRODUCTION_ROADMAP = f"{CATALOG}._metrics.customerlake_production_roadmap"
+VIEW_PRODUCTION_VALIDATION = f"{CATALOG}._metrics.customerlake_production_validation_plan"
+
+# --- CPA Sensitivity Analysis (CMO-313 — CVR scenario breakeven) ---
+VIEW_CPA_SENSITIVITY = f"{CATALOG}._metrics.customerlake_cpa_sensitivity_analysis"
+
+# --- CLTV Impact Measurement (CMO-319 — the killer CDP metric) ---
+VIEW_CLTV_IMPACT = f"{CATALOG}._metrics.customerlake_cltv_impact_measurement"
+VIEW_CLTV_COHORT = f"{CATALOG}._metrics.customerlake_cltv_cohort_analysis"
+
+# --- Canonical ROI with Ranges (CMO-315/316 — SINGLE SOURCE OF TRUTH) ---
+VIEW_CANONICAL_ROI = f"{CATALOG}._metrics.customerlake_canonical_roi_with_ranges"
+
+# --- Spend Less Get More (CMO-325/320/322 — the killer value prop) ---
+VIEW_ACTION_PLAYBOOK_V3_FIXED = f"{CATALOG}._metrics.customerlake_action_playbook_v3_fixed"
+VIEW_CHANNEL_SCALE_MODEL = f"{CATALOG}._metrics.customerlake_channel_scale_model"
+VIEW_BUDGET_OPTIMIZER = f"{CATALOG}._metrics.customerlake_budget_optimizer_output"
 
 # Minimum holdout sample size for credible power claims.
 # Segments with fewer holdout entities are reclassified as ANOMALY_LOW_N
@@ -4455,6 +4492,7 @@ async def demo_prefetch():
         ("dual_roi", "/api/executive/dual-roi", executive_dual_roi),
         ("channel_maturity", "/api/channels/maturity", channel_maturity),
         ("honest_revenue", "/api/dark-audience/honest-revenue", dark_audience_honest_revenue),
+        ("spend_optimization", "/api/spend-optimization", spend_optimization),
     ]
     for key, path, func in endpoints:
         t0 = time.time()
@@ -4490,7 +4528,8 @@ async def demo_cache_status():
     now = time.time()
     status = {}
     for key in ["exec_summary", "tiered_roi", "roi_methodology",
-                "ltv_cac_reconciliation", "dual_roi", "honest_revenue"]:
+                "ltv_cac_reconciliation", "dual_roi", "honest_revenue",
+                "spend_optimization"]:
         entry = _CACHE.get(key)
         if entry and entry[0] > now:
             status[key] = {
@@ -4763,8 +4802,1294 @@ async def reoptimization_scenarios():
 
 
 # ---------------------------------------------------------------------------
+# CAMPAIGN LEARNING LOOP — Closed-loop optimization trajectory (CMO-280/288)
+# ---------------------------------------------------------------------------
+@app.get("/api/learning-loop/convergence")
+async def learning_loop_convergence():
+    """4-cycle convergence summary: -92% ROI to +132% ROI.
+
+    CMO-288 answer: THIS is the closed-loop. Each cycle = measure, learn, optimize.
+    Legacy CDPs never iterate; CustomerLake improves every quarter.
+    """
+    cached = cache_get("learning_convergence")
+    if cached:
+        return cached
+    try:
+        cycles = sql_query(f"""
+            SELECT cycle_number, cycle_phase, fully_loaded_roi_pct,
+                   cumulative_roi_improvement_ppt, incremental_revenue_usd,
+                   fully_loaded_cost_usd, net_profit_usd, spend_efficiency,
+                   waste_eliminated_usd, active_channels, convergence_signal,
+                   board_one_liner, legacy_cdp_can_do_this
+            FROM {VIEW_LEARNING_CONVERGENCE}
+            ORDER BY cycle_number
+        """)
+
+        model = sql_query(f"""
+            SELECT cycle_number, cycle_name, cycle_phase, cycle_description,
+                   channels_active, channels_exited, winning_sub_channels,
+                   total_incremental_revenue_usd, total_fully_loaded_cost_usd,
+                   fully_loaded_roi_x, waste_detected_usd,
+                   waste_eliminated_cumulative_usd,
+                   roi_improvement_vs_baseline_ppt,
+                   profit_improvement_vs_baseline_usd,
+                   learning_output, cmo_headline,
+                   customerlake_differentiator, methodology
+            FROM {VIEW_LEARNING_MODEL}
+            ORDER BY cycle_number
+        """)
+
+        c1 = next((c for c in cycles if c.get("cycle_number") == 1), {})
+        c4 = next((c for c in cycles if c.get("cycle_number") == 4), cycles[-1] if cycles else {})
+
+        result = {
+            "hero": {
+                "baseline_roi_pct": float(c1.get("fully_loaded_roi_pct") or 0),
+                "current_roi_pct": float(c4.get("fully_loaded_roi_pct") or 0),
+                "roi_improvement_ppt": float(c4.get("cumulative_roi_improvement_ppt") or 0),
+                "total_waste_eliminated_usd": float(c4.get("waste_eliminated_usd") or 0),
+                "current_profit_usd": float(c4.get("net_profit_usd") or 0),
+                "cycles_completed": len(cycles),
+            },
+            "cycles": [
+                {
+                    "number": c.get("cycle_number"),
+                    "phase": c.get("cycle_phase"),
+                    "roi_pct": float(c.get("fully_loaded_roi_pct") or 0),
+                    "roi_improvement_ppt": float(c.get("cumulative_roi_improvement_ppt") or 0),
+                    "revenue_usd": float(c.get("incremental_revenue_usd") or 0),
+                    "cost_usd": float(c.get("fully_loaded_cost_usd") or 0),
+                    "profit_usd": float(c.get("net_profit_usd") or 0),
+                    "waste_eliminated_usd": float(c.get("waste_eliminated_usd") or 0),
+                    "active_channels": c.get("active_channels"),
+                    "signal": c.get("convergence_signal"),
+                    "headline": c.get("board_one_liner"),
+                    "legacy_can_do": c.get("legacy_cdp_can_do_this"),
+                }
+                for c in cycles
+            ],
+            "model": [
+                {
+                    "number": m.get("cycle_number"),
+                    "name": m.get("cycle_name"),
+                    "phase": m.get("cycle_phase"),
+                    "description": m.get("cycle_description"),
+                    "channels_active": m.get("channels_active"),
+                    "channels_exited": m.get("channels_exited"),
+                    "winning_sub_channels": m.get("winning_sub_channels"),
+                    "revenue_usd": float(m.get("total_incremental_revenue_usd") or 0),
+                    "cost_usd": float(m.get("total_fully_loaded_cost_usd") or 0),
+                    "roi_x": float(m.get("fully_loaded_roi_x") or 0),
+                    "waste_eliminated_usd": float(m.get("waste_eliminated_cumulative_usd") or 0),
+                    "roi_vs_baseline_ppt": float(m.get("roi_improvement_vs_baseline_ppt") or 0),
+                    "learning_output": m.get("learning_output"),
+                    "cmo_headline": m.get("cmo_headline"),
+                    "differentiator": m.get("customerlake_differentiator"),
+                }
+                for m in model
+            ],
+            "narrative": {
+                "headline": (
+                    f"From {c1.get('fully_loaded_roi_pct', -92)}% ROI to "
+                    f"+{c4.get('fully_loaded_roi_pct', 132)}% ROI in {len(cycles)} quarterly cycles."
+                ),
+                "cmo_answer": (
+                    "CMO-288 answered: The closed-loop IS the learning loop. "
+                    "Each cycle measures, exits destructive channels, finds winners inside losers, "
+                    "and feeds results back. Braze/Iterable cannot do this."
+                ),
+            },
+            "methodology": model[0].get("methodology") if model else "CPA_HOLDOUT_NORMALIZED",
+        }
+        return cache_set("learning_convergence", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/learning-loop/channels")
+async def learning_loop_channels():
+    """Per-channel per-cycle status changes showing the learning in action."""
+    cached = cache_get("learning_channels")
+    if cached:
+        return cached
+    try:
+        rows = sql_query(f"""
+            SELECT cycle_number, cycle_phase, channel, channel_status,
+                   prescribed_action, incremental_conversions,
+                   incremental_revenue_usd, fully_loaded_cost_usd,
+                   fully_loaded_roi_x, pct_of_portfolio_spend,
+                   pct_of_portfolio_revenue, cycle_recommendation,
+                   status_change_from_prior
+            FROM {VIEW_LEARNING_CHANNEL_DETAIL}
+            ORDER BY cycle_number, channel
+        """)
+
+        channels = {}
+        for r in rows:
+            ch = r.get("channel", "")
+            if ch not in channels:
+                channels[ch] = []
+            channels[ch].append({
+                "cycle": r.get("cycle_number"),
+                "phase": r.get("cycle_phase"),
+                "status": r.get("channel_status"),
+                "action": r.get("prescribed_action"),
+                "conversions": r.get("incremental_conversions"),
+                "revenue_usd": float(r.get("incremental_revenue_usd") or 0),
+                "cost_usd": float(r.get("fully_loaded_cost_usd") or 0),
+                "roi_x": float(r.get("fully_loaded_roi_x") or 0),
+                "pct_spend": float(r.get("pct_of_portfolio_spend") or 0),
+                "pct_revenue": float(r.get("pct_of_portfolio_revenue") or 0),
+                "recommendation": r.get("cycle_recommendation"),
+                "status_change": r.get("status_change_from_prior"),
+            })
+
+        result = {
+            "channels": channels,
+            "total_channels": len(channels),
+            "total_cycles": max((r.get("cycle_number", 0) for r in rows), default=0),
+        }
+        return cache_set("learning_channels", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# SILOED VS UNIFIED — Platform configuration comparison (CMO-281/286)
+# ---------------------------------------------------------------------------
+@app.get("/api/comparison/siloed-vs-unified")
+async def siloed_vs_unified():
+    """4-platform comparison: CRM_ONLY to UNIFIED_CUSTOMERLAKE.
+
+    Shows capability score progression from 0/4 to 4/4 and ML AUC/F1 lift.
+    The competitive differentiator hero for Why CustomerLake.
+    """
+    cached = cache_get("siloed_vs_unified")
+    if cached:
+        return cached
+    try:
+        configs = sql_query(f"""
+            SELECT platform_config, represents, feature_count,
+                   has_suppression, has_dark_audience,
+                   has_holdout_measurement, has_value_destruction,
+                   capability_score, auc, f1,
+                   precision_score, recall_score,
+                   auc_lift_vs_unified_pct, f1_lift_vs_unified_pct,
+                   top_features, source_systems_included,
+                   missing_from_config,
+                   capability_gap_narrative, cmo_takeaway
+            FROM {VIEW_SILOED_VS_UNIFIED}
+            ORDER BY capability_score
+        """)
+
+        unified = next((c for c in configs if c.get("platform_config") == "UNIFIED_CUSTOMERLAKE"), {})
+        crm_only = next((c for c in configs if c.get("platform_config") == "CRM_ONLY"), {})
+
+        result = {
+            "hero": {
+                "unified_capabilities": int(unified.get("capability_score") or 0),
+                "crm_only_capabilities": int(crm_only.get("capability_score") or 0),
+                "auc_lift_pct": float(unified.get("auc_lift_vs_unified_pct") or 0),
+                "f1_lift_pct": float(unified.get("f1_lift_vs_unified_pct") or 0),
+                "unified_auc": float(unified.get("auc") or 0),
+                "crm_auc": float(crm_only.get("auc") or 0),
+            },
+            "configs": [
+                {
+                    "id": c.get("platform_config"),
+                    "represents": c.get("represents"),
+                    "feature_count": c.get("feature_count"),
+                    "capability_score": int(c.get("capability_score") or 0),
+                    "capabilities": {
+                        "suppression": c.get("has_suppression") == "Y",
+                        "dark_audience": c.get("has_dark_audience") == "Y",
+                        "holdout_measurement": c.get("has_holdout_measurement") == "Y",
+                        "value_destruction": c.get("has_value_destruction") == "Y",
+                    },
+                    "ml": {
+                        "auc": float(c.get("auc") or 0),
+                        "f1": float(c.get("f1") or 0),
+                        "precision": float(c.get("precision_score") or 0),
+                        "recall": float(c.get("recall_score") or 0),
+                    },
+                    "sources": c.get("source_systems_included"),
+                    "missing": c.get("missing_from_config"),
+                    "narrative": c.get("capability_gap_narrative"),
+                    "cmo_takeaway": c.get("cmo_takeaway"),
+                }
+                for c in configs
+            ],
+            "differentiator": (
+                "CRM-only platforms see 0/4 CustomerLake capabilities. "
+                "Adding billing, service, identity, and consent unlocks suppression, "
+                "dark audience discovery, holdout measurement, and value-destruction detection. "
+                "That is the product."
+            ),
+        }
+        return cache_set("siloed_vs_unified", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# BOARD-READY SINGLE SOURCE (CMO-267/276/291 — one canonical set of numbers)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/board-ready/single-source")
+async def board_ready_single_source():
+    """Board-ready single source of truth — one canonical number per metric.
+
+    Addresses CMO-267 (three different revenue numbers), CMO-276 (no single
+    canonical value story), and CMO-214 (no single source of truth).
+    Source: customerlake_board_single_source_v2 (Oct 12).
+    """
+    cached = cache_get("board_single_source")
+    if cached:
+        return cached
+    try:
+        rows = sql_query(f"""
+            SELECT metric_category, metric_name, metric_value,
+                   unit, confidence_level, source_view,
+                   methodology, cmo_talking_point, data_origin
+            FROM {VIEW_BOARD_SINGLE_SOURCE}
+            ORDER BY CASE metric_category
+                WHEN 'REVENUE' THEN 1
+                WHEN 'ROI' THEN 2
+                WHEN 'CHANNEL_PRESCRIPTION' THEN 3
+                WHEN 'MEASUREMENT_QUALITY' THEN 4
+                WHEN 'CUSTOMERLAKE_DIFFERENTIATOR' THEN 5
+                ELSE 6 END,
+                metric_name
+        """)
+
+        categories = {}
+        for r in rows:
+            cat = r.get("metric_category", "OTHER")
+            if cat not in categories:
+                categories[cat] = []
+            val = r.get("metric_value", "")
+            try:
+                numeric_val = float(val)
+            except (ValueError, TypeError):
+                numeric_val = None
+            categories[cat].append({
+                "name": r.get("metric_name"),
+                "value": val,
+                "numeric_value": numeric_val,
+                "unit": r.get("unit"),
+                "confidence": r.get("confidence_level"),
+                "source": r.get("source_view"),
+                "methodology": r.get("methodology"),
+                "talking_point": r.get("cmo_talking_point"),
+                "data_origin": r.get("data_origin"),
+            })
+
+        result = {
+            "title": "Board-Ready Single Source of Truth",
+            "subtitle": (
+                "One canonical number per metric. No alternatives, no ambiguity. "
+                "Every number is CPA-normalized and holdout-measured (synthetic-modeled data)."
+            ),
+            "categories": categories,
+            "total_metrics": len(rows),
+            "proven_count": sum(1 for r in rows if r.get("confidence_level") == "PROVEN"),
+            "differentiator": (
+                "Legacy CDPs report one headline number. CustomerLake shows the methodology, "
+                "confidence level, and source view for every metric — because the board will ask."
+            ),
+        }
+        return cache_set("board_single_source", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/board-ready/value-waterfall")
+async def board_ready_value_waterfall():
+    """CPA Value Story waterfall — 8-tier honest revenue cascade.
+
+    Addresses CMO-291 (revenue waterfall widget), CMO-253 (is $210K
+    demo-worthy?), and CMO-276 (canonical value story).
+    Source: customerlake_cpa_value_story (Oct 12).
+    """
+    cached = cache_get("value_waterfall")
+    if cached:
+        return cached
+    try:
+        rows = sql_query(f"""
+            SELECT section_order, value_category, metric_name,
+                   metric_value_usd, cost_basis_usd, roi_x,
+                   headline, methodology, evidence_tier
+            FROM {VIEW_CPA_VALUE_STORY}
+            ORDER BY section_order
+        """)
+
+        tiers = []
+        for r in rows:
+            tiers.append({
+                "order": int(r.get("section_order", 0)),
+                "category": r.get("value_category"),
+                "metric": r.get("metric_name"),
+                "value_usd": float(r["metric_value_usd"]) if r.get("metric_value_usd") else None,
+                "cost_basis_usd": float(r["cost_basis_usd"]) if r.get("cost_basis_usd") else None,
+                "roi_x": float(r["roi_x"]) if r.get("roi_x") else None,
+                "headline": r.get("headline"),
+                "methodology": r.get("methodology"),
+                "evidence_tier": r.get("evidence_tier"),
+            })
+
+        # Extract key figures for hero
+        honest = next((t for t in tiers if t["category"] == "HONEST_HEADLINE"), {})
+        total = next((t for t in tiers if t["category"] == "TOTAL_CUSTOMERLAKE_VALUE"), {})
+        verdict = next((t for t in tiers if t["category"] == "CMO_253_VERDICT"), {})
+
+        result = {
+            "title": "CPA Value Story — Revenue Waterfall",
+            "subtitle": (
+                "8-tier honest value cascade. Read in order for the complete demo story. "
+                "DO NOT SUM across tiers — tier 7 is the composite upper-bound."
+            ),
+            "hero": {
+                "proven_revenue_usd": honest.get("value_usd"),
+                "delivery_roi_x": honest.get("roi_x"),
+                "total_value_usd": total.get("value_usd"),
+                "verdict_headline": verdict.get("headline"),
+            },
+            "tiers": tiers,
+            "narrative": (
+                "The demo story is NOT $210K revenue. It is: "
+                "(1) Found 2/5 channels DESTROYING value. "
+                "(2) Identified 21K entities to suppress ($1.3M saved). "
+                "(3) Segment-level intelligence unlocked $641K on $8K cost. "
+                "That is what only CustomerLake can do."
+            ),
+        }
+        return cache_set("value_waterfall", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# SPEND TRANSPARENCY (CMO-252/289 — CFO-ready spend reconciliation)
+# ---------------------------------------------------------------------------
+@app.get("/api/spend-crosswalk")
+async def spend_crosswalk():
+    """CFO-ready spend reconciliation across 5 methodologies.
+
+    Shows why 5 different spend numbers exist and which one to quote.
+    Only one is CFO-canonical ($2.7M fully loaded treatment).
+    Addresses CMO-252 (CPA rebase) and CMO-289 (demo readiness).
+    Source: customerlake_spend_crosswalk (Oct 12).
+    """
+    cached = cache_get("spend_crosswalk")
+    if cached:
+        return cached
+    try:
+        rows = sql_query(f"""
+            SELECT sort_order, methodology, source_table,
+                   reported_spend_usd, contributing_rows,
+                   methodology_description, scope_description,
+                   is_cfo_canonical, cfo_reconciliation_note,
+                   cfo_guidance, data_origin
+            FROM {VIEW_SPEND_CROSSWALK}
+            ORDER BY sort_order
+        """)
+
+        canonical = next((r for r in rows if r.get("is_cfo_canonical")), {})
+        methodologies = []
+        for r in rows:
+            spend = float(r["reported_spend_usd"]) if r.get("reported_spend_usd") else None
+            methodologies.append({
+                "order": int(r.get("sort_order", 0)),
+                "methodology": r.get("methodology"),
+                "source_table": r.get("source_table"),
+                "spend_usd": spend,
+                "contributing_rows": int(r.get("contributing_rows", 0)),
+                "description": r.get("methodology_description"),
+                "scope": r.get("scope_description"),
+                "is_canonical": bool(r.get("is_cfo_canonical")),
+                "reconciliation_note": r.get("cfo_reconciliation_note"),
+                "guidance": r.get("cfo_guidance"),
+                "data_origin": r.get("data_origin"),
+            })
+
+        spend_vals = [m["spend_usd"] for m in methodologies if m["spend_usd"]]
+        spread_x = round(max(spend_vals) / min(spend_vals), 1) if spend_vals and min(spend_vals) > 0 else None
+
+        result = {
+            "title": "Spend Transparency \u2014 CFO Reconciliation",
+            "subtitle": (
+                "5 methodologies, 1 canonical number. Legacy CDPs report one spend figure "
+                "with no methodology. CustomerLake shows all 5 and explains why they differ."
+            ),
+            "hero": {
+                "canonical_spend_usd": float(canonical.get("reported_spend_usd", 0)),
+                "canonical_methodology": canonical.get("methodology"),
+                "total_methodologies": len(methodologies),
+                "spread_x": spread_x,
+            },
+            "methodologies": methodologies,
+            "differentiator": (
+                "A legacy CDP gives the CFO one number and hopes nobody asks how it was calculated. "
+                "CustomerLake shows 5 methodologies, flags the canonical one, and provides "
+                "reconciliation notes for every alternative. That is CFO-ready transparency."
+            ),
+            "methodology": "SPEND_CROSSWALK_V1",
+        }
+        return cache_set("spend_crosswalk", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# Customer Lifecycle (CMO-300 — lifecycle stages, cross-source retention, cohorts)
+# ---------------------------------------------------------------------------
+@app.get("/api/lifecycle/stages")
+async def lifecycle_stages():
+    """Lifecycle stage distribution with revenue and identity depth.
+
+    Shows 8 lifecycle stages (prospect→deceased) with entity counts,
+    revenue concentration, churn risk, and multi-source resolution depth.
+    CDP differentiator: multi-source entities cluster in revenue-bearing stages.
+    Source: customerlake_lifecycle_stage_distribution.
+    """
+    cached = cache_get("lifecycle_stages")
+    if cached:
+        return cached
+    try:
+        rows = sql_query(f"""
+            SELECT lifecycle_status, entity_count, pct_of_base,
+                   multi_source_entities, pct_multi_source,
+                   avg_lifetime_revenue, total_revenue_in_stage,
+                   avg_churn_risk, avg_interactions_90d,
+                   avg_active_services, avg_identity_depth,
+                   stage_description, stage_order
+            FROM {VIEW_LIFECYCLE_STAGES}
+            ORDER BY stage_order
+        """)
+
+        total_entities = sum(int(r.get("entity_count", 0)) for r in rows)
+        total_revenue = sum(float(r.get("total_revenue_in_stage") or 0) for r in rows)
+        active_revenue = sum(
+            float(r.get("total_revenue_in_stage") or 0)
+            for r in rows if r.get("lifecycle_status") in ("active", "lead")
+        )
+        at_risk_revenue = sum(
+            float(r.get("total_revenue_in_stage") or 0)
+            for r in rows if r.get("lifecycle_status") in ("dormant", "suspended")
+        )
+
+        stages = []
+        for r in rows:
+            stages.append({
+                "stage": r.get("lifecycle_status"),
+                "description": r.get("stage_description"),
+                "order": int(r.get("stage_order", 0)),
+                "entity_count": int(r.get("entity_count", 0)),
+                "pct_of_base": float(r.get("pct_of_base") or 0),
+                "multi_source_count": int(r.get("multi_source_entities") or 0),
+                "pct_multi_source": float(r.get("pct_multi_source") or 0),
+                "avg_revenue": float(r.get("avg_lifetime_revenue") or 0),
+                "total_revenue": float(r.get("total_revenue_in_stage") or 0),
+                "avg_churn_risk": round(float(r.get("avg_churn_risk") or 0), 3),
+                "avg_identity_depth": round(float(r.get("avg_identity_depth") or 0), 2),
+                "avg_active_services": round(float(r.get("avg_active_services") or 0), 1),
+            })
+
+        result = {
+            "title": "Customer Lifecycle",
+            "subtitle": (
+                "Identity-resolved lifecycle stages across 22K entities. "
+                "Multi-source resolution concentrates in revenue-bearing stages \u2014 "
+                "proof that deeper identity = deeper wallet."
+            ),
+            "hero": {
+                "total_entities": total_entities,
+                "total_revenue": total_revenue,
+                "active_revenue": active_revenue,
+                "at_risk_revenue": at_risk_revenue,
+                "total_stages": len(stages),
+            },
+            "stages": stages,
+            "differentiator": (
+                "A legacy CDP assigns lifecycle stages from a single CRM field. "
+                "CustomerLake resolves identity across sources first, then computes "
+                "lifecycle from the unified signal \u2014 revealing that 93%+ of revenue-bearing "
+                "customers are multi-source resolved."
+            ),
+            "methodology": "LIFECYCLE_STAGE_V1",
+        }
+        return cache_set("lifecycle_stages", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/lifecycle/cross-source-retention")
+async def cross_source_retention():
+    """Retention rates by identity resolution depth.
+
+    The killer CDP differentiator: entities resolved from more sources
+    retain at higher rates. 4-source entities: 18.5% retention vs
+    2-source: 12.3%. This is the marginal value of each identity link.
+    Source: customerlake_cross_source_retention.
+    """
+    cached = cache_get("cross_source_retention")
+    if cached:
+        return cached
+    try:
+        rows = sql_query(f"""
+            SELECT identity_depth, identity_depth_label, entity_count,
+                   active_count, churned_count, win_back_count,
+                   retention_rate_pct, churn_rate_pct, win_back_rate_pct,
+                   avg_lifetime_revenue, avg_churn_risk,
+                   avg_active_services, revenue_per_source,
+                   retention_lift_vs_baseline
+            FROM {VIEW_CROSS_SOURCE_RETENTION}
+            ORDER BY identity_depth
+        """)
+
+        tiers = []
+        for r in rows:
+            tiers.append({
+                "depth": int(r.get("identity_depth", 0)),
+                "label": r.get("identity_depth_label"),
+                "entity_count": int(r.get("entity_count", 0)),
+                "active": int(r.get("active_count") or 0),
+                "churned": int(r.get("churned_count") or 0),
+                "win_back": int(r.get("win_back_count") or 0),
+                "retention_pct": float(r.get("retention_rate_pct") or 0),
+                "churn_pct": float(r.get("churn_rate_pct") or 0),
+                "win_back_pct": float(r.get("win_back_rate_pct") or 0),
+                "avg_revenue": float(r.get("avg_lifetime_revenue") or 0),
+                "avg_churn_risk": round(float(r.get("avg_churn_risk") or 0), 3),
+                "revenue_per_source": float(r.get("revenue_per_source") or 0),
+                "retention_lift_pct": float(r.get("retention_lift_vs_baseline") or 0),
+            })
+
+        # Compute headline lift (max depth with meaningful N vs baseline)
+        meaningful = [t for t in tiers if t["entity_count"] >= 100]
+        if len(meaningful) >= 2:
+            baseline_ret = meaningful[0]["retention_pct"]
+            best = max(meaningful, key=lambda t: t["retention_pct"])
+            lift_pp = round(best["retention_pct"] - baseline_ret, 1)
+        else:
+            baseline_ret = 0
+            best = {"label": "N/A", "retention_pct": 0}
+            lift_pp = 0
+
+        result = {
+            "title": "Cross-Source Retention",
+            "subtitle": (
+                "More identity links = higher retention. Each additional source system "
+                "resolved into a customer profile correlates with measurably lower churn."
+            ),
+            "hero": {
+                "baseline_label": meaningful[0]["label"] if meaningful else "N/A",
+                "baseline_retention_pct": baseline_ret,
+                "best_label": best["label"],
+                "best_retention_pct": best["retention_pct"],
+                "lift_pp": lift_pp,
+                "total_entities": sum(t["entity_count"] for t in tiers),
+            },
+            "tiers": tiers,
+            "differentiator": (
+                "No legacy CDP can show this. Cross-source retention analysis requires "
+                "identity resolution first \u2014 then correlating resolution depth with outcomes. "
+                "CustomerLake proves that each additional identity link protects revenue."
+            ),
+            "methodology": "CROSS_SOURCE_RETENTION_V1",
+        }
+        return cache_set("cross_source_retention", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/lifecycle/cohort-analysis")
+async def retention_cohort_analysis():
+    """Year-over-year cohort retention with multi-source vs single-source split.
+
+    Shows that multi-source resolved entities consistently retain better
+    than single-source across every cohort year.
+    Source: customerlake_retention_cohort_analysis.
+    """
+    cached = cache_get("cohort_analysis")
+    if cached:
+        return cached
+    try:
+        rows = sql_query(f"""
+            SELECT cohort_year, cohort_size, active_count, churned_count,
+                   dormant_count, win_back_count,
+                   retention_rate_pct, churn_rate_pct, win_back_rate_pct,
+                   avg_revenue_active, avg_revenue_churned,
+                   total_revenue_retained, total_revenue_lost,
+                   avg_source_count_active, avg_source_count_churned,
+                   multi_source_retention_rate, single_source_retention_rate
+            FROM {VIEW_RETENTION_COHORT}
+            ORDER BY cohort_year
+        """)
+
+        cohorts = []
+        for r in rows:
+            multi_ret = float(r.get("multi_source_retention_rate") or 0)
+            single_ret = float(r.get("single_source_retention_rate") or 0)
+            cohorts.append({
+                "year": int(r.get("cohort_year", 0)),
+                "size": int(r.get("cohort_size", 0)),
+                "active": int(r.get("active_count") or 0),
+                "churned": int(r.get("churned_count") or 0),
+                "dormant": int(r.get("dormant_count") or 0),
+                "win_back": int(r.get("win_back_count") or 0),
+                "retention_pct": float(r.get("retention_rate_pct") or 0),
+                "churn_pct": float(r.get("churn_rate_pct") or 0),
+                "win_back_pct": float(r.get("win_back_rate_pct") or 0),
+                "avg_revenue_active": float(r.get("avg_revenue_active") or 0),
+                "avg_revenue_churned": float(r.get("avg_revenue_churned") or 0),
+                "total_retained": float(r.get("total_revenue_retained") or 0),
+                "total_lost": float(r.get("total_revenue_lost") or 0),
+                "avg_sources_active": round(float(r.get("avg_source_count_active") or 0), 2),
+                "avg_sources_churned": round(float(r.get("avg_source_count_churned") or 0), 2),
+                "multi_source_retention": multi_ret,
+                "single_source_retention": single_ret,
+                "multi_source_lift_pp": round(multi_ret - single_ret, 1),
+            })
+
+        total_retained_rev = sum(c["total_retained"] for c in cohorts)
+        total_lost_rev = sum(c["total_lost"] for c in cohorts)
+        avg_multi_lift = round(
+            sum(c["multi_source_lift_pp"] for c in cohorts) / len(cohorts), 1
+        ) if cohorts else 0
+
+        result = {
+            "title": "Retention Cohort Analysis",
+            "subtitle": (
+                "Year-over-year cohort retention with multi-source vs single-source split. "
+                "Multi-source resolved entities retain better across every cohort."
+            ),
+            "hero": {
+                "total_cohorts": len(cohorts),
+                "total_retained_revenue": total_retained_rev,
+                "total_lost_revenue": total_lost_rev,
+                "avg_multi_source_lift_pp": avg_multi_lift,
+            },
+            "cohorts": cohorts,
+            "differentiator": (
+                "Legacy CDPs cannot split retention by identity resolution depth \u2014 they don\u2019t "
+                "resolve identity. CustomerLake shows that multi-source entities retain "
+                f"{avg_multi_lift}pp better on average, proving the ROI of identity resolution."
+            ),
+            "methodology": "RETENTION_COHORT_V1",
+        }
+        return cache_set("cohort_analysis", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# Production Path (CMO-312, CMO-314, CMO-306/310 — simulation-to-reality)
+# ---------------------------------------------------------------------------
+@app.get("/api/production-path/roadmap")
+async def production_path_roadmap():
+    """6-phase production roadmap: synthetic validated → production pilot → success gate.
+
+    Addresses CMO-312 (board narrative missing Production Path slide)
+    and CMO-306/310 (provenance disclosure for synthetic data).
+    """
+    cached = cache_get("prod_roadmap")
+    if cached:
+        return cached
+    try:
+        conn = get_sql_connection()
+        cur = conn.cursor()
+        cur.execute(f"""
+            SELECT phase_order, phase, status, headline, detail,
+                   evidence_today, production_requirement, timeline, risk, data_origin
+            FROM {VIEW_PRODUCTION_ROADMAP}
+            ORDER BY phase_order
+        """)
+        cols = [d[0] for d in cur.description]
+        rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+
+        completed = sum(1 for r in rows if r.get("status") == "COMPLETED")
+        planned = sum(1 for r in rows if r.get("status") == "PLANNED")
+
+        result = {
+            "title": "From Simulation to Production",
+            "subtitle": (
+                "Every number today is methodology-validated on synthetic data. "
+                "This roadmap shows the concrete path to real-data proof."
+            ),
+            "provenance_warning": (
+                "ALL current metrics use SYNTHETIC_MODELED data. "
+                "The word 'proven' means methodology-proven, not production-proven. "
+                "Real proof requires completing all 6 phases below."
+            ),
+            "summary": {
+                "total_phases": len(rows),
+                "completed": completed,
+                "planned": planned,
+                "current_phase": next(
+                    (r["phase"] for r in rows if r.get("status") == "IN_PROGRESS"),
+                    rows[completed]["phase"] if completed < len(rows) else "ALL_DONE",
+                ),
+            },
+            "phases": rows,
+            "differentiator": (
+                "Legacy CDPs ship dashboards and call it done. CustomerLake defines the EXACT "
+                "validation gates required before any number earns the label 'production-proven'."
+            ),
+        }
+        return cache_set("prod_roadmap", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/production-path/validation-plan")
+async def production_path_validation_plan():
+    """4-phase production validation plan with start dates and success criteria.
+
+    Addresses CMO-314 (Phase 1 starts Oct 14 — is anyone doing it?).
+    """
+    cached = cache_get("prod_validation")
+    if cached:
+        return cached
+    try:
+        conn = get_sql_connection()
+        cur = conn.cursor()
+        cur.execute(f"""
+            SELECT phase, phase_name, week_start, week_end, duration_weeks,
+                   objective, channel, sample_size, success_criterion,
+                   current_status, target_start_date, target_end_date,
+                   deliverable, risk, prerequisite, escalation_trigger,
+                   owner, data_origin, measurement_approach
+            FROM {VIEW_PRODUCTION_VALIDATION}
+            ORDER BY phase
+        """)
+        cols = [d[0] for d in cur.description]
+        rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+
+        # Convert dates to strings for JSON
+        for r in rows:
+            for k in ["target_start_date", "target_end_date"]:
+                if r.get(k):
+                    r[k] = str(r[k])
+
+        not_started = sum(1 for r in rows if r.get("current_status") == "NOT_STARTED")
+        next_phase = next((r for r in rows if r.get("current_status") == "NOT_STARTED"), None)
+
+        result = {
+            "title": "Production Validation Plan",
+            "subtitle": (
+                "Concrete phases from methodology demo to real-data proof. "
+                "Each phase has a measurable success criterion and escalation trigger."
+            ),
+            "urgency_banner": (
+                f"Phase 1 ({next_phase['phase_name']}) target start: {next_phase['target_start_date']}. "
+                f"Channel: {next_phase['channel']}. Status: {next_phase['current_status']}."
+            ) if next_phase else None,
+            "summary": {
+                "total_phases": len(rows),
+                "not_started": not_started,
+                "in_progress": sum(1 for r in rows if r.get("current_status") == "IN_PROGRESS"),
+                "passed": sum(1 for r in rows if r.get("current_status") == "PASSED"),
+            },
+            "phases": rows,
+            "differentiator": (
+                "No legacy CDP defines validation gates BEFORE going to production. "
+                "CustomerLake's plan ensures every production number meets the same "
+                "statistical rigor as the synthetic proof."
+            ),
+        }
+        return cache_set("prod_validation", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# CPA Sensitivity Analysis (CMO-313: CVR scenario breakeven)
+# ---------------------------------------------------------------------------
+@app.get("/api/cpa-sensitivity")
+async def cpa_sensitivity():
+    """CPA sensitivity analysis across real-vs-synthetic CVR scenarios.
+
+    Shows how the $210K incremental claim changes if real-world
+    conversion rates differ from synthetic assumptions. 6 scenarios
+    from zero-lift (null hypothesis) to full-lift (ceiling).
+    Addresses CMO-313.
+    """
+    cached = cache_get("cpa_sensitivity")
+    if cached:
+        return cached
+    try:
+        conn = get_sql_connection()
+        cur = conn.cursor()
+        cur.execute(f"""
+            SELECT scenario_code, scenario_description, lift_pct_of_observed,
+                   incremental_conversions, incremental_revenue_usd,
+                   delivery_cost_usd, net_profit_usd, delivery_roi_pct,
+                   profitable_channels, total_channels,
+                   investment_verdict, cost_efficiency,
+                   methodology_note, data_origin
+            FROM {VIEW_CPA_SENSITIVITY}
+            ORDER BY lift_pct_of_observed ASC
+        """)
+        cols = [d[0] for d in cur.description]
+        rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+
+        # Cast Decimal types to float for JSON serialization
+        for r in rows:
+            for k in ["lift_pct_of_observed", "delivery_cost_usd"]:
+                if r.get(k) is not None:
+                    r[k] = float(r[k])
+
+        # Derive breakeven analysis
+        profitable = [r for r in rows if r.get("net_profit_usd", 0) and r["net_profit_usd"] > 0]
+        unprofitable = [r for r in rows if r.get("net_profit_usd") is not None and r["net_profit_usd"] <= 0]
+        breakeven_pct = None
+        if unprofitable and profitable:
+            last_neg = max(unprofitable, key=lambda x: x.get("lift_pct_of_observed", 0))
+            first_pos = min(profitable, key=lambda x: x.get("lift_pct_of_observed", 0))
+            if last_neg["net_profit_usd"] is not None and first_pos["net_profit_usd"] is not None:
+                neg_pct = last_neg["lift_pct_of_observed"] or 0
+                pos_pct = first_pos["lift_pct_of_observed"] or 0
+                neg_profit = last_neg["net_profit_usd"]
+                pos_profit = first_pos["net_profit_usd"]
+                if pos_profit != neg_profit:
+                    breakeven_pct = round(
+                        neg_pct + (0 - neg_profit) / (pos_profit - neg_profit) * (pos_pct - neg_pct), 1
+                    )
+
+        delivery_cost = rows[0]["delivery_cost_usd"] if rows else None
+        base_scenario = next((r for r in rows if r.get("scenario_code") == "S0_CURRENT_SYNTHETIC"), None)
+        worst_case = next((r for r in rows if r.get("scenario_code") == "S5_ZERO_LIFT"), None)
+
+        result = {
+            "title": "CPA Sensitivity Analysis",
+            "subtitle": (
+                "What happens to the $210K incremental claim if real-world conversion rates "
+                "differ from synthetic assumptions? Six scenarios from zero-lift to full-lift."
+            ),
+            "provenance_warning": (
+                "ALL scenarios use SYNTHETIC_MODELED data. These project what production outcomes "
+                "COULD look like \u2014 they are not production measurements."
+            ),
+            "summary": {
+                "total_scenarios": len(rows),
+                "profitable_scenarios": len(profitable),
+                "value_destructive": sum(1 for r in rows if r.get("investment_verdict") == "VALUE_DESTRUCTIVE"),
+                "breakeven_lift_pct": breakeven_pct,
+                "delivery_cost_usd": delivery_cost,
+                "base_revenue_usd": base_scenario["incremental_revenue_usd"] if base_scenario else None,
+                "worst_case_loss_usd": worst_case["net_profit_usd"] if worst_case else None,
+            },
+            "scenarios": rows,
+            "breakeven_insight": (
+                f"Breakeven requires ~{breakeven_pct}% of synthetic lift to persist in production. "
+                f"Below {breakeven_pct}%, CustomerLake delivery is value-destructive (cost > revenue)."
+            ) if breakeven_pct else (
+                "Breakeven point could not be determined from current scenarios."
+            ),
+            "differentiator": (
+                "Legacy CDPs present a single ROI number and call it done. CustomerLake shows "
+                "the RANGE of outcomes under different assumptions \u2014 so the CFO knows exactly "
+                "where the risk is before committing budget."
+            ),
+        }
+        return cache_set("cpa_sensitivity", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# CLTV Impact Measurement (CMO-319: the killer CDP metric)
+# ---------------------------------------------------------------------------
+@app.get("/api/cltv/impact")
+async def cltv_impact():
+    """CLTV impact: siloed vs unified entity visibility, revenue, and capabilities."""
+    cached = cache_get("cltv_impact")
+    if cached:
+        return cached
+    try:
+        conn = get_sql_connection()
+        cur = conn.cursor()
+        cur.execute(f"SELECT * FROM {VIEW_CLTV_IMPACT}")
+        cols = [d[0] for d in cur.description]
+        rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+        row = rows[0] if rows else {}
+
+        result = {
+            "title": "CLTV Impact Measurement",
+            "subtitle": (
+                "The killer CDP metric: without identity resolution, 56.6% of entities are "
+                "invisible to churn prediction, CLTV scoring, and marketing activation."
+            ),
+            "hero_kpis": {
+                "pct_invisible": row.get("pct_invisible_without_customerlake"),
+                "pct_visible": row.get("pct_visible_with_customerlake"),
+                "total_population": row.get("total_population"),
+                "siloed_entities": row.get("siloed_entity_count"),
+                "unified_entities": row.get("unified_entity_count"),
+                "revenue_unlocked": row.get("total_revenue_unlocked_by_unification"),
+                "revenue_invisible": row.get("revenue_invisible_to_business"),
+                "revenue_under_management": row.get("revenue_under_management"),
+            },
+            "siloed_vs_unified": {
+                "siloed": {
+                    "entity_count": row.get("siloed_entity_count"),
+                    "avg_completeness": row.get("siloed_avg_completeness"),
+                    "avg_revenue": row.get("siloed_avg_revenue"),
+                    "total_revenue": row.get("siloed_total_revenue"),
+                    "avg_cltv_3yr": row.get("siloed_avg_cltv_3yr"),
+                    "churn_scorable": row.get("siloed_churn_scorable"),
+                    "cltv_scorable": row.get("siloed_cltv_scorable"),
+                    "marketing_reachable": row.get("siloed_marketing_reachable"),
+                },
+                "unified": {
+                    "entity_count": row.get("unified_entity_count"),
+                    "avg_completeness": row.get("unified_avg_completeness"),
+                    "avg_revenue": row.get("unified_avg_revenue"),
+                    "total_revenue": row.get("unified_total_revenue"),
+                    "avg_cltv_3yr": row.get("unified_avg_cltv_3yr"),
+                    "churn_scorable": row.get("unified_churn_scorable"),
+                    "cltv_scorable": row.get("unified_cltv_scorable"),
+                    "marketing_reachable": row.get("unified_marketing_reachable"),
+                    "high_value_entities": row.get("unified_high_value_entities"),
+                    "avg_churn_risk": row.get("unified_avg_churn_risk"),
+                    "retention_prob": row.get("unified_retention_prob"),
+                },
+            },
+            "capability_deltas": {
+                "churn_prediction": {
+                    "with_unification": row.get("churn_prediction_enabled_entities"),
+                    "without_unification": row.get("churn_prediction_without_unification"),
+                },
+                "cltv_scoring": {
+                    "with_unification": row.get("cltv_scoring_enabled_entities"),
+                    "without_unification": row.get("cltv_scoring_without_unification"),
+                },
+                "consent_gated_reach": {
+                    "with_unification": row.get("consent_gated_reachable_entities"),
+                    "without_unification": row.get("reachable_without_unification"),
+                },
+            },
+            "data_origin": row.get("data_origin", "SYNTHETIC_MODELED"),
+            "methodology_note": row.get("methodology_note"),
+            "differentiator": (
+                "Legacy CDPs report only on entities they can see. CustomerLake reveals the "
+                "56.6% that are INVISIBLE without identity resolution \u2014 entities with zero "
+                "churn prediction, zero CLTV score, and zero marketing reachability."
+            ),
+        }
+        return cache_set("cltv_impact", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/cltv/cohorts")
+async def cltv_cohorts():
+    """CLTV cohort analysis by unification tier and CLTV bucket."""
+    cached = cache_get("cltv_cohorts")
+    if cached:
+        return cached
+    try:
+        conn = get_sql_connection()
+        cur = conn.cursor()
+        cur.execute(f"SELECT * FROM {VIEW_CLTV_COHORT} ORDER BY cohort_dimension, entity_count DESC")
+        cols = [d[0] for d in cur.description]
+        rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+
+        tiers = [r for r in rows if r.get("cohort_dimension") == "UNIFICATION_TIER"]
+        buckets = [r for r in rows if r.get("cohort_dimension") == "CLTV_BUCKET"]
+
+        result = {
+            "unification_tiers": tiers,
+            "cltv_buckets": buckets,
+            "insight": (
+                "SINGLE_SOURCE entities (56.6%) have zero CDP capabilities: no churn prediction, "
+                "no CLTV scoring, no marketing reach. FULLY_UNIFIED entities have 4/4 capabilities "
+                "and generate all visible revenue. This IS the CustomerLake value proposition."
+            ),
+        }
+        return cache_set("cltv_cohorts", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/canonical-roi")
+async def canonical_roi():
+    """Single source of truth ROI with sensitivity ranges (CMO-315/316)."""
+    cached = cache_get("canonical_roi")
+    if cached:
+        return cached
+    try:
+        conn = get_sql_connection()
+        cur = conn.cursor()
+        cur.execute(f"SELECT * FROM {VIEW_CANONICAL_ROI}")
+        cols = [d[0] for d in cur.description]
+        rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+        row = rows[0] if rows else {}
+        result = {
+            "title": "Canonical ROI \u2014 Single Source of Truth",
+            "data": row,
+            "headline": row.get("range_based_headline"),
+            "fragility": row.get("fragility_assessment"),
+            "reconciliation": row.get("three_view_reconciliation"),
+        }
+        return cache_set("canonical_roi", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# Spend Less, Get More (CMO-325/320/322 — the killer value prop)
+# ---------------------------------------------------------------------------
+@app.get("/api/spend-optimization")
+async def spend_optimization():
+    """Spend Less, Get More: the killer CustomerLake value prop.
+
+    Proves: EXIT value-destructive channels, SHRINK to profitable points,
+    organic baseline holds. No other CDP can prove this.
+    """
+    cached = cache_get("spend_optimization")
+    if cached:
+        return cached
+    try:
+        conn = get_sql_connection()
+        cur = conn.cursor()
+
+        # 1. Channel prescriptions from V3_FIXED playbook
+        cur.execute(f"""
+            SELECT channel_type, prescribed_action, kill_switch_triggered,
+                   incremental_revenue_usd, delivery_cost_usd, fully_loaded_cost_usd,
+                   delivery_roi_x, fully_loaded_roi_x,
+                   incremental_conversions, treatment_conversions, holdout_conversions,
+                   treatment_cvr_pct, holdout_cvr_pct, true_lift_ppt,
+                   evidence_strength, total_sends, board_narrative,
+                   customerlake_differentiator, data_origin
+            FROM {VIEW_ACTION_PLAYBOOK_V3_FIXED}
+            ORDER BY delivery_cost_usd DESC
+        """)
+        pb_cols = [d[0] for d in cur.description]
+        playbook = [dict(zip(pb_cols, r)) for r in cur.fetchall()]
+
+        # 2. Scale model: diminishing returns at $50K for profitable channels
+        cur.execute(f"""
+            SELECT channel, current_spend_usd, current_revenue_usd, current_roi_pct,
+                   spend_level_usd, spend_level_label, projected_revenue_usd,
+                   projected_roi_pct, marginal_revenue_per_dollar, board_insight
+            FROM {VIEW_CHANNEL_SCALE_MODEL}
+            ORDER BY channel, spend_level_usd
+        """)
+        sm_cols = [d[0] for d in cur.description]
+        scale_rows = [dict(zip(sm_cols, r)) for r in cur.fetchall()]
+
+        # 3. Budget optimizer summary
+        cur.execute(f"""
+            SELECT
+                SUM(current_spend_usd) as total_current_delivery,
+                SUM(optimized_spend_usd) as total_optimized_delivery,
+                SUM(current_incr_revenue) as total_current_revenue,
+                SUM(projected_incr_revenue) as total_projected_revenue,
+                COUNT(*) FILTER (WHERE optimized_action = 'SUPPRESS') as suppress_count,
+                COUNT(*) FILTER (WHERE optimized_action = 'REDUCE') as reduce_count,
+                COUNT(*) FILTER (WHERE optimized_action = 'SCALE') as scale_count,
+                COUNT(*) as total_cells
+            FROM {VIEW_BUDGET_OPTIMIZER}
+        """)
+        opt_cols = [d[0] for d in cur.description]
+        opt_row = dict(zip(opt_cols, cur.fetchone()))
+
+        # Compute key metrics from playbook
+        exit_channels = [c for c in playbook if c.get("kill_switch_triggered")]
+        hold_channels = [c for c in playbook if not c.get("kill_switch_triggered")]
+
+        exit_delivery_waste = sum(
+            float(c.get("delivery_cost_usd") or 0) for c in exit_channels
+        )
+        exit_conversions_destroyed = sum(
+            abs(int(c.get("incremental_conversions") or 0))
+            for c in exit_channels
+        )
+        legacy_fake_conversions = sum(
+            int(c.get("treatment_conversions") or 0) for c in exit_channels
+        )
+        hold_incremental_conversions = sum(
+            int(c.get("incremental_conversions") or 0) for c in hold_channels
+        )
+        hold_incremental_revenue = sum(
+            float(c.get("incremental_revenue_usd") or 0) for c in hold_channels
+        )
+        total_current_delivery = sum(
+            float(c.get("delivery_cost_usd") or 0) for c in playbook
+        )
+
+        # Scale model: find profitable point per channel
+        profitable_points = {}
+        for row in scale_rows:
+            ch = row["channel"]
+            roi = float(row.get("projected_roi_pct") or -999)
+            spend = float(row.get("spend_level_usd") or 0)
+            if roi > 0 and (ch not in profitable_points
+                           or spend < profitable_points[ch]["spend"]):
+                profitable_points[ch] = {
+                    "spend": spend,
+                    "roi_pct": roi,
+                    "label": row["spend_level_label"],
+                    "revenue": float(row.get("projected_revenue_usd") or 0),
+                }
+
+        # Optimal budget: EXIT kill-switch channels, use profitable point for HOLD
+        optimal_delivery = 0
+        optimal_detail = []
+        for c in playbook:
+            ch = c["channel_type"]
+            current = float(c.get("delivery_cost_usd") or 0)
+            if c.get("kill_switch_triggered"):
+                optimal_detail.append({
+                    "channel": ch,
+                    "action": "EXIT",
+                    "current_delivery": current,
+                    "optimal_delivery": 0,
+                    "savings": current,
+                    "reason": f"Kill switch: destroys {abs(int(c.get('incremental_conversions') or 0))} conversions",
+                })
+            else:
+                # Use scale model profitable point or current if no data
+                pp = profitable_points.get(ch)
+                opt = min(current, pp["spend"]) if pp else current
+                savings = current - opt
+                optimal_delivery += opt
+                optimal_detail.append({
+                    "channel": ch,
+                    "action": "OPTIMIZE" if savings > 0 else "MAINTAIN",
+                    "current_delivery": current,
+                    "optimal_delivery": opt,
+                    "savings": savings,
+                    "optimal_roi_pct": pp["roi_pct"] if pp else None,
+                    "reason": f"Scale model: profitable at {pp['label']}" if pp else "No profitable point in scale model",
+                })
+
+        total_savings = total_current_delivery - optimal_delivery
+
+        # Organic baseline proof: holdout CVR on EXIT channels
+        organic_proof = []
+        for c in exit_channels:
+            organic_proof.append({
+                "channel": c["channel_type"],
+                "holdout_cvr_pct": c.get("holdout_cvr_pct"),
+                "treatment_cvr_pct": c.get("treatment_cvr_pct"),
+                "true_lift_ppt": c.get("true_lift_ppt"),
+                "holdout_conversions": c.get("holdout_conversions"),
+                "insight": (
+                    f"Holdout ({c.get('holdout_cvr_pct')}% CVR) OUTPERFORMS "
+                    f"treatment ({c.get('treatment_cvr_pct')}% CVR). "
+                    f"Organic conversions continue without spend."
+                ),
+            })
+
+        # Scale model per channel for frontend curves
+        scale_by_channel = {}
+        for row in scale_rows:
+            ch = row["channel"]
+            if ch not in scale_by_channel:
+                scale_by_channel[ch] = []
+            scale_by_channel[ch].append({
+                "spend_level": row["spend_level_label"],
+                "spend_usd": float(row.get("spend_level_usd") or 0),
+                "projected_roi_pct": float(row.get("projected_roi_pct") or 0),
+                "marginal_revenue": float(row.get("marginal_revenue_per_dollar") or 0),
+            })
+
+        result = {
+            "title": "Spend Less, Get More",
+            "subtitle": (
+                "The killer CustomerLake value prop: prove your optimal marketing "
+                "budget is LOWER than current spend, with near-zero revenue impact. "
+                "No other CDP can prove this."
+            ),
+            "hero": {
+                "delivery_waste_usd": exit_delivery_waste,
+                "conversions_destroyed": exit_conversions_destroyed,
+                "legacy_fake_conversions": legacy_fake_conversions,
+                "total_current_delivery": total_current_delivery,
+                "optimal_delivery": optimal_delivery,
+                "total_savings_usd": total_savings,
+                "hold_incremental_conversions": hold_incremental_conversions,
+                "hold_incremental_revenue": hold_incremental_revenue,
+                "headline": (
+                    f"CustomerLake proves ${exit_delivery_waste:,.0f} in marketing "
+                    f"spend DESTROYS {exit_conversions_destroyed} conversions. "
+                    f"Legacy CDPs report {legacy_fake_conversions:,} \"conversions\" "
+                    f"on those same channels."
+                ),
+            },
+            "legacy_vs_customerlake": {
+                "legacy_reported_conversions": legacy_fake_conversions,
+                "customerlake_incremental": -exit_conversions_destroyed,
+                "gap": legacy_fake_conversions + exit_conversions_destroyed,
+                "insight": (
+                    f"Legacy CDPs (Braze, Salesforce, Iterable) report "
+                    f"{legacy_fake_conversions:,} conversions on paid_social + email. "
+                    f"CustomerLake holdout measurement proves "
+                    f"-{exit_conversions_destroyed} INCREMENTAL conversions. "
+                    f"Every dollar spent on these channels destroys value."
+                ),
+            },
+            "channel_prescriptions": [
+                {
+                    "channel": c["channel_type"],
+                    "action": c["prescribed_action"],
+                    "kill_switch": c.get("kill_switch_triggered"),
+                    "delivery_cost": float(c.get("delivery_cost_usd") or 0),
+                    "fully_loaded_cost": float(c.get("fully_loaded_cost_usd") or 0),
+                    "incremental_conversions": c.get("incremental_conversions"),
+                    "delivery_roi_x": c.get("delivery_roi_x"),
+                    "holdout_cvr_pct": c.get("holdout_cvr_pct"),
+                    "treatment_cvr_pct": c.get("treatment_cvr_pct"),
+                    "evidence_strength": c.get("evidence_strength"),
+                }
+                for c in playbook
+            ],
+            "optimal_budget": {
+                "detail": optimal_detail,
+                "total_current": total_current_delivery,
+                "total_optimal": optimal_delivery,
+                "total_savings": total_savings,
+                "cmo_talking_point": (
+                    f"Optimal delivery budget: ${optimal_delivery:,.0f} "
+                    f"(vs current ${total_current_delivery:,.0f}). "
+                    f"Save ${total_savings:,.0f} with near-zero revenue impact "
+                    f"because organic conversions continue without spend."
+                ),
+            },
+            "organic_baseline_proof": organic_proof,
+            "scale_model": scale_by_channel,
+            "optimizer_summary": {
+                "suppress_cells": opt_row.get("suppress_count"),
+                "reduce_cells": opt_row.get("reduce_count"),
+                "scale_cells": opt_row.get("scale_count"),
+                "total_cells": opt_row.get("total_cells"),
+                "insight": (
+                    f"{opt_row.get('suppress_count', 0)} of {opt_row.get('total_cells', 0)} "
+                    f"motion\u00d7tier cells should be SUPPRESSED. Only "
+                    f"{opt_row.get('scale_count', 0)} merit scaling."
+                ),
+            },
+            "differentiator": (
+                "No other CDP can prove: 'Spend LESS, get the SAME or MORE.' "
+                "Braze reports 2,857 conversions on paid_social + email. "
+                "CustomerLake proves -150 incremental. The savings story is the moat."
+            ),
+            "data_origin": "SYNTHETIC_MODELED",
+            "app_version": APP_VERSION,
+        }
+        return cache_set("spend_optimization", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
 # Health check
 # ---------------------------------------------------------------------------
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "app": "CustomerLake", "version": APP_VERSION}
+

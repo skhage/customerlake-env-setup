@@ -268,3 +268,8 @@ agent_evaluation
 src/notebooks/_devops_*.py
 src/notebooks/_devops_*.ipynb
 src/notebooks/_sync_*.py
+
+# Additional WIP patterns (INFRA-TARGETED-AUDIT-64, 2026-10-14)
+/DA-PROVENANCE-*.ipynb
+/DEVOPS-*.ipynb
+src/daily_cache_refresh.ipynb
