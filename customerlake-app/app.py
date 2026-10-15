@@ -33,7 +33,7 @@ _pg_conn = None
 CATALOG = "cdm_tmforum"
 
 # Single source of truth for app version (DRY pattern)
-APP_VERSION = "65.1.0"
+APP_VERSION = "66.0.0"
 
 # ---------------------------------------------------------------------------
 # Materialized table aliases (CMO-138 / APP-CACHED-VIEWS + V2 performance fix)
@@ -67,6 +67,7 @@ VIEW_RISK_BASED_TARGETING = f"{CATALOG}._metrics.customerlake_risk_based_targeti
 VIEW_HONEST_REVENUE = f"{CATALOG}._metrics.customerlake_dark_audience_honest_revenue_cached"
 VIEW_EXEC_SUMMARY_V2 = f"{CATALOG}._metrics.customerlake_exec_summary_v2_cached"
 
+
 # --- Campaign Learning Loop views (ML-CAMPAIGN-LEARNING, CMO-280/288) ---
 VIEW_LEARNING_CONVERGENCE = f"{CATALOG}._metrics.customerlake_campaign_learning_convergence"
 VIEW_LEARNING_MODEL = f"{CATALOG}._metrics.customerlake_campaign_learning_model"
@@ -74,6 +75,7 @@ VIEW_LEARNING_CHANNEL_DETAIL = f"{CATALOG}._metrics.customerlake_campaign_learni
 VIEW_LEARNING_CURVE = f"{CATALOG}._metrics.customerlake_campaign_learning_curve"
 # --- Siloed vs Unified platform comparison (DA-ADD-SILOED-HERO, CMO-281/286) ---
 VIEW_SILOED_VS_UNIFIED = f"{CATALOG}._metrics.customerlake_siloed_vs_unified"
+VIEW_FEEDBACK_LOOP = f"{CATALOG}._metrics.customerlake_feedback_loop_plan_cached"
 # --- Board-Ready Single Source (CMO-267/276/291 — canonical revenue numbers) ---
 VIEW_BOARD_SINGLE_SOURCE = f"{CATALOG}._metrics.customerlake_board_single_source_v2"
 VIEW_CPA_VALUE_STORY = f"{CATALOG}._metrics.customerlake_cpa_value_story"
