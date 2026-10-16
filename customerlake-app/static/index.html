@@ -97,6 +97,16 @@
       font-weight: 500;
     }
     .nav-icon { font-size: 18px; width: 24px; text-align: center; }
+    .nav-section {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      padding: 16px 20px 4px;
+      margin-top: 4px;
+    }
+    .nav-section:first-child { margin-top: 0; padding-top: 12px; }
     .main-content { flex: 1; padding: 24px 32px; overflow-y: auto; max-height: 100vh; }
     .page-header { margin-bottom: 24px; }
     .page-header h2 { font-size: 22px; font-weight: 600; }
@@ -658,6 +668,7 @@
       playCircle: 'M12 12m-10 0a10 10 0 1 0 20 0 10 10 0 1 0-20 0 M10 8l6 4-6 4V8z',
       heart: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z',
       trendingDown: 'M22 17l-8.5-8.5-5 5L2 7 M16 17h6v-6',
+      briefcase: 'M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16',
     };
 
     // ---- Focus Trap Hook (UX-FIX-4) ----
@@ -856,7 +867,7 @@
            {data.data_integrity_warnings && data.data_integrity_warnings.length > 0 && (
              <div className="card" role="note" style={{borderLeft:'3px solid var(--warning)', marginBottom:16, background:'rgba(251,191,36,0.04)'}}>
                <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:6}}>
-                 <span className="diff-badge" style={{fontSize:9, background:'rgba(251,191,36,0.15)', color:'var(--warning)'}}>DATA NOTE</span>
+                 <span className="diff-badge" style={{fontSize:10, background:'rgba(251,191,36,0.15)', color:'var(--warning)'}}>DATA NOTE</span>
                  <span style={{fontWeight:600, fontSize:12, color:'var(--text-primary)'}}>Metric Cross-Check</span>
                </div>
                {data.data_integrity_warnings.map((w, i) => (
@@ -874,7 +885,7 @@
               <div className="kpi-card" style={{borderLeft:'3px solid var(--accent)', background:'var(--accent-light)', gridColumn: dualRoi ? 'span 1' : 'span 1'}}>
                 <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
                   <div className="kpi-label">Campaign-Period ROI</div>
-                  <span className="diff-badge" style={{fontSize:9}}>IN-PERIOD</span>
+                  <span className="diff-badge" style={{fontSize:10}}>IN-PERIOD</span>
                 </div>
                 <div className="kpi-value" style={{color:'var(--text-secondary)', fontSize:32}}>{dualRoi ? (dualRoi.portfolio.campaign_roi_x * 100).toFixed(0) + '%' : h.incremental_roi_x != null ? (h.incremental_roi_x * 100).toFixed(0) + '%' : '\u2014'}</div>
                 <div className="kpi-sub">{dualRoi ? dualRoi.portfolio.campaign_roi_x + 'x' : (h.incremental_roi_x != null ? h.incremental_roi_x + 'x' : '\u2014')} on {fmtB(dualRoi ? dualRoi.portfolio.total_cost : null)}</div>
@@ -883,8 +894,8 @@
               <div className="kpi-card" style={{borderLeft:'3px solid var(--warning)', background:'rgba(251,191,36,0.06)'}}>
                 <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
                   <div className="kpi-label">Portfolio LTV ROI</div>
-                  <span className="diff-badge" style={{fontSize:9, background:'rgba(251,191,36,0.15)', color:'var(--warning)'}}>NEEDS RECALIBRATION</span>
-                  <span className="diff-badge" style={{fontSize:9}}>ML-PROJECTED</span>
+                  <span className="diff-badge" style={{fontSize:10, background:'rgba(251,191,36,0.15)', color:'var(--warning)'}}>NEEDS RECALIBRATION</span>
+                  <span className="diff-badge" style={{fontSize:10}}>ML-PROJECTED</span>
                 </div>
                 <div className="kpi-value" style={{color:'var(--warning)', fontSize:32}}>{dualRoi ? (dualRoi.portfolio.ltv_roi_x * 100).toFixed(0) + '%' : '168%'}</div>
                 <div className="kpi-sub" style={{fontWeight:600, color:'var(--warning)'}}>{dualRoi && dualRoi.narrative && dualRoi.narrative.ltv_calibration_warning ? dualRoi.narrative.ltv_calibration_warning.model_overprediction_factor + 'x model overprediction detected' : '~6.7x model overprediction detected'}</div>
@@ -898,7 +909,7 @@
               <div className="kpi-card" style={{borderLeft:'3px solid var(--warning)'}}>
                 <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
                    <div className="kpi-label">Suppression Savings (90d)</div>
-                   <span className="diff-badge" style={{fontSize:9, background:'rgba(251,191,36,0.15)', color:'var(--warning)'}}>{suppressBreakdown ? suppressBreakdown.measured_pct + '% MEASURED' : ''}</span>
+                   <span className="diff-badge" style={{fontSize:10, background:'rgba(251,191,36,0.15)', color:'var(--warning)'}}>{suppressBreakdown ? suppressBreakdown.measured_pct + '% MEASURED' : ''}</span>
                  </div>
                  <div className="kpi-value" style={{color:'var(--warning)'}}>{suppressBreakdown ? fmtB(suppressBreakdown.measured.value) : fmtB(h.suppression_90day_value)}</div>
                  <div className="kpi-sub" style={{fontWeight:500}}>{suppressBreakdown ? 'Measured cost savings (real spend eliminated)' : 'Stop spending on value-destructive segments'}</div>
@@ -985,7 +996,7 @@
                <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
                  <div style={{display:'flex', alignItems:'center', gap:8}}>
                    <div className="card-title" style={{margin:0}}><Icon d={icons.barChart} size={16} /> ROI Confidence Tiers</div>
-                   <span className={`badge ${tieredRoi.evidence_summary?.evidence_quality === 'HIGH' ? 'badge-success' : tieredRoi.evidence_summary?.evidence_quality === 'MODERATE' ? 'badge-warning' : 'badge-danger'}`} style={{fontSize:9, padding:'1px 6px'}}>
+                   <span className={`badge ${tieredRoi.evidence_summary?.evidence_quality === 'HIGH' ? 'badge-success' : tieredRoi.evidence_summary?.evidence_quality === 'MODERATE' ? 'badge-warning' : 'badge-danger'}`} style={{fontSize:10, padding:'1px 6px'}}>
                      {tieredRoi.evidence_summary?.evidence_quality || 'N/A'} EVIDENCE
                    </span>
                    <span className="diff-badge">UNIQUE</span>
@@ -1209,11 +1220,11 @@
                            {ch.incremental.ltv_cac.toFixed(1)}x
                          </td>
                          <td>{ch.incremental.campaign_roi_x.toFixed(2)}x</td>
-                         <td><span className={`badge ${ch.incremental.verdict?.includes('SCALE') ? 'badge-success' : ch.incremental.verdict?.includes('REDUCE') ? 'badge-danger' : 'badge-warning'}`} style={{fontSize:9}}>
+                         <td><span className={`badge ${ch.incremental.verdict?.includes('SCALE') ? 'badge-success' : ch.incremental.verdict?.includes('REDUCE') ? 'badge-danger' : 'badge-warning'}`} style={{fontSize:10}}>
                            {(ch.incremental.verdict || '').split(' ')[0]}
                          </span></td>
                          <td style={{color:'var(--text-muted)'}}>{ch.fully_loaded.ltv_cac.toFixed(1)}x</td>
-                         <td><span className="badge badge-info" style={{fontSize:9}}>{ch.fully_loaded.health}</span></td>
+                         <td><span className="badge badge-info" style={{fontSize:10}}>{ch.fully_loaded.health}</span></td>
                          <td style={{color:'var(--danger)', fontSize:11}}>{ch.divergence_x}x gap</td>
                        </tr>
                      ))}
@@ -1582,7 +1593,7 @@
                           <div style={{position:'absolute', left:'-25px', top:'2px', width:'10px', height:'10px', borderRadius:'50%', background: typeColor, border:'2px solid var(--bg-secondary)'}} />
                           <div style={{display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap'}}>
                             <span style={{fontSize:'10px', fontWeight:600, textTransform:'uppercase', color: typeColor}}>{ev.event_type}</span>
-                            {ev.source_system && <span className={`source-badge source-${ev.source_system}`} style={{fontSize:'9px'}}>{ev.source_system}</span>}
+                            {ev.source_system && <span className={`source-badge source-${ev.source_system}`} style={{fontSize:'10px'}}>{ev.source_system}</span>}
                             <span style={{color:'var(--text-muted)', fontSize:'10px', marginLeft:'auto'}}>{ts}</span>
                           </div>
                           <div style={{color:'var(--text-primary)', marginTop:'2px', fontWeight:500}}>
@@ -4953,7 +4964,7 @@
           {/* DISAMBIGUATION BANNER — CMO-155: dark audience ≠ dark funnel */}
            <div className="card" role="note" style={{borderLeft:'3px solid var(--info)', marginBottom:16, background:'var(--info-bg)'}}>
              <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:6}}>
-               <span className="diff-badge" style={{fontSize:9}}>TERMINOLOGY</span>
+               <span className="diff-badge" style={{fontSize:10}}>TERMINOLOGY</span>
                <span style={{fontWeight:600, fontSize:13, color:'var(--text-primary)'}}>Dark Audience ≠ Zero-LTV Contacts</span>
              </div>
              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, fontSize:12, color:'var(--text-secondary)'}}>
@@ -4972,8 +4983,8 @@
            {honestRev && honestRev.headline && (
              <div className="card" style={{borderLeft:'3px solid var(--success)', marginBottom:16, background:'rgba(52,211,153,0.04)'}}>
                <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:8}}>
-                 <span className="diff-badge" style={{fontSize:9, background:'rgba(52,211,153,0.15)', color:'var(--success)'}}>PILOT HYPOTHESIS</span>
-                 <span className="diff-badge" style={{fontSize:9}}>CMO-156</span>
+                 <span className="diff-badge" style={{fontSize:10, background:'rgba(52,211,153,0.15)', color:'var(--success)'}}>PILOT HYPOTHESIS</span>
+                 <span className="diff-badge" style={{fontSize:10}}>CMO-156</span>
                </div>
                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16}}>
                  <div>
@@ -5018,7 +5029,7 @@
              <div className="kpi-card" style={{borderLeft:'3px solid var(--warning)', background:'rgba(251,191,36,0.06)'}}>
                <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
                  <div className="kpi-label">Recoverable LTV</div>
-                 <span className="diff-badge" style={{fontSize:9, background:'rgba(251,191,36,0.15)', color:'var(--warning)'}}>CALIBRATED</span>
+                 <span className="diff-badge" style={{fontSize:10, background:'rgba(251,191,36,0.15)', color:'var(--warning)'}}>CALIBRATED</span>
                </div>
                <div className="kpi-value" style={{color:'var(--warning)'}}>{kpiData && kpiData.ltv_calibration ? fmtB(kpiData.ltv_calibration.calibrated_addressable_dark_ltv) : fmtB(k.addressable_dark_ltv / 6.40)}</div>
                <div className="kpi-sub" style={{fontSize:10, color:'var(--text-muted)'}}>Raw model: {fmtB(k.addressable_dark_ltv)} \u00b7 <span style={{color:'var(--warning)'}}>\u00f76.4x overprediction</span></div>
@@ -5957,7 +5968,7 @@
       }, []);
 
       if (error) return <ErrorCard message={error} onRetry={() => { setError(null); api('/api/board-ready/single-source').then(setSource).catch(e => setError(e.message)); }} />;
-      if (!source) return <LoadingShimmer />;
+      if (!source) return <div aria-live="polite" role="status"><LoadingShimmer /></div>;
 
       const cats = source.categories || {};
       const tiers = (waterfall && waterfall.tiers) || [];
@@ -6118,7 +6129,7 @@
         api('/api/learning-loop/channels').then(setChannels).catch(() => {});
       }, []);
       if (error) return <ErrorCard message={error} onRetry={() => { setError(null); api('/api/learning-loop/convergence').then(setData).catch(e => setError(e.message)); }} />;
-      if (!data) return <LoadingShimmer />;
+      if (!data) return <div aria-live="polite" role="status"><LoadingShimmer /></div>;
 
       const fmtUsd = (v) => v == null ? '\u2014' : '$' + Number(v).toLocaleString(undefined, {maximumFractionDigits:0});
       const fmtPct = (v) => v == null ? '\u2014' : (v > 0 ? '+' : '') + Number(v).toFixed(1) + '%';
@@ -6434,6 +6445,11 @@
           <div className="page-header">
             <h2><Icon d={icons.users} size={22} /> Customer Lifecycle</h2>
             <p className="page-subtitle">{stages.subtitle}</p>
+          </div>
+
+          {/* Data provenance disclosure — CMO-306 compliance (V100-UX-FIX-5) */}
+          <div role="note" style={{background:'var(--warning-bg)', border:'1px solid var(--warning)', borderRadius:'var(--radius)', padding:'12px 16px', marginBottom:16, fontSize:12, color:'var(--warning)', lineHeight:1.5}}>
+            <span style={{fontWeight:700, display:'inline-flex', alignItems:'center', gap:4}}><Icon d={icons.alertTriangle} size={14} /> SIMULATION ENVIRONMENT:</span> Lifecycle stages computed from modeled identity-resolved data. These metrics model production patterns, not production measurements.
           </div>
 
           {/* Hero KPIs */}
@@ -6827,7 +6843,7 @@
         api('/api/production-path/validation-plan').then(setPlan).catch(e => setError(e.message));
       }, []);
 
-      if (error) return <div className="card" style={{padding:20, color:'var(--danger)'}}><Icon d={icons.alertCircle} size={16} /> {error}</div>;
+      if (error) return <ErrorCard message={error} onRetry={() => { setError(null); api('/api/production-path/roadmap').then(setRoadmap).catch(e => setError(e.message)); }} />;
       if (!roadmap) return <div className="card" style={{padding:40, textAlign:'center'}}><div className="shimmer" style={{height:200}} /></div>;
 
       const statusColor = (s) => s === 'COMPLETED' ? 'var(--success)' : s === 'IN_PROGRESS' ? 'var(--accent)' : 'var(--text-muted)';
@@ -6989,7 +7005,7 @@
       }, []);
 
       if (error) return <ErrorCard message={error} onRetry={() => { setError(null); window.location.reload(); }} />;
-      if (!impact) return <LoadingShimmer />;
+      if (!impact) return <div aria-live="polite" role="status"><LoadingShimmer /></div>;
 
       const h = impact.hero_kpis;
       const s = impact.siloed_vs_unified.siloed;
@@ -7180,7 +7196,7 @@
       }, []);
 
       if (error) return <ErrorCard message={error} onRetry={() => { setError(null); window.location.reload(); }} />;
-      if (!data) return <LoadingShimmer />;
+      if (!data) return <div aria-live="polite" role="status"><LoadingShimmer /></div>;
 
       const h = data.hero;
       const lvc = data.legacy_vs_customerlake;
@@ -7390,8 +7406,8 @@
                         <div key={i} style={{flex:1, textAlign:'center'}}>
                           <div role="img" aria-label={ch + ' at ' + p.spend_level + ': ' + p.projected_roi_pct.toFixed(0) + '% ROI'}
                             style={{height:barH, background:isPositive ? 'var(--success)' : 'var(--danger)', borderRadius:3, opacity:0.8, margin:'0 2px'}} />
-                          <div style={{fontSize:9, color: isPositive ? 'var(--success)' : 'var(--danger)', fontWeight:600, marginTop:2}}>{p.projected_roi_pct.toFixed(0)}%</div>
-                          <div style={{fontSize:9, color:'var(--text-muted)'}}>{p.spend_level}</div>
+                          <div style={{fontSize:10, color: isPositive ? 'var(--success)' : 'var(--danger)', fontWeight:600, marginTop:2}}>{p.projected_roi_pct.toFixed(0)}%</div>
+                          <div style={{fontSize:10, color:'var(--text-muted)'}}>{p.spend_level}</div>
                         </div>
                       );
                     })}
@@ -7435,35 +7451,492 @@
       );
     }
 
+    // ---- Board Narrative Page (CMO-350/351 — 5-row value summary + cached full narrative) ----
+    function BoardNarrativePage() {
+      const [valueSummary, setValueSummary] = useState(null);
+      const [slides, setSlides] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      const [expandedSlide, setExpandedSlide] = useState(null);
+
+      useEffect(() => {
+        setLoading(true);
+        Promise.all([
+          api('/api/board-narrative/value-summary'),
+          api('/api/board-narrative/slides'),
+        ]).then(([v, s]) => {
+          setValueSummary(v);
+          setSlides(s);
+          setLoading(false);
+        }).catch(e => { setError(e.message); setLoading(false); });
+      }, []);
+
+      const fmtUsd = (v) => v == null ? '\u2014' : (v < 0 ? '-$' + Math.abs(Math.round(v)).toLocaleString() : '$' + Math.round(v).toLocaleString());
+      const fmtUsdK = (v) => v == null ? '\u2014' : (Math.abs(v) >= 1000000 ? (v < 0 ? '-$' : '$') + (Math.abs(v) / 1000000).toFixed(1) + 'M' : (v < 0 ? '-$' : '$') + Math.round(Math.abs(v)).toLocaleString());
+
+      if (loading) return <div aria-live="polite" role="status"><LoadingShimmer /></div>;
+      if (error) return <ErrorCard message={error} onRetry={() => window.location.reload()} />;
+
+      const streams = valueSummary?.value_streams || [];
+      const total = valueSummary?.total || {};
+      const slideList = slides?.slides || [];
+      const summary = slides?.summary || {};
+
+      const tierColors = {
+        success: 'var(--success)',
+        warning: 'var(--warning)',
+        info: 'var(--accent)',
+        muted: 'var(--text-muted)',
+      };
+
+      const evidenceColors = {
+        BOARD_SAFE: 'var(--success)',
+        REQUIRES_VALIDATION: 'var(--warning)',
+        HYPOTHESIS: 'var(--accent)',
+        CAVEAT: 'var(--text-muted)',
+      };
+
+      const evidenceLabels = {
+        BOARD_SAFE: 'Board Safe',
+        REQUIRES_VALIDATION: 'Needs Validation',
+        HYPOTHESIS: 'Hypothesis',
+        CAVEAT: 'Caveat',
+      };
+
+      // Max absolute value for bar scaling
+      const maxAmt = Math.max(...streams.map(s => Math.abs(s.amount_usd)), 1);
+
+      return (
+        <div>
+          <div className="page-header">
+            <h2><Icon d={icons.briefcase} size={22} /> Board Narrative</h2>
+            <p style={{color:'var(--text-secondary)', margin:'4px 0 0'}}>
+              CMO-351 response: The 5-row executive summary. CMO-350 fix: cached narrative (sub-second).
+            </p>
+          </div>
+
+          {/* SIMULATION ENVIRONMENT provenance banner (CMO-306/310) */}
+          <div role="note" style={{background:'var(--warning-bg)', border:'1px solid var(--warning)', borderRadius:8, padding:'10px 16px', marginBottom:20, display:'flex', alignItems:'center', gap:8}}>
+            <Icon d={icons.alertTriangle} size={16} />
+            <span style={{fontSize:13}}>SIMULATION ENVIRONMENT: All values derived from synthetic data calibrated to industry benchmarks. Production validation required before board use.</span>
+          </div>
+
+          {/* === SECTION 1: 5-Row Value Summary Hero === */}
+          <div className="card" style={{marginBottom:24}}>
+            <h3 style={{margin:'0 0 4px'}}>CustomerLake Annual Value \u2014 5-Row Summary</h3>
+            <p style={{color:'var(--text-muted)', fontSize:12, margin:'0 0 16px'}}>One row per value stream. This IS the board slide.</p>
+
+            {/* Total hero */}
+            <div style={{background:'var(--card-bg)', border:'2px solid var(--accent)', borderRadius:10, padding:'16px 20px', marginBottom:16, display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+              <div>
+                <div style={{fontSize:12, fontWeight:700, color:'var(--accent)', textTransform:'uppercase', letterSpacing:1}}>Total Demonstrable Value</div>
+                <div style={{fontSize:28, fontWeight:700, color:'var(--text-primary)', marginTop:4}}>{fmtUsdK(total.amount_usd)}</div>
+              </div>
+              <span style={{fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:4, background:'var(--accent)22', color:'var(--accent)'}}>BLENDED</span>
+            </div>
+
+            {/* Value stream rows */}
+            <div style={{display:'flex', flexDirection:'column', gap:8}}>
+              {streams.map((s, i) => {
+                const barW = Math.max(Math.abs(s.amount_usd) / maxAmt * 100, 2);
+                const isNeg = s.amount_usd < 0;
+                const tierColor = tierColors[s.tier_color] || 'var(--text-muted)';
+                return (
+                  <div key={i} style={{background:'var(--surface)', borderRadius:8, padding:'12px 16px', border:'1px solid var(--border)'}}>
+                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6}}>
+                      <div style={{display:'flex', alignItems:'center', gap:8}}>
+                        <span style={{fontSize:14, fontWeight:700, color:'var(--text-primary)'}}>{s.order}.</span>
+                        <span style={{fontSize:13, fontWeight:600, color:'var(--text-primary)'}}>{s.category.replace(/_/g, ' ')}</span>
+                        <span style={{fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:4, background: tierColor + '22', color: tierColor}}>{s.tier_label}</span>
+                      </div>
+                      <span style={{fontSize:16, fontWeight:700, color: isNeg ? 'var(--danger)' : 'var(--success)'}}>{fmtUsd(s.amount_usd)}</span>
+                    </div>
+                    {/* Bar */}
+                    <div style={{height:6, background:'var(--border)', borderRadius:3, overflow:'hidden', marginBottom:6}}>
+                      <div style={{width: barW + '%', height:'100%', background: isNeg ? 'var(--danger)' : tierColor, borderRadius:3, transition:'width 0.4s ease'}} />
+                    </div>
+                    <div style={{fontSize:12, color:'var(--text-secondary)', lineHeight:1.4}}>{s.board_one_liner}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* === SECTION 2: Full Narrative Slides === */}
+          <div className="card" style={{marginBottom:24}}>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12}}>
+              <h3 style={{margin:0}}>Full Board Narrative \u2014 {slideList.length} Slides</h3>
+              <div style={{display:'flex', gap:8}}>
+                <span style={{fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:4, background:'var(--success)22', color:'var(--success)'}}>{summary.board_safe_count || 0} Board Safe</span>
+                <span style={{fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:4, background:'var(--warning)22', color:'var(--warning)'}}>{summary.requires_validation_count || 0} Needs Val.</span>
+                <span style={{fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:4, background:'var(--accent)22', color:'var(--accent)'}}>{summary.hypothesis_count || 0} Hypothesis</span>
+              </div>
+            </div>
+            <p style={{color:'var(--text-muted)', fontSize:12, margin:'0 0 16px'}}>Served from cached table (sub-second). Click any slide to expand presenter talking points and CFO methodology.</p>
+
+            <div style={{display:'flex', flexDirection:'column', gap:6}}>
+              {slideList.map((sl, i) => {
+                const isExpanded = expandedSlide === i;
+                const evColor = evidenceColors[sl.evidence_level] || 'var(--text-muted)';
+                const evLabel = evidenceLabels[sl.evidence_level] || sl.evidence_level;
+                return (
+                  <div key={i} style={{border:'1px solid var(--border)', borderRadius:8, overflow:'hidden', transition:'all 0.2s'}}>
+                    <button
+                      onClick={() => setExpandedSlide(isExpanded ? null : i)}
+                      style={{width:'100%', padding:'12px 16px', background: isExpanded ? 'var(--surface)' : 'transparent', border:'none', cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', textAlign:'left'}}
+                      aria-expanded={isExpanded}
+                    >
+                      <div style={{display:'flex', alignItems:'center', gap:10, flex:1, minWidth:0}}>
+                        <span style={{fontSize:13, fontWeight:700, color:'var(--text-muted)', flexShrink:0}}>{sl.order}</span>
+                        <span style={{fontSize:13, fontWeight:600, color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{sl.title}</span>
+                      </div>
+                      <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0}}>
+                        {sl.value_usd > 0 && <span style={{fontSize:13, fontWeight:700, color:'var(--success)'}}>{fmtUsdK(sl.value_usd)}</span>}
+                        <span style={{fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:4, background: evColor + '22', color: evColor}}>{evLabel}</span>
+                        <span style={{fontSize:14, color:'var(--text-muted)', transition:'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0)'}}>{"\u25BC"}</span>
+                      </div>
+                    </button>
+                    {isExpanded && (
+                      <div style={{padding:'0 16px 16px', borderTop:'1px solid var(--border)'}}>
+                        {sl.talking_point && (
+                          <div style={{marginTop:12}}>
+                            <div style={{fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:4}}>Presenter Talking Point</div>
+                            <div style={{fontSize:13, color:'var(--text-secondary)', lineHeight:1.5, whiteSpace:'pre-wrap'}}>{sl.talking_point}</div>
+                          </div>
+                        )}
+                        {sl.methodology && (
+                          <div style={{marginTop:12}}>
+                            <div style={{fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:4}}>CFO Methodology</div>
+                            <div style={{fontSize:12, color:'var(--text-muted)', lineHeight:1.4, whiteSpace:'pre-wrap'}}>{sl.methodology}</div>
+                          </div>
+                        )}
+                        {sl.correction && (
+                          <div style={{marginTop:12, background:'var(--warning-bg)', borderRadius:6, padding:'8px 12px'}}>
+                            <div style={{fontSize:11, fontWeight:700, color:'var(--warning)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:4}}>Correction Applied</div>
+                            <div style={{fontSize:12, color:'var(--text-secondary)'}}>{sl.correction}</div>
+                            {sl.stale_cache_note && <div style={{fontSize:11, color:'var(--text-muted)', marginTop:4}}>Previous: {sl.stale_cache_note}</div>}
+                          </div>
+                        )}
+                        {sl.source && (
+                          <div style={{marginTop:8, fontSize:11, color:'var(--text-muted)'}}>Source: {sl.source}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* === SECTION 3: Differentiator footer === */}
+          <div className="card" style={{background:'var(--accent)08', border:'1px solid var(--accent)33'}}>
+            <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:8}}>
+              <Icon d={icons.zap} size={16} />
+              <span style={{fontSize:13, fontWeight:700, color:'var(--accent)'}}>CustomerLake Differentiator</span>
+            </div>
+            <p style={{fontSize:13, color:'var(--text-secondary)', margin:0, lineHeight:1.5}}>
+              {valueSummary?.differentiator || 'No other CDP surfaces proven, modeled, and platform-cost value streams in a single auditable summary.'}
+            </p>
+          </div>
+
+          {slides?.generated_at && (
+            <div style={{marginTop:12, fontSize:11, color:'var(--text-muted)', textAlign:'right'}}>
+              Narrative generated: {new Date(slides.generated_at).toLocaleString()} | Cached (sub-second) | v{appVersion}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function CostMethodologyPage() {
+      const [overhead, setOverhead] = useState(null);
+      const [pnl, setPnl] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+
+      useEffect(() => {
+        setLoading(true);
+        Promise.all([
+          api('/api/cost-methodology/overhead'),
+          api('/api/cost-methodology/pnl-reconciliation'),
+        ]).then(([o, p]) => {
+          setOverhead(o);
+          setPnl(p);
+          setLoading(false);
+        }).catch(e => { setError(e.message); setLoading(false); });
+      }, []);
+
+      const fmtUsd = (v) => v == null ? '\u2014' : '$' + Number(v).toLocaleString(undefined, {maximumFractionDigits: 0});
+      const fmtX = (v) => v == null ? '\u2014' : Number(v).toFixed(2) + 'x';
+      const fmtMult = (v) => v == null ? '\u2014' : Number(v).toLocaleString(undefined, {maximumFractionDigits: 0}) + 'x';
+      const fmtPct = (v) => v == null ? '\u2014' : Number(v).toFixed(1) + '%';
+
+      if (loading) return <div aria-live="polite" role="status" style={{padding:40, textAlign:'center', color:'var(--text-muted)'}}>Loading cost methodology...</div>;
+      if (error) return <ErrorCard message={error} onRetry={() => window.location.reload()} />;
+
+      const channels = overhead?.channels || [];
+      const paradox = overhead?.paradox || {};
+      const methWarnings = overhead?.methodology_warnings || [];
+      const pnlItems = pnl?.pnl || [];
+      const tcoItems = pnl?.tco || [];
+      const pnlSummary = pnl?.pnl_summary || {};
+      const tcoWarnings = pnl?.tco_warnings || [];
+      const allWarnings = [...methWarnings, ...tcoWarnings];
+      const maxMult = Math.max(...channels.map(c => Number(c.overhead_multiplier_x) || 0), 1);
+
+      return (
+        <div>
+          <div className="page-header">
+            <h2><Icon d={icons.alertTriangle} size={22} /> Cost Basis Methodology</h2>
+            <p>
+              Radical cost transparency — how overhead allocation changes the sign of ROI, and why the P&L tells a different story than channel-level returns{' '}
+              <ProvenanceBadge synthetic={true} />
+            </p>
+          </div>
+          <div style={{display:'flex', gap:8, flexWrap:'wrap', marginBottom:16}}>
+            <span className="diff-badge">METHODOLOGY-EXPOSED</span>
+            <span className="diff-badge">OVERHEAD-TRANSPARENT</span>
+            <span className="diff-badge">ROI-PARADOX-EXPLAINED</span>
+            <span className="diff-badge">CFO-FORENSIC</span>
+          </div>
+
+          {/* SIMULATION ENVIRONMENT PROVENANCE */}
+          <div role="note" style={{padding:'10px 16px', marginBottom:16, background:'var(--warning-bg)', borderRadius:'var(--radius)', fontSize:12, color:'var(--warning)', display:'flex', alignItems:'center', gap:8}}>
+            <Icon d={icons.alertTriangle} size={14} />
+            <span>Cost methodology analysis uses SYNTHETIC_MODELED data. Overhead allocation ratios reflect modeling assumptions, not production-measured cost accounting. Per CMO-82 transparency mandate.</span>
+          </div>
+
+          {/* METHODOLOGY WARNINGS */}
+          {allWarnings.length > 0 && (
+            <div style={{marginBottom:20}}>
+              {allWarnings.map((w, i) => (
+                <div key={i} style={{padding:'12px 16px', marginBottom:8, background: w.severity === 'CRITICAL' ? 'var(--danger-bg)' : 'var(--warning-bg)', borderRadius:'var(--radius)', border: '1px solid ' + (w.severity === 'CRITICAL' ? 'var(--danger)' : 'var(--warning)'), fontSize:12}}>
+                  <div style={{fontWeight:700, color: w.severity === 'CRITICAL' ? 'var(--danger)' : 'var(--warning)', marginBottom:4, display:'flex', alignItems:'center', gap:6}}>
+                    <Icon d={icons.alertTriangle} size={12} />
+                    {w.severity}: {w.code}
+                    <span style={{marginLeft:'auto', fontSize:10, opacity:0.7}}>{w.cmo_ref}</span>
+                  </div>
+                  <div style={{color:'var(--text-secondary)', lineHeight:1.5}}>{w.message}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* HERO: THE ROI PARADOX */}
+          <div className="card" style={{padding:24, marginBottom:24, border:'1px solid var(--warning)', background:'linear-gradient(135deg, var(--bg-card) 0%, rgba(251,191,36,0.06) 100%)'}}>
+            <div style={{fontSize:11, color:'var(--warning)', textTransform:'uppercase', letterSpacing:'1px', fontWeight:700, marginBottom:16}}>
+              <Icon d={icons.alertTriangle} size={12} /> The ROI Paradox
+            </div>
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:16}}>
+              <div>
+                <div style={{fontSize:36, fontWeight:700, color:'var(--success)'}}>{fmtX(paradox.portfolio_delivery_roi)}</div>
+                <div style={{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Delivery-Cost ROI</div>
+                <div style={{fontSize:11, color:'var(--text-secondary)', marginTop:4}}>Direct send cost only</div>
+              </div>
+              <div>
+                <div style={{fontSize:36, fontWeight:700, color:'var(--danger)'}}>{fmtX(paradox.portfolio_fully_loaded_roi)}</div>
+                <div style={{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Fully-Loaded ROI</div>
+                <div style={{fontSize:11, color:'var(--text-secondary)', marginTop:4}}>Includes platform overhead</div>
+              </div>
+              <div>
+                <div style={{fontSize:36, fontWeight:700, color:'var(--accent)'}}>{paradox.overhead_range}</div>
+                <div style={{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Overhead Multiplier Range</div>
+                <div style={{fontSize:11, color:'var(--text-secondary)', marginTop:4}}>Across 5 channels</div>
+              </div>
+              <div>
+                <div style={{fontSize:36, fontWeight:700, color:'var(--warning)'}}>{paradox.sign_conflict_count}/5</div>
+                <div style={{fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Sign Conflicts</div>
+                <div style={{fontSize:11, color:'var(--text-secondary)', marginTop:4}}>Positive delivery, negative loaded</div>
+              </div>
+            </div>
+            <div style={{marginTop:16, padding:'10px 14px', background:'rgba(251,191,36,0.08)', borderRadius:6, fontSize:12, color:'var(--text-secondary)', lineHeight:1.6}}>
+              <strong style={{color:'var(--warning)'}}>Why it matters:</strong> The <em>same</em> marketing portfolio shows +0.52x ROI or -0.90x ROI depending on which cost basis you use. A legacy CDP picks one number. CustomerLake shows both and explains why they differ.
+            </div>
+          </div>
+
+          {/* OVERHEAD ALLOCATION BREAKDOWN */}
+          <div className="card" style={{padding:20, marginBottom:24}}>
+            <h3 style={{fontSize:16, fontWeight:700, marginBottom:4}}>Overhead Allocation by Channel</h3>
+            <p style={{fontSize:12, color:'var(--text-muted)', marginBottom:16}}>How fixed platform costs get distributed across channels — and why low-volume channels get absurd multipliers</p>
+            <table style={{width:'100%', borderCollapse:'collapse'}}>
+              <caption className="kpi-label" style={{captionSide:'top', textAlign:'left', marginBottom:8}}>Per-channel cost basis and ROI comparison</caption>
+              <thead>
+                <tr style={{borderBottom:'2px solid var(--border)'}}>
+                  <th style={{textAlign:'left', padding:'8px 10px', fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Channel</th>
+                  <th style={{textAlign:'right', padding:'8px 10px', fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Delivery Cost</th>
+                  <th style={{textAlign:'right', padding:'8px 10px', fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Fully Loaded</th>
+                  <th style={{textAlign:'right', padding:'8px 10px', fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Overhead</th>
+                  <th style={{textAlign:'right', padding:'8px 10px', fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Incr. Revenue</th>
+                  <th style={{textAlign:'right', padding:'8px 10px', fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Delivery ROI</th>
+                  <th style={{textAlign:'right', padding:'8px 10px', fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Loaded ROI</th>
+                  <th style={{textAlign:'center', padding:'8px 10px', fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {channels.map(c => {
+                  const mult = Number(c.overhead_multiplier_x) || 0;
+                  const barW = (mult / maxMult * 100);
+                  const multColor = mult > 500 ? 'var(--danger)' : mult > 50 ? 'var(--warning)' : 'var(--success)';
+                  const delRoi = Number(c.delivery_roi_x) || 0;
+                  const loadRoi = Number(c.fully_loaded_roi_x) || 0;
+                  const actionColor = c.honest_action === 'EXIT' ? 'var(--danger)' : c.honest_action === 'CUT' ? 'var(--warning)' : 'var(--success)';
+                  return (
+                    <tr key={c.channel} style={{borderBottom:'1px solid var(--border)'}}>
+                      <td style={{padding:'10px 10px', fontSize:13, fontWeight:600}}>{c.channel}</td>
+                      <td style={{textAlign:'right', padding:'10px 10px', fontSize:13}}>{fmtUsd(c.delivery_cost_usd)}</td>
+                      <td style={{textAlign:'right', padding:'10px 10px', fontSize:13}}>{fmtUsd(c.fully_loaded_cost_usd)}</td>
+                      <td style={{textAlign:'right', padding:'10px 10px'}}>
+                        <div style={{display:'flex', alignItems:'center', justifyContent:'flex-end', gap:8}}>
+                          <div style={{width:60, height:6, background:'var(--bg-hover)', borderRadius:3, overflow:'hidden'}}>
+                            <div style={{width: barW + '%', height:'100%', background:multColor, borderRadius:3}} />
+                          </div>
+                          <span style={{fontSize:13, fontWeight:700, color:multColor, minWidth:50, textAlign:'right'}}>{fmtMult(mult)}</span>
+                        </div>
+                      </td>
+                      <td style={{textAlign:'right', padding:'10px 10px', fontSize:13}}>{fmtUsd(c.holdout_incremental_revenue_usd)}</td>
+                      <td style={{textAlign:'right', padding:'10px 10px', fontSize:13, fontWeight:600, color: delRoi >= 0 ? 'var(--success)' : 'var(--danger)'}}>{fmtX(delRoi)}</td>
+                      <td style={{textAlign:'right', padding:'10px 10px', fontSize:13, fontWeight:600, color: loadRoi >= 0 ? 'var(--success)' : 'var(--danger)'}}>{fmtX(loadRoi)}</td>
+                      <td style={{textAlign:'center', padding:'10px 10px'}}>
+                        <span style={{padding:'2px 10px', borderRadius:12, fontWeight:700, fontSize:10, background:actionColor, color:'var(--bg-primary)'}}>{c.honest_action}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* P&L RECONCILIATION */}
+          <div className="card" style={{padding:20, marginBottom:24}}>
+            <h3 style={{fontSize:16, fontWeight:700, marginBottom:4}}>Investment P&L Reconciliation</h3>
+            <p style={{fontSize:12, color:'var(--text-muted)', marginBottom:12}}>How $1.3M–$1.6M positive P&L coexists with -0.90x fully-loaded ROI</p>
+            <div style={{padding:'10px 14px', background:'var(--info-bg)', borderRadius:6, fontSize:12, color:'var(--info)', marginBottom:16, lineHeight:1.6}}>
+              <strong>The Paradox Explained:</strong> {pnlSummary.paradox_explanation}
+            </div>
+            <table style={{width:'100%', borderCollapse:'collapse'}}>
+              <caption className="kpi-label" style={{captionSide:'top', textAlign:'left', marginBottom:8}}>CustomerLake investment P&L framework</caption>
+              <thead>
+                <tr style={{borderBottom:'2px solid var(--border)'}}>
+                  <th style={{textAlign:'left', padding:'8px 10px', fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Category</th>
+                  <th style={{textAlign:'left', padding:'8px 10px', fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Line Item</th>
+                  <th style={{textAlign:'right', padding:'8px 10px', fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Amount</th>
+                  <th style={{textAlign:'center', padding:'8px 10px', fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Evidence</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pnlItems.map((p, i) => {
+                  const amt = Number(p.amount_usd) || 0;
+                  const isNet = p.pnl_category === 'NET_PNL';
+                  const isCost = p.pnl_category === 'COST';
+                  const catColor = isCost ? 'var(--danger)' : p.pnl_category === 'COST_AVOIDANCE' ? 'var(--warning)' : isNet ? 'var(--accent)' : 'var(--success)';
+                  return (
+                    <tr key={i} style={{borderBottom: isNet ? '2px solid var(--border)' : '1px solid var(--border)', background: isNet ? 'rgba(79,143,247,0.04)' : 'transparent'}}>
+                      <td style={{padding:'8px 10px', fontSize:11, fontWeight: isNet ? 700 : 400}}>
+                        <span style={{padding:'1px 6px', borderRadius:4, background:catColor + '22', color:catColor, fontSize:10, fontWeight:700}}>{p.pnl_category}</span>
+                      </td>
+                      <td style={{padding:'8px 10px', fontSize:12, fontWeight: isNet ? 700 : 400, color:'var(--text-primary)'}}>{p.description}</td>
+                      <td style={{textAlign:'right', padding:'8px 10px', fontSize:13, fontWeight:700, color: amt >= 0 ? 'var(--success)' : 'var(--danger)'}}>{fmtUsd(amt)}</td>
+                      <td style={{textAlign:'center', padding:'8px 10px'}}>
+                        <span style={{fontSize:10, padding:'1px 6px', borderRadius:4, background: p.evidence_tier === 'HOLDOUT_MEASURED' ? 'var(--success-bg)' : 'var(--warning-bg)', color: p.evidence_tier === 'HOLDOUT_MEASURED' ? 'var(--success)' : 'var(--warning)', fontWeight:600}}>{p.evidence_tier}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* TCO LEGACY COMPARISON */}
+          <div className="card" style={{padding:20, marginBottom:24}}>
+            <h3 style={{fontSize:16, fontWeight:700, marginBottom:4}}>Platform TCO vs Legacy CDP</h3>
+            <p style={{fontSize:12, color:'var(--text-muted)', marginBottom:16}}>Annual platform cost by category with legacy CDP equivalent benchmarks</p>
+            {tcoWarnings.length > 0 && (
+              <div style={{padding:'10px 14px', background:'var(--danger-bg)', borderRadius:6, border:'1px solid var(--danger)', fontSize:12, color:'var(--danger)', marginBottom:16, lineHeight:1.5}}>
+                <strong><Icon d={icons.alertTriangle} size={12} /> Data Quality Bug:</strong> {tcoWarnings[0].message}
+              </div>
+            )}
+            <table style={{width:'100%', borderCollapse:'collapse'}}>
+              <caption className="kpi-label" style={{captionSide:'top', textAlign:'left', marginBottom:8}}>Platform cost categories with legacy comparison</caption>
+              <thead>
+                <tr style={{borderBottom:'2px solid var(--border)'}}>
+                  <th style={{textAlign:'left', padding:'8px 10px', fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Category</th>
+                  <th style={{textAlign:'right', padding:'8px 10px', fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>CustomerLake</th>
+                  <th style={{textAlign:'right', padding:'8px 10px', fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Legacy CDP</th>
+                  <th style={{textAlign:'right', padding:'8px 10px', fontSize:11, color:'var(--text-muted)', textTransform:'uppercase'}}>Savings</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tcoItems.map(t => {
+                  const isTotal = t.cost_category === 'PLATFORM_TOTAL';
+                  return (
+                    <tr key={t.cost_category} style={{borderBottom: isTotal ? '2px solid var(--border)' : '1px solid var(--border)', fontWeight: isTotal ? 700 : 400, background: isTotal ? 'rgba(79,143,247,0.04)' : 'transparent'}}>
+                      <td style={{padding:'8px 10px', fontSize:12}}>{t.cost_category_label}</td>
+                      <td style={{textAlign:'right', padding:'8px 10px', fontSize:13, color:'var(--success)'}}>{fmtUsd(t.annual_cost_usd)}</td>
+                      <td style={{textAlign:'right', padding:'8px 10px', fontSize:13, color: tcoWarnings.length > 0 ? 'var(--danger)' : 'var(--text-secondary)'}}>
+                        {fmtUsd(t.legacy_equivalent_usd)}
+                        {tcoWarnings.length > 0 && !isTotal && <span style={{fontSize:10, marginLeft:4, color:'var(--danger)'}}>BUG</span>}
+                      </td>
+                      <td style={{textAlign:'right', padding:'8px 10px', fontSize:13, color:'var(--success)'}}>{fmtPct(t.savings_vs_legacy_pct)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* DIFFERENTIATOR */}
+          <div style={{marginTop:12, padding:'12px 16px', background:'var(--accent)11', borderRadius:6, fontSize:12, color:'var(--accent)', lineHeight:1.5}}>
+            <span style={{fontWeight:700}}>CustomerLake Insight:</span> {overhead?.differentiator}
+          </div>
+
+          <div style={{fontSize:11, color:'var(--text-secondary)', marginTop:12, textAlign:'right'}}>Source: cost_basis_reconciliation + investment_pnl_framework + platform_tco</div>
+        </div>
+      );
+    }
+
       const pages = [
+        // --- BOARD DECK: Demo-safe pages a board member finds in <60s (CMO-354) ---
+        { section: 'BOARD DECK' },
         { id: 'demo', label: 'Demo Walkthrough', icon: icons.megaphone },
+        { id: 'board-narrative', label: 'Board Narrative', icon: icons.briefcase },
         { id: 'executive', label: 'Exec Summary', icon: icons.award },
+        { id: 'board-ready', label: 'Board Ready', icon: icons.checkCircle },
+        { id: 'cltv-impact', label: 'CLTV Impact', icon: icons.heart },
+        // --- CUSTOMER INTELLIGENCE ---
+        { section: 'CUSTOMER INTELLIGENCE' },
         { id: 'overview', label: 'Overview', icon: icons.home },
         { id: 'intelligence', label: 'Intelligence', icon: icons.brain },
         { id: 'profiles', label: 'Profile Search', icon: icons.userSearch },
         { id: 'audiences', label: 'Audience Builder', icon: icons.target },
-        { id: 'campaigns', label: 'Campaigns', icon: icons.barChart },
         { id: 'steward', label: 'Identity Steward', icon: icons.gitMerge },
+        // --- CAMPAIGN ANALYTICS ---
+        { section: 'CAMPAIGN ANALYTICS' },
+        { id: 'campaigns', label: 'Campaigns', icon: icons.barChart },
         { id: 'dark-audience', label: 'Dark Audience', icon: icons.alertCircle },
-        { id: 'health', label: 'Data Health', icon: icons.shieldCheck },
         { id: 'ml', label: 'ML Predictions', icon: icons.sparkles },
         { id: 'incrementality', label: 'Incrementality', icon: icons.trendingUp },
         { id: 'closedloop', label: 'Closed Loop', icon: icons.refreshCw },
+        { id: 'learning-loop', label: 'Learning Loop', icon: icons.activity },
+        // --- MEASUREMENT ---
+        { section: 'MEASUREMENT' },
         { id: 'confidence', label: 'Stat. Confidence', icon: icons.lock },
         { id: 'channel-maturity', label: 'Channel Maturity', icon: icons.layers },
+        { id: 'cpa-sensitivity', label: 'CPA Sensitivity', icon: icons.percent },
+        { id: 'lifecycle', label: 'Lifecycle', icon: icons.users },
+        // --- VALUE & OPTIMIZATION ---
+        { section: 'VALUE & OPTIMIZATION' },
         { id: 'tco', label: 'Cost & ROI', icon: icons.dollarSign },
         { id: 'comparison', label: 'Why CustomerLake', icon: icons.zap },
         { id: 'action-playbook', label: 'Action Playbook', icon: icons.clipboardList },
         { id: 'waste-exposure', label: 'Waste Exposure', icon: icons.scissors },
-        { id: 'reoptimization', label: 'Reoptimization', icon: icons.rocket },
-        { id: 'learning-loop', label: 'Learning Loop', icon: icons.activity },
-        { id: 'board-ready', label: 'Board Ready', icon: icons.checkCircle },
-        { id: 'spend-transparency', label: 'Spend Transparency', icon: icons.fileText },
-        { id: 'lifecycle', label: 'Lifecycle', icon: icons.users },
-        { id: 'cpa-sensitivity', label: 'CPA Sensitivity', icon: icons.percent },
-        { id: 'production-path', label: 'Production Path', icon: icons.calendar },
-        { id: 'cltv-impact', label: 'CLTV Impact', icon: icons.heart },
         { id: 'spend-optimization', label: 'Spend Less, Get More', icon: icons.trendingDown },
+        { id: 'reoptimization', label: 'Reoptimization', icon: icons.rocket },
+        // --- OPERATIONS ---
+        { section: 'OPERATIONS' },
+        { id: 'health', label: 'Data Health', icon: icons.shieldCheck },
+        { id: 'spend-transparency', label: 'Spend Transparency', icon: icons.fileText },
+        { id: 'production-path', label: 'Production Path', icon: icons.calendar },
+        { id: 'cost-methodology', label: 'Cost Methodology', icon: icons.alertTriangle },
       ];
 
       const navigate = (id) => {
@@ -7508,6 +7981,8 @@
           case 'production-path': return <ProductionPathPage />;
           case 'cltv-impact': return <CLTVImpactPage />;
           case 'spend-optimization': return <SpendOptimizationPage />;
+          case 'cost-methodology': return <CostMethodologyPage />;
+          case 'board-narrative': return <BoardNarrativePage />;
           default: return <OverviewPage />;
         }
       };
@@ -7537,14 +8012,16 @@
               )}
             </div>
             <nav aria-label="Main navigation">
-              {pages.map(p => (
-                <button key={p.id}
-                  className={`nav-item ${page === p.id ? 'active' : ''}`}
-                  onClick={() => navigate(p.id)}
-                  aria-current={page === p.id ? 'page' : undefined}>
-                  <span className="nav-icon" aria-hidden="true"><Icon d={p.icon} /></span>
-                  {p.label}
-                </button>
+              {pages.map((p, idx) => (
+                p.section
+                  ? <div key={`section-${idx}`} className="nav-section">{p.section}</div>
+                  : <button key={p.id}
+                      className={`nav-item ${page === p.id ? 'active' : ''}`}
+                      onClick={() => navigate(p.id)}
+                      aria-current={page === p.id ? 'page' : undefined}>
+                      <span className="nav-icon" aria-hidden="true"><Icon d={p.icon} /></span>
+                      {p.label}
+                    </button>
               ))}
             </nav>
             <div style={{marginTop:'auto', padding:'16px 20px', borderTop:'1px solid var(--border)'}}>

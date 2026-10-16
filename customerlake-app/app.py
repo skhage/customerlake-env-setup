@@ -33,7 +33,7 @@ _pg_conn = None
 CATALOG = "cdm_tmforum"
 
 # Single source of truth for app version (DRY pattern)
-APP_VERSION = "65.1.0"
+APP_VERSION = "68.0.0"
 
 # ---------------------------------------------------------------------------
 # Materialized table aliases (CMO-138 / APP-CACHED-VIEWS + V2 performance fix)
@@ -98,6 +98,15 @@ VIEW_CLTV_COHORT = f"{CATALOG}._metrics.customerlake_cltv_cohort_analysis"
 
 # --- Canonical ROI with Ranges (CMO-315/316 — SINGLE SOURCE OF TRUTH) ---
 VIEW_CANONICAL_ROI = f"{CATALOG}._metrics.customerlake_canonical_roi_with_ranges"
+
+# --- Board Narrative (CMO-350/351 — 5-row value summary + 10-section cached narrative) ---
+VIEW_BOARD_VALUE_SUMMARY = f"{CATALOG}._metrics.customerlake_board_value_summary"
+VIEW_BOARD_NARRATIVE_CACHED = f"{CATALOG}._metrics.customerlake_board_narrative_final_cached"
+
+# --- Cost Basis Methodology (CMO-348/346/347 — overhead allocation transparency) ---
+VIEW_COST_BASIS_RECONCILIATION = f"{CATALOG}._metrics.customerlake_cost_basis_reconciliation"
+VIEW_INVESTMENT_PNL = f"{CATALOG}._metrics.customerlake_investment_pnl_framework"
+VIEW_PLATFORM_TCO = f"{CATALOG}._metrics.customerlake_platform_tco"
 
 # --- Spend Less Get More (CMO-325/320/322 — the killer value prop) ---
 VIEW_ACTION_PLAYBOOK_V3_FIXED = f"{CATALOG}._metrics.customerlake_action_playbook_v3_fixed"
@@ -6082,6 +6091,273 @@ async def spend_optimization():
             "app_version": APP_VERSION,
         }
         return cache_set("spend_optimization", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# 29. COST BASIS METHODOLOGY — Overhead Allocation Transparency (CMO-348/346/347)
+# ---------------------------------------------------------------------------
+@app.get("/api/cost-methodology/overhead")
+async def cost_methodology_overhead():
+    """Cost basis reconciliation: per-channel overhead multipliers and ROI by cost basis.
+
+    CustomerLake differentiator: Surfaces the METHODOLOGY behind ROI claims.
+    No legacy CDP shows you delivery ROI vs fully-loaded ROI side-by-side,
+    or reveals that overhead allocation models can produce 3,191x multipliers.
+    This is radical cost transparency — the CFO differentiator.
+    """
+    try:
+        channels = sql_query(f"""
+            SELECT channel, delivery_cost_usd, fully_loaded_cost_usd,
+                   overhead_multiplier_x,
+                   holdout_incremental_revenue_usd,
+                   delivery_roi_x, fully_loaded_roi_x, legacy_cdp_roi_x,
+                   attribution_inflation_x, roi_sign_conflict,
+                   board_recommendation, honest_action,
+                   portfolio_delivery_roi_x, portfolio_fully_loaded_roi_x,
+                   data_origin
+            FROM {VIEW_COST_BASIS_RECONCILIATION}
+            ORDER BY overhead_multiplier_x ASC
+        """)
+        if not channels:
+            return {"channels": [], "paradox": {}, "methodology_warnings": []}
+
+        warnings = []
+        multipliers = [float(c["overhead_multiplier_x"] or 0) for c in channels]
+        min_m, max_m = min(multipliers), max(multipliers)
+        if max_m / max(min_m, 0.01) > 100:
+            warnings.append({
+                "severity": "CRITICAL",
+                "code": "OVERHEAD_RANGE_EXTREME",
+                "message": f"Overhead multiplier ranges from {min_m:.0f}x to {max_m:.0f}x "
+                           f"({max_m/max(min_m,0.01):.0f}x spread). The allocation model "
+                           f"distributes fixed costs equally regardless of channel volume, "
+                           f"producing absurd multipliers on low-delivery-cost channels.",
+                "cmo_ref": "CMO-348",
+            })
+
+        sign_conflicts = [c for c in channels if c.get("roi_sign_conflict", "").startswith("YES")]
+        if sign_conflicts:
+            warnings.append({
+                "severity": "HIGH",
+                "code": "ROI_SIGN_CONFLICT",
+                "message": f"{len(sign_conflicts)} of {len(channels)} channels show positive "
+                           f"delivery ROI but negative fully-loaded ROI. The cost basis you "
+                           f"choose determines whether marketing \"works\" or \"fails\".",
+                "cmo_ref": "CMO-346",
+            })
+
+        c0 = channels[0]
+        return {
+            "channels": channels,
+            "paradox": {
+                "portfolio_delivery_roi": float(c0.get("portfolio_delivery_roi_x") or 0),
+                "portfolio_fully_loaded_roi": float(c0.get("portfolio_fully_loaded_roi_x") or 0),
+                "sign_conflict_count": len(sign_conflicts),
+                "overhead_range": f"{min_m:.0f}x to {max_m:.0f}x",
+            },
+            "methodology_warnings": warnings,
+            "differentiator": "CustomerLake exposes the METHODOLOGY behind ROI claims. "
+                             "A legacy CDP would only show one number. CustomerLake shows "
+                             "three cost bases, the overhead allocation model, and flags "
+                             "when the methodology choice changes the sign of the ROI.",
+            "data_origin": "SYNTHETIC_MODELED",
+            "app_version": APP_VERSION,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/cost-methodology/pnl-reconciliation")
+async def cost_methodology_pnl():
+    """Investment P&L framework + platform TCO with legacy comparison.
+
+    Shows how positive net P&L ($1.3M) coexists with negative fully-loaded ROI (-0.90x).
+    The answer: P&L includes cost avoidance (suppression, channel exits) that ROI doesn't count.
+    Also flags the TCO legacy_equivalent bug (identical $3.86M on every line).
+    """
+    try:
+        pnl = sql_query(f"""
+            SELECT pnl_category, line_order, line_item, description,
+                   amount_usd, evidence_tier, source_view, data_origin
+            FROM {VIEW_INVESTMENT_PNL}
+            ORDER BY line_order
+        """)
+        tco = sql_query(f"""
+            SELECT cost_category, cost_category_label, cost_description,
+                   annual_cost_usd, legacy_equivalent_usd,
+                   savings_vs_legacy_pct, entities_served, data_origin
+            FROM {VIEW_PLATFORM_TCO}
+        """)
+
+        tco_warnings = []
+        legacy_vals = set()
+        for t in tco:
+            lv = t.get("legacy_equivalent_usd")
+            if lv is not None:
+                legacy_vals.add(str(lv))
+        if len(legacy_vals) == 1:
+            tco_warnings.append({
+                "severity": "CRITICAL",
+                "code": "LEGACY_EQUIVALENT_IDENTICAL",
+                "message": f"legacy_equivalent_usd is ${float(list(legacy_vals)[0]):,.0f} "
+                           f"for ALL {len(tco)} categories. Each category should have a "
+                           f"different legacy benchmark (identity: Acxiom/LiveRamp $2-5M, "
+                           f"ML: Dataiku/SageMaker $500K-2M, etc.).",
+                "cmo_ref": "CMO-347",
+            })
+
+        revenue_lines = [p for p in pnl if p.get("pnl_category") in ("REVENUE", "COST_AVOIDANCE")]
+        cost_lines = [p for p in pnl if p.get("pnl_category") == "COST"]
+        net_lines = [p for p in pnl if p.get("pnl_category") == "NET_PNL"]
+
+        return {
+            "pnl": pnl,
+            "tco": tco,
+            "pnl_summary": {
+                "revenue_items": len(revenue_lines),
+                "cost_items": len(cost_lines),
+                "net_optimistic": float(net_lines[0]["amount_usd"]) if net_lines else None,
+                "net_conservative": float(net_lines[-1]["amount_usd"]) if len(net_lines) > 1 else None,
+                "paradox_explanation": "P&L includes cost avoidance (suppression savings, "
+                    "channel exit savings) that channel-level ROI calculations exclude. "
+                    "The ROI is -0.90x because it only counts incremental revenue vs "
+                    "fully-loaded cost. The P&L adds $1.1M in cost avoidance — money "
+                    "NOT spent thanks to CustomerLake's targeting intelligence.",
+            },
+            "tco_warnings": tco_warnings,
+            "differentiator": "CustomerLake reconciles multiple financial frameworks "
+                             "side-by-side and flags inconsistencies. A legacy CDP would "
+                             "cherry-pick the best number.",
+            "data_origin": "SYNTHETIC_MODELED",
+            "app_version": APP_VERSION,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# Board Narrative (CMO-350/351 — 5-row value summary + full narrative)
+# ---------------------------------------------------------------------------
+@app.get("/api/board-narrative/value-summary")
+async def board_narrative_value_summary():
+    """5-row board value summary — THE answer to 'what is CustomerLake worth?'
+
+    Addresses CMO-351: $1.29M story buried across 6 views.
+    Source: customerlake_board_value_summary (5 rows, one per value stream).
+    """
+    cached = cache_get("board_value_summary")
+    if cached:
+        return cached
+    try:
+        rows = sql_query(f"""
+            SELECT display_order, value_category, description,
+                   amount_usd, evidence_tier, board_one_liner, data_origin
+            FROM {VIEW_BOARD_VALUE_SUMMARY}
+            ORDER BY display_order
+        """)
+
+        total_row = next((r for r in rows if r.get("value_category") == "TOTAL_DEMONSTRABLE_VALUE"), None)
+        value_streams = [r for r in rows if r.get("value_category") != "TOTAL_DEMONSTRABLE_VALUE"]
+
+        # Tier color mapping for frontend
+        tier_meta = {
+            "HOLDOUT_MEASURED": {"label": "Proven", "color": "success"},
+            "MODELED_ESTIMATE": {"label": "Modeled", "color": "warning"},
+            "BLENDED": {"label": "Blended", "color": "info"},
+        }
+
+        result = {
+            "title": "CustomerLake Value \u2014 Board Summary",
+            "value_streams": [{
+                "order": r.get("display_order"),
+                "category": r.get("value_category"),
+                "description": r.get("description"),
+                "amount_usd": float(r.get("amount_usd") or 0),
+                "evidence_tier": r.get("evidence_tier"),
+                "tier_label": tier_meta.get(r.get("evidence_tier"), {}).get("label", r.get("evidence_tier")),
+                "tier_color": tier_meta.get(r.get("evidence_tier"), {}).get("color", "muted"),
+                "board_one_liner": r.get("board_one_liner"),
+                "data_origin": r.get("data_origin"),
+            } for r in value_streams],
+            "total": {
+                "amount_usd": float(total_row.get("amount_usd") or 0) if total_row else 0,
+                "board_one_liner": total_row.get("board_one_liner") if total_row else None,
+                "evidence_tier": "BLENDED",
+            },
+            "data_origin": "SYNTHETIC_MODELED",
+            "differentiator": (
+                "No other CDP surfaces proven, modeled, and platform-cost value streams "
+                "in a single auditable 5-row summary. Legacy CDPs show one number; "
+                "CustomerLake shows the methodology behind every dollar."
+            ),
+            "app_version": APP_VERSION,
+        }
+        return cache_set("board_value_summary", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/board-narrative/slides")
+async def board_narrative_slides():
+    """Full 10-section board narrative with presenter talking points.
+
+    Addresses CMO-350: board_narrative_final TIMES OUT.
+    Solution: queries the CACHED materialized table (sub-second).
+    Source: customerlake_board_narrative_final_cached.
+    """
+    cached = cache_get("board_narrative_slides")
+    if cached:
+        return cached
+    try:
+        rows = sql_query(f"""
+            SELECT section_order, section_type, board_slide_title,
+                   canonical_value_usd, evidence_level,
+                   presenter_talking_point, methodology_for_cfo,
+                   what_stale_cache_showed, correction_magnitude,
+                   source_table, generated_at
+            FROM {VIEW_BOARD_NARRATIVE_CACHED}
+            ORDER BY section_order
+        """)
+
+        board_safe = [r for r in rows if r.get("evidence_level") == "BOARD_SAFE"]
+        requires_val = [r for r in rows if r.get("evidence_level") == "REQUIRES_VALIDATION"]
+        hypothesis = [r for r in rows if r.get("evidence_level") == "HYPOTHESIS"]
+        caveats = [r for r in rows if r.get("evidence_level") == "CAVEAT"]
+
+        board_safe_total = sum(float(r.get("canonical_value_usd") or 0) for r in board_safe)
+
+        result = {
+            "title": "Board Narrative \u2014 Full Slide Deck",
+            "slide_count": len(rows),
+            "slides": [{
+                "order": r.get("section_order"),
+                "type": r.get("section_type"),
+                "title": r.get("board_slide_title"),
+                "value_usd": float(r.get("canonical_value_usd") or 0),
+                "evidence_level": r.get("evidence_level"),
+                "talking_point": r.get("presenter_talking_point"),
+                "methodology": r.get("methodology_for_cfo"),
+                "stale_cache_note": r.get("what_stale_cache_showed"),
+                "correction": r.get("correction_magnitude"),
+                "source": r.get("source_table"),
+                "generated_at": str(r.get("generated_at")) if r.get("generated_at") else None,
+            } for r in rows],
+            "summary": {
+                "board_safe_count": len(board_safe),
+                "board_safe_total_usd": board_safe_total,
+                "requires_validation_count": len(requires_val),
+                "hypothesis_count": len(hypothesis),
+                "caveat_count": len(caveats),
+            },
+            "generated_at": str(rows[0].get("generated_at")) if rows else None,
+            "data_origin": "SYNTHETIC_MODELED",
+            "performance_note": "Served from materialized cached table (sub-second). "
+                               "Live view board_narrative_final may time out on cold query.",
+            "app_version": APP_VERSION,
+        }
+        return cache_set("board_narrative_slides", result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

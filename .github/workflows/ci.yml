@@ -1,6 +1,7 @@
 # CustomerLake CI — Validate DAB on every push/PR
 # Owner: @devops (Release Engineering)
 # Updated by @devops agent run 27 (2026-10-06): validate all 3 targets, add YAML lint
+# Updated by @devops DEVOPS-V98-REGRESSION-RCA (2026-10-15): add app regression guard
 name: CI - Bundle Validate
 
 on:
@@ -84,3 +85,74 @@ jobs:
           else
             echo "All jobs have email_notifications configured."
           fi
+
+      # ── App Regression Guard (DEVOPS-V98-REGRESSION-RCA) ──────────────
+      # Prevents deploying an app that has fewer pages, lines, or endpoints
+      # than the .app-baseline.json thresholds. Root cause: v65.1.0→v56.0.0
+      # regression from uncommitted workspace edits lost during branch checkout.
+      - name: App regression guard — page count
+        run: |
+          echo "=== APP REGRESSION GUARD ==="
+          BASELINE=".app-baseline.json"
+          if [ ! -f "$BASELINE" ]; then
+            echo "SKIP: .app-baseline.json not found — guard not active"
+            exit 0
+          fi
+
+          INDEX="customerlake-app/static/index.html"
+          APPPY="customerlake-app/app.py"
+          ERRORS=0
+
+          # --- index.html checks ---
+          if [ -f "$INDEX" ]; then
+            LINE_COUNT=$(wc -l < "$INDEX")
+            PAGE_COUNT=$(grep -cP "case\s+'[^']+':\s*$" "$INDEX" || true)
+            MIN_LINES=$(python3 -c "import json; print(json.load(open('$BASELINE'))['index_html']['min_lines'])")
+            MIN_PAGES=$(python3 -c "import json; print(json.load(open('$BASELINE'))['index_html']['min_pages'])")
+
+            echo "index.html: $LINE_COUNT lines (min: $MIN_LINES), $PAGE_COUNT pages (min: $MIN_PAGES)"
+
+            if [ "$LINE_COUNT" -lt "$MIN_LINES" ]; then
+              echo "FAIL: index.html line count $LINE_COUNT < baseline $MIN_LINES — REGRESSION DETECTED"
+              ERRORS=$((ERRORS+1))
+            fi
+            if [ "$PAGE_COUNT" -lt "$MIN_PAGES" ]; then
+              echo "FAIL: index.html page count $PAGE_COUNT < baseline $MIN_PAGES — REGRESSION DETECTED"
+              ERRORS=$((ERRORS+1))
+            fi
+          else
+            echo "FAIL: $INDEX not found"
+            ERRORS=$((ERRORS+1))
+          fi
+
+          # --- app.py checks ---
+          if [ -f "$APPPY" ]; then
+            APP_LINES=$(wc -l < "$APPPY")
+            APP_ENDPOINTS=$(grep -cP '@app\.(get|post|put|delete|patch)\(' "$APPPY" || true)
+            APP_VERSION=$(grep -oP 'APP_VERSION\s*=\s*["'\''"](\K[^"'\''"]+)' "$APPPY" || echo "unknown")
+            MIN_APP_LINES=$(python3 -c "import json; print(json.load(open('$BASELINE'))['app_py']['min_lines'])")
+            MIN_ENDPOINTS=$(python3 -c "import json; print(json.load(open('$BASELINE'))['app_py']['min_endpoints'])")
+
+            echo "app.py: $APP_LINES lines (min: $MIN_APP_LINES), $APP_ENDPOINTS endpoints (min: $MIN_ENDPOINTS), version: $APP_VERSION"
+
+            if [ "$APP_LINES" -lt "$MIN_APP_LINES" ]; then
+              echo "FAIL: app.py line count $APP_LINES < baseline $MIN_APP_LINES — REGRESSION DETECTED"
+              ERRORS=$((ERRORS+1))
+            fi
+            if [ "$APP_ENDPOINTS" -lt "$MIN_ENDPOINTS" ]; then
+              echo "FAIL: app.py endpoint count $APP_ENDPOINTS < baseline $MIN_ENDPOINTS — REGRESSION DETECTED"
+              ERRORS=$((ERRORS+1))
+            fi
+          else
+            echo "FAIL: $APPPY not found"
+            ERRORS=$((ERRORS+1))
+          fi
+
+          # --- Verdict ---
+          if [ $ERRORS -gt 0 ]; then
+            echo ""
+            echo "BLOCKED: $ERRORS regression(s) detected. This commit would reduce the app below known-good thresholds."
+            echo "If this is intentional, update .app-baseline.json and get @devops approval."
+            exit 1
+          fi
+          echo "PASS: App meets all regression guard thresholds."

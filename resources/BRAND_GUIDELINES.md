@@ -1,6 +1,6 @@
 # CustomerLake Brand Guidelines
 
-**Version:** 3.12.0 — Updated 2026-10-14 by @designer (V94 Full Brand Sweep: v65.0.0 audit. index.html 7,570 lines, app.py 6,095 lines/85+ endpoints, 28 pages. V93-UX-FIX-1 VERIFIED: Spend Less, Get More heading now has icons.trendingDown. ZERO EMOJI. 1 BINDING: V94-UX-FIX-1 Production Path heading (L6839) missing icons.calendar. ADVISORY: Board Ready heading missing icons.checkCircle (low priority, API-driven title). Score: 8.5/9.)  
+**Version:** 3.17.0 — Updated 2026-10-16 by @designer (V106 Brand Sweep: App v67.0.0 — new Board Narrative page (CMO-350/351). 8.5/9 — 2 fontWeight:800 violations in new page, BINDING fix V106-UX-FIX-1 filed. 0 off-palette hex, 1,730 CSS var() refs, ZERO EMOJI, WCAG 2.1 AA compliant. App: 8,023 lines, 30 pages, 87+ endpoints. 3 BINDING Genie fixes (V105-GENIE-FIX-1/2/3) still open.)  
 **Status:** BINDING — All CustomerLake apps, dashboards, and demos MUST conform  
 **Scope:** Databricks App (`customerlake`), AI/BI dashboards, Genie spaces, demo materials  
 **Tag:** `customerlake_project: customerlake`
@@ -131,8 +131,8 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
 ## 4. Iconography
 
-### Current State: ZERO EMOJI DEBT — ALL CLEAR (v3.11, v65.0.0)
-36 unique Lucide SVG icon paths across 28 pages. V92-UX-FIX-1 VERIFIED (V93): CLTV Impact heading at L7013 now includes icons.heart. NEW: icons.trendingDown added for Spend Less, Get More page (L7466 nav). ZERO EMOJI in entire 7,570-line codebase. 1 OPEN: V93-UX-FIX-1 — Spend Less, Get More heading (L7207) missing icons.trendingDown; 7 of 28 headings include their nav icon (newer pages). All icons compliant: 18px default, 1.5px stroke, currentColor, aria-hidden. Utility icons: menu (mobile nav), x (close), checkCircle (success states + Board Ready nav), clock (timestamps), activity (Learning Loop), fileText (Spend Transparency), calendar (Production Path), percent (CPA Sensitivity), heart (CLTV Impact), trendingDown (Spend Less nav).
+### Current State: ZERO EMOJI DEBT — ALL CLEAR (v3.14, v65.1.0)
+37+ unique Lucide SVG icon paths across 28 pages. 140 icon refs, 101 <Icon> components. V93-UX-FIX-1 NOW RESOLVED: Spend Less, Get More heading (L7212) includes icons.trendingDown. ZERO EMOJI in entire 7,576-line codebase. 0 OPEN — ALL 28/28 page headings include their nav icon. All icons compliant: 18px default, 1.5px stroke, currentColor, aria-hidden. 4 Unicode → arrows at L5551 in Demo Walkthrough prose (acceptable as typographic content). Utility icons: menu (mobile nav), x (close), checkCircle (success states + Board Ready nav), clock (timestamps), activity (Learning Loop), fileText (Spend Transparency), calendar (Production Path), percent (CPA Sensitivity), heart (CLTV Impact), trendingDown (Spend Less nav + heading).
 
 ### Required Standard
 - **Icon system:** Use inline SVG icons or a lightweight icon font (Lucide, Phosphor, or similar)
@@ -172,7 +172,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 | Production Path | calendar | `icons.calendar` |
 | CPA Sensitivity | percent | `icons.percent` (nav + heading — V91-UX-ADVISORY-1 RESOLVED in v64.0.0) |
 | CLTV Impact | heart | `icons.heart` (nav + heading — V92-UX-FIX-1 VERIFIED in V93) |
-| Spend Less, Get More | trending-down | `icons.trendingDown` (nav only — heading missing, V93-UX-FIX-1 filed) |
+| Spend Less, Get More | trending-down | `icons.trendingDown` (nav + heading — V93-UX-FIX-1 RESOLVED in V102, L7212) |
 
 ### Icon Rules
 1. **NEVER use emoji in production UI** — rendering varies across OS/browser
@@ -718,4 +718,5 @@ When creating AI/BI dashboards or Genie spaces tagged `customerlake_project: cus
 
 | 2026-10-02 | 1.9.3 | @designer | **V24 FULL BRAND SWEEP (v18.0).** APP-UNUSED-VIEWS (v17: ML Channel Propensity, Statistical Quality Disclosure, Holdout Data Quality) all 9/9 PASS. APP-STAT-CONFIDENCE (v18: new 11th page, 237 lines, 3 endpoints) 8/9 PASS. All V21/V22/V23 fixes verified holding. 2 low issues filed: V24-UX-FIX-1 (fontWeight:800→700 on Stat Confidence hero KPIs), V24-UX-FIX-2 (Channel Propensity grid auto-fill→auto-fit + 140→160px). 4 diff-badge terms added to §6: CAUSAL, P-VALUE, CONFIDENCE-INTERVAL, STATISTICAL-POWER. Version sync v18.0 = 18.0.0 PASS. 11/11 pages brand-compliant. |
 | 2026-10-04 | 1.9.6 | @designer | **V32 FULL BRAND SWEEP (v26.0.0, 4760 lines, 15 pages).** All 7 open V21-V24 fixes VERIFIED APPLIED (V21-UX-FIX-1/2/3/4, V22-UX-FIX-1, V24-UX-FIX-1/2). 4 new pages audited: Cost & ROI (9/9 PASS), Why CustomerLake (9/9 PASS), Dark Audience Explorer (7/9 PASS — 2 tables missing captions), Statistical Confidence updates (PASS). Version sync v26.0.0 = 26.0.0 PASS. Filed V32-UX-FIX-1/2 (Dark Audience table captions) to @app-developer. |
+| 2026-10-16 | 3.16.0 | @designer | **V105 FULL BRAND SWEEP.** App v66.0.0 ZERO DELTA — 6th consecutive 9/9 PERFECT. Dashboard "Canonical Executive Brief" expanded to 7 pages/22 datasets (new page 6: "Identity Resolution & CLTV Value" 4 widgets, page 7: "Fully-Loaded ROI Truth" 6 widgets) — PASS. All 4 CLTV datasets validated healthy. 3 BINDING Genie space fixes filed to @data-analyst: V105-GENIE-FIX-1 (add description to Executive Intelligence Hub), V105-GENIE-FIX-2 (remove timestamp from Explorer title), V105-GENIE-FIX-3 (add description to Explorer). 1 LOW dashboard suggestion: DASH-V105-1 (Page 6 title could be bolder). |
 | 2026-09-30 | 1.3.0 | @designer | **V10 COMPREHENSIVE AUDIT — FULL PASS.** 9-dimension review (Color, Typography, Iconography, Layout, Components, Responsive, Accessibility, Brand Voice, Security). All 2,310 lines of index.html and 78K of app.py verified against brand spec. WCAG 2.1 AA: all 16 compliance items (A1–A16) confirmed in code. All UX-FIX-1 through V8-UX-FIX-4 verified. 3 low-priority polish items filed: V10-UX-FIX-1 (footer version stale v7.0→v10.0), V10-UX-FIX-2 (attribution badge semantic color), V10-UX-FIX-3 (steward dismiss icon consistency). |

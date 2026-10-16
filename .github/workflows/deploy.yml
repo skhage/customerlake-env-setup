@@ -1,6 +1,7 @@
 # CustomerLake Deploy — Deploy DAB on merge/tag
 # Owner: @devops (Release Engineering)
 # Updated by @devops agent run 27 (2026-10-06): add validate-before-deploy, concurrency guards
+# Updated by @devops DEVOPS-V98-REGRESSION-RCA (2026-10-15): add pre-deploy regression guard
 name: Deploy Bundle
 
 on:
@@ -13,8 +14,43 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Pre-deploy regression gate — blocks ALL deploy targets if app has regressed
+  regression-gate:
+    name: App Regression Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check app regression baseline
+        run: |
+          BASELINE=".app-baseline.json"
+          if [ ! -f "$BASELINE" ]; then echo "SKIP: no baseline"; exit 0; fi
+          INDEX="customerlake-app/static/index.html"
+          APPPY="customerlake-app/app.py"
+          ERRORS=0
+          if [ -f "$INDEX" ]; then
+            LINES=$(wc -l < "$INDEX")
+            PAGES=$(grep -cP "case\s+'[^']+':\s*$" "$INDEX" || true)
+            MIN_L=$(python3 -c "import json; print(json.load(open('$BASELINE'))['index_html']['min_lines'])")
+            MIN_P=$(python3 -c "import json; print(json.load(open('$BASELINE'))['index_html']['min_pages'])")
+            echo "index.html: $LINES lines (min $MIN_L), $PAGES pages (min $MIN_P)"
+            [ "$LINES" -lt "$MIN_L" ] && echo "FAIL: line regression" && ERRORS=$((ERRORS+1))
+            [ "$PAGES" -lt "$MIN_P" ] && echo "FAIL: page regression" && ERRORS=$((ERRORS+1))
+          fi
+          if [ -f "$APPPY" ]; then
+            AL=$(wc -l < "$APPPY")
+            AE=$(grep -cP '@app\.(get|post|put|delete|patch)\(' "$APPPY" || true)
+            MAL=$(python3 -c "import json; print(json.load(open('$BASELINE'))['app_py']['min_lines'])")
+            MAE=$(python3 -c "import json; print(json.load(open('$BASELINE'))['app_py']['min_endpoints'])")
+            echo "app.py: $AL lines (min $MAL), $AE endpoints (min $MAE)"
+            [ "$AL" -lt "$MAL" ] && echo "FAIL: app.py line regression" && ERRORS=$((ERRORS+1))
+            [ "$AE" -lt "$MAE" ] && echo "FAIL: endpoint regression" && ERRORS=$((ERRORS+1))
+          fi
+          [ $ERRORS -gt 0 ] && echo "BLOCKED: $ERRORS regression(s)" && exit 1
+          echo "PASS: No regressions."
+
   deploy-dev:
     name: Deploy to Dev
+    needs: regression-gate
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
@@ -38,6 +74,7 @@ jobs:
 
   deploy-test:
     name: Deploy to Test
+    needs: regression-gate
     if: startsWith(github.ref, 'refs/heads/release/')
     runs-on: ubuntu-latest
     steps:
@@ -61,6 +98,7 @@ jobs:
 
   deploy-prod:
     name: Deploy to Production
+    needs: regression-gate
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     environment: production
