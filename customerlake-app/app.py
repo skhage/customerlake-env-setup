@@ -33,7 +33,7 @@ _pg_conn = None
 CATALOG = "cdm_tmforum"
 
 # Single source of truth for app version (DRY pattern)
-APP_VERSION = "71.0.0"
+APP_VERSION = "77.0.0"
 
 # ---------------------------------------------------------------------------
 # Materialized table aliases (CMO-138 / APP-CACHED-VIEWS + V2 performance fix)
@@ -6751,6 +6751,226 @@ async def board_presentation_script():
         "data_origin": "SYNTHETIC_MODELED",
         "app_version": APP_VERSION,
     }
+
+
+# ---------------------------------------------------------------------------
+# Activation Intelligence (CMO-368: entity-level prescriptions, wave cadence,
+# consent gates, suppression — the "so what" demo moment)
+# ---------------------------------------------------------------------------
+VIEW_ACTIVATION_PLAN = f"{CATALOG}._metrics.customerlake_activation_execution_plan"
+VIEW_ACTIVATION_WAVE = f"{CATALOG}._metrics.customerlake_activation_wave_summary"
+VIEW_SUPPRESSION_LIST = f"{CATALOG}._metrics.customerlake_suppression_list"
+VIEW_SUPPRESSION_EXPORT = f"{CATALOG}._metrics.customerlake_suppression_export"
+
+
+@app.get("/api/activation-intelligence")
+async def activation_intelligence():
+    """Activation intelligence overview: wave summary, hero KPIs, channel breakdown.
+
+    CMO-368 response — show the machine working, not slides.
+    Sources: activation_execution_plan, activation_wave_summary.
+    """
+    cached = cache_get("activation_intelligence")
+    if cached:
+        return cached
+    try:
+        waves = sql_query(f"""
+            SELECT activation_wave, execution_status, entities,
+                   ROUND(projected_incremental_usd, 0) as projected_incremental_usd,
+                   ROUND(total_revenue_at_risk_usd, 0) as total_revenue_at_risk_usd,
+                   ROUND(avg_priority_score, 1) as avg_priority_score,
+                   ROUND(avg_holdout_lift_ppt, 2) as avg_holdout_lift_ppt,
+                   ROUND(avg_churn_probability, 3) as avg_churn_probability,
+                   execution_guidance
+            FROM {VIEW_ACTIVATION_WAVE}
+            ORDER BY CASE activation_wave
+                WHEN 'WEEK_1' THEN 1 WHEN 'WEEK_2' THEN 2
+                WHEN 'WEEK_3' THEN 3 WHEN 'WEEK_4' THEN 4
+                ELSE 5 END, execution_status
+        """)
+
+        kpis = sql_query(f"""
+            SELECT
+                COUNT(*) as total_prescriptions,
+                SUM(CASE WHEN activation_wave = 'WEEK_1' AND execution_status = 'ACTIVATE_PRIORITY' THEN 1 ELSE 0 END) as week1_priority,
+                SUM(CASE WHEN execution_status = 'CONSENT_BLOCKED' THEN 1 ELSE 0 END) as consent_blocked,
+                SUM(CASE WHEN execution_status = 'DO_NOT_ACTIVATE' THEN 1 ELSE 0 END) as do_not_activate,
+                ROUND(SUM(CASE WHEN execution_status = 'ACTIVATE_PRIORITY' THEN projected_incremental_per_entity_usd ELSE 0 END), 0) as priority_incremental_usd,
+                ROUND(SUM(CASE WHEN execution_status = 'DO_NOT_ACTIVATE' THEN ABS(projected_incremental_per_entity_usd) ELSE 0 END), 0) as waste_prevented_usd,
+                ROUND(SUM(revenue_at_risk_usd), 0) as total_revenue_at_risk,
+                COUNT(DISTINCT prescribed_channel) as channels_used,
+                COUNT(DISTINCT marketing_motion) as motions_used,
+                SUM(CASE WHEN consent_cleared THEN 1 ELSE 0 END) as consent_cleared_count
+            FROM {VIEW_ACTIVATION_PLAN}
+        """)
+
+        by_channel = sql_query(f"""
+            SELECT prescribed_channel as channel,
+                   COUNT(*) as entities,
+                   SUM(CASE WHEN consent_cleared THEN 1 ELSE 0 END) as consentable,
+                   ROUND(SUM(projected_incremental_per_entity_usd), 0) as projected_incremental_usd,
+                   ROUND(AVG(action_priority_score), 1) as avg_priority,
+                   ROUND(AVG(ml_channel_confidence), 3) as avg_confidence
+            FROM {VIEW_ACTIVATION_PLAN}
+            GROUP BY prescribed_channel
+            ORDER BY entities DESC
+        """)
+
+        by_motion = sql_query(f"""
+            SELECT marketing_motion as motion,
+                   COUNT(*) as entities,
+                   ROUND(SUM(projected_incremental_per_entity_usd), 0) as projected_incremental_usd,
+                   ROUND(AVG(ml_churn_probability), 3) as avg_churn_prob
+            FROM {VIEW_ACTIVATION_PLAN}
+            GROUP BY marketing_motion
+            ORDER BY entities DESC
+        """)
+
+        result = {
+            "kpis": kpis[0] if kpis else {},
+            "waves": waves,
+            "by_channel": by_channel,
+            "by_motion": by_motion,
+            "narrative": {
+                "headline": (
+                    f"{kpis[0]['total_prescriptions']} entity-level prescriptions across "
+                    f"{kpis[0]['channels_used']} channels. "
+                    f"{kpis[0]['week1_priority']} entities ready for immediate activation in Week 1."
+                ) if kpis else "",
+                "differentiator": (
+                    "Other CDPs show audience segments. CustomerLake prescribes WHICH entity, "
+                    "on WHICH channel, in WHICH wave, with WHAT expected ROI — and automatically "
+                    "suppresses entities that would destroy value. Entity-level activation intelligence "
+                    "with consent gating and wave-based execution cannot be built without identity resolution."
+                ),
+            },
+            "data_origin": "SYNTHETIC_MODELED",
+            "app_version": APP_VERSION,
+        }
+        return cache_set("activation_intelligence", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/activation-intelligence/prescriptions")
+async def activation_prescriptions(
+    wave: Optional[str] = Query(None),
+    channel: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    risk_tier: Optional[str] = Query(None),
+    consent_only: bool = Query(False),
+    limit: int = Query(30),
+    offset: int = Query(0),
+):
+    """Paginated entity-level activation prescriptions with filters.
+
+    The CMO's demo moment: "She sees 647 ACTIVATE_PRIORITY entities queued
+    for Week 1 across sms and crm_list channels."
+    """
+    try:
+        where_clauses = []
+        if wave:
+            where_clauses.append(f"activation_wave = '{wave}'")
+        if channel:
+            where_clauses.append(f"prescribed_channel = '{channel}'")
+        if status:
+            where_clauses.append(f"execution_status = '{status}'")
+        if risk_tier:
+            where_clauses.append(f"churn_risk_tier = '{risk_tier}'")
+        if consent_only:
+            where_clauses.append("consent_cleared = TRUE")
+        where_sql = (" WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+        count_row = sql_query(f"SELECT COUNT(*) as total FROM {VIEW_ACTIVATION_PLAN}{where_sql}")
+        total = count_row[0]["total"] if count_row else 0
+
+        entities = sql_query(f"""
+            SELECT entity_id, entity_type, lifecycle_status, customer_segment,
+                   churn_risk_tier, ROUND(ml_churn_probability, 3) as churn_prob,
+                   ROUND(predicted_ltv_12m, 0) as predicted_ltv_12m,
+                   value_segment, marketing_motion, prescribed_channel,
+                   prescribed_action, optimization_decision, execution_status,
+                   activation_wave, action_priority_score,
+                   ROUND(true_lift_ppt, 2) as true_lift_ppt,
+                   ROUND(projected_incremental_per_entity_usd, 2) as projected_incremental_usd,
+                   ROUND(revenue_at_risk_usd, 0) as revenue_at_risk_usd,
+                   consent_cleared, consent_marketing, do_not_contact
+            FROM {VIEW_ACTIVATION_PLAN}{where_sql}
+            ORDER BY action_priority_score DESC
+            LIMIT {limit} OFFSET {offset}
+        """)
+
+        return {
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "prescriptions": entities,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/activation-intelligence/suppression")
+async def activation_suppression():
+    """Suppression overview: consent-blocked and negative-ROI entities with savings.
+
+    The waste-prevention story: 1,933 consent-blocked + 220 negative-ROI = $61K saved.
+    """
+    cached = cache_get("activation_suppression")
+    if cached:
+        return cached
+    try:
+        summary = sql_query(f"""
+            SELECT
+                COUNT(*) as total_suppressed,
+                SUM(CASE WHEN suppression_reason LIKE '%consent%' OR suppression_reason LIKE '%Consent%' THEN 1 ELSE 0 END) as consent_blocked,
+                SUM(CASE WHEN suppression_reason LIKE '%ROI%' OR suppression_reason LIKE '%negative%' THEN 1 ELSE 0 END) as negative_roi,
+                ROUND(SUM(estimated_waste_prevented_usd), 0) as total_waste_prevented_usd,
+                COUNT(DISTINCT customer_segment) as segments_affected
+            FROM {VIEW_SUPPRESSION_LIST}
+        """)
+
+        by_reason = sql_query(f"""
+            SELECT suppression_reason as reason,
+                   COUNT(*) as entities,
+                   ROUND(SUM(estimated_waste_prevented_usd), 0) as waste_prevented_usd,
+                   ROUND(AVG(churn_risk_score), 3) as avg_churn_risk
+            FROM {VIEW_SUPPRESSION_LIST}
+            GROUP BY suppression_reason
+            ORDER BY entities DESC
+        """)
+
+        top_suppressed = sql_query(f"""
+            SELECT entity_id, name, customer_segment, lifecycle_status,
+                   suppression_reason, ROUND(churn_risk_score, 3) as churn_risk,
+                   ROUND(estimated_waste_prevented_usd, 0) as waste_prevented_usd,
+                   consent_marketing, do_not_contact
+            FROM {VIEW_SUPPRESSION_LIST}
+            ORDER BY estimated_waste_prevented_usd DESC
+            LIMIT 20
+        """)
+
+        result = {
+            "summary": summary[0] if summary else {},
+            "by_reason": by_reason,
+            "top_suppressed": top_suppressed,
+            "narrative": {
+                "headline": (
+                    f"{summary[0]['total_suppressed']} entities suppressed — "
+                    f"${summary[0]['total_waste_prevented_usd']:,.0f} waste prevented."
+                ) if summary else "",
+                "differentiator": (
+                    "Legacy CDPs blast entire segments. CustomerLake evaluates each entity's consent status, "
+                    "churn probability, and expected ROI BEFORE activation. Entities that would destroy value "
+                    "are automatically held back — not after the fact, but before a single dollar is spent."
+                ),
+            },
+            "data_origin": "SYNTHETIC_MODELED",
+            "app_version": APP_VERSION,
+        }
+        return cache_set("activation_suppression", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ---------------------------------------------------------------------------

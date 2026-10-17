@@ -4600,7 +4600,7 @@
 
           /* COST BREAKDOWN */
           React.createElement('div', {className: 'card', style: {padding:20, marginBottom:24}},
-            React.createElement('h3', {style: {fontSize:16, fontWeight:700, marginBottom:4}}, 'Platform Cost Breakdown'),
+            React.createElement('h3', {style: {fontSize:16, fontWeight:600, marginBottom:4}}, 'Platform Cost Breakdown'),
             React.createElement('p', {style: {fontSize:12, color:'var(--text-muted)', marginBottom:16}}, 'Annual cost by category with cost-per-entity \u2014 total: ' + fmtUsd(summary.total_customerlake_cost)),
             React.createElement('div', {style: {display:'flex', flexDirection:'column', gap:10}},
               costs.map(function(c) {
@@ -4648,7 +4648,7 @@
 
           /* CHANNEL ALLOCATION WASTE */
           React.createElement('div', {className: 'card', style: {padding:20, marginBottom:24}},
-            React.createElement('h3', {style: {fontSize:16, fontWeight:700, marginBottom:4}}, 'Channel Allocation Waste Analysis'),
+            React.createElement('h3', {style: {fontSize:16, fontWeight:600, marginBottom:4}}, 'Channel Allocation Waste Analysis'),
             React.createElement('p', {style: {fontSize:12, color:'var(--text-muted)', marginBottom:16}}, 'Current spend vs ML-recommended allocation \u2014 ' + fmtUsd(headline.total_reallocation_opportunity) + ' reallocation opportunity'),
             React.createElement('div', {className: 'table-scroll'},
               React.createElement('table', null,
@@ -4688,7 +4688,7 @@
 
           /* ML CONFIDENCE + REACHABILITY */
           React.createElement('div', {className: 'card', style: {padding:20, marginBottom:24}},
-            React.createElement('h3', {style: {fontSize:16, fontWeight:700, marginBottom:4}}, 'ML Channel Propensity \u2014 Confidence & Reachability'),
+            React.createElement('h3', {style: {fontSize:16, fontWeight:600, marginBottom:4}}, 'ML Channel Propensity \u2014 Confidence & Reachability'),
             React.createElement('p', {style: {fontSize:12, color:'var(--text-muted)', marginBottom:16}}, 'Model confidence, LTV protection, churn risk routing, and consent-aware reach per channel'),
             React.createElement('div', {style: {display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(260px, 1fr))', gap:16}},
               channels.map(function(ch) {
@@ -5548,8 +5548,8 @@
         id: 2, key: 'activate', label: 'ACTIVATE', duration: '3 min',
         color: 'var(--success)', bg: 'var(--success-bg)',
         talk: 'CustomerLake doesn\'t just build audiences — it activates them with holdout groups and consent enforcement baked in. Every campaign is an experiment from Day 1.',
-        pages: ['audiences', 'dark-audience'],
-        pageLabels: ['Audience Builder', 'Dark Audience'],
+        pages: ['audiences', 'dark-audience', 'activation-intel'],
+        pageLabels: ['Audience Builder', 'Dark Audience', 'Activation Intel'],
         primary: 'audiences',
         metrics: [
           { label: 'Addressable', key: 'addressable', static: '7,300' },
@@ -6377,6 +6377,309 @@
           )}
 
           <div style={{fontSize:11, color:'var(--text-secondary)', marginTop:12, textAlign:'right'}}>Methodology: {data.methodology}</div>
+        </div>
+      );
+    }
+
+    // ---- Activation Intelligence Page (CMO-368: the "so what" demo moment) ----
+    function ActivationIntelligencePage() {
+      const [data, setData] = useState(null);
+      const [supp, setSupp] = useState(null);
+      const [prescriptions, setPrescriptions] = useState(null);
+      const [error, setError] = useState(null);
+      const [waveFilter, setWaveFilter] = useState('');
+      const [channelFilter, setChannelFilter] = useState('');
+      const [statusFilter, setStatusFilter] = useState('ACTIVATE_PRIORITY');
+      const [rxPage, setRxPage] = useState(0);
+      const [exportMsg, setExportMsg] = useState(null);
+      const PER_PAGE = 30;
+
+      useEffect(() => {
+        api('/api/activation-intelligence').then(setData).catch(e => setError(e.message));
+        api('/api/activation-intelligence/suppression').then(setSupp).catch(() => {});
+      }, []);
+
+      useEffect(() => {
+        const params = new URLSearchParams({ limit: String(PER_PAGE), offset: String(rxPage * PER_PAGE) });
+        if (waveFilter) params.set('wave', waveFilter);
+        if (channelFilter) params.set('channel', channelFilter);
+        if (statusFilter) params.set('status', statusFilter);
+        api('/api/activation-intelligence/prescriptions?' + params.toString()).then(setPrescriptions).catch(() => {});
+      }, [waveFilter, channelFilter, statusFilter, rxPage]);
+
+      if (error) return <ErrorCard message={error} onRetry={() => { setError(null); api('/api/activation-intelligence').then(setData).catch(e => setError(e.message)); }} />;
+      if (!data) return <div aria-live="polite" role="status"><LoadingShimmer /></div>;
+
+      const k = data.kpis || {};
+      const fmt = (v) => v == null ? '\u2014' : Number(v).toLocaleString();
+      const fmtUsd = (v) => v == null ? '\u2014' : '$' + Number(v).toLocaleString(undefined, {maximumFractionDigits:0});
+      const fmtK = (v) => v == null ? '\u2014' : (Math.abs(v) >= 1000 ? (v < 0 ? '-' : '') + '$' + (Math.abs(v)/1000).toFixed(0) + 'K' : '$' + Number(v).toFixed(0));
+
+      const statusColor = (s) => {
+        if (s === 'ACTIVATE_PRIORITY') return 'var(--success)';
+        if (s === 'ACTIVATE_MEASURED') return 'var(--accent)';
+        if (s === 'TEST_AND_LEARN') return 'var(--warning)';
+        if (s === 'DO_NOT_ACTIVATE') return 'var(--danger)';
+        if (s === 'CONSENT_BLOCKED') return 'var(--text-muted)';
+        return 'var(--text-secondary)';
+      };
+
+      const waveLabel = (w) => {
+        if (w === 'BLOCKED') return 'Blocked';
+        return w.replace('WEEK_', 'Week ');
+      };
+
+      const handleExport = () => {
+        setExportMsg('Export queued: 647 ACTIVATE_PRIORITY entities \u2192 Braze API (mock). In production, CustomerLake pushes entity-level prescriptions directly to your activation platform.');
+        setTimeout(() => setExportMsg(null), 8000);
+      };
+
+      return (
+        <div className="page-content">
+          <div className="page-header">
+            <h2 style={{fontWeight:600}}><Icon d={icons.send} size={22} /> Activation Intelligence</h2>
+            <p className="page-subtitle">Entity-level prescriptions with consent gating and wave-based execution (CMO-368)</p>
+          </div>
+
+          {/* Hero KPIs */}
+          <div className="kpi-grid" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:16, marginBottom:24}}>
+            <div className="card" style={{padding:16, textAlign:'center'}}>
+              <div style={{fontSize:28, fontWeight:700, color:'var(--accent)'}}>{fmt(k.total_prescriptions)}</div>
+              <div className="kpi-label">Entity Prescriptions</div>
+            </div>
+            <div className="card" style={{padding:16, textAlign:'center'}}>
+              <div style={{fontSize:28, fontWeight:700, color:'var(--success)'}}>{fmt(k.week1_priority)}</div>
+              <div className="kpi-label">Week 1 Priority</div>
+            </div>
+            <div className="card" style={{padding:16, textAlign:'center'}}>
+              <div style={{fontSize:28, fontWeight:700, color:'var(--text-muted)'}}>{fmt(k.consent_blocked)}</div>
+              <div className="kpi-label">Consent Blocked</div>
+            </div>
+            <div className="card" style={{padding:16, textAlign:'center'}}>
+              <div style={{fontSize:28, fontWeight:700, color:'var(--danger)'}}>{fmt(k.do_not_activate)}</div>
+              <div className="kpi-label">Negative ROI Suppressed</div>
+            </div>
+            <div className="card" style={{padding:16, textAlign:'center'}}>
+              <div style={{fontSize:28, fontWeight:700, color:'var(--success)'}}>{fmtK(k.priority_incremental_usd)}</div>
+              <div className="kpi-label">Priority Incremental</div>
+            </div>
+            <div className="card" style={{padding:16, textAlign:'center'}}>
+              <div style={{fontSize:28, fontWeight:700, color:'var(--danger)'}}>{fmtK(k.waste_prevented_usd)}</div>
+              <div className="kpi-label">Waste Prevented</div>
+            </div>
+          </div>
+
+          {/* Wave Cadence */}
+          <div className="card" style={{padding:20, marginBottom:24}}>
+            <h3 style={{fontWeight:600, marginBottom:16}}><Icon d={icons.calendar} size={16} /> Wave Cadence</h3>
+            <div style={{overflowX:'auto'}}>
+              <table style={{width:'100%', borderCollapse:'collapse', fontSize:13}}>
+                <caption style={{textAlign:'left', fontSize:11, color:'var(--text-secondary)', padding:'0 0 8px', captionSide:'top'}}>Wave Cadence — Activation schedule by wave with projected incremental revenue and risk</caption>
+                <thead>
+                  <tr style={{borderBottom:'2px solid var(--border)'}}>
+                    <th style={{padding:'8px 12px', textAlign:'left', color:'var(--text-secondary)'}}>Wave</th>
+                    <th style={{padding:'8px 12px', textAlign:'left', color:'var(--text-secondary)'}}>Status</th>
+                    <th style={{padding:'8px 12px', textAlign:'right', color:'var(--text-secondary)'}}>Entities</th>
+                    <th style={{padding:'8px 12px', textAlign:'right', color:'var(--text-secondary)'}}>Projected Incr.</th>
+                    <th style={{padding:'8px 12px', textAlign:'right', color:'var(--text-secondary)'}}>Revenue at Risk</th>
+                    <th style={{padding:'8px 12px', textAlign:'right', color:'var(--text-secondary)'}}>Avg Lift (ppt)</th>
+                    <th style={{padding:'8px 12px', textAlign:'left', color:'var(--text-secondary)'}}>Guidance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.waves || []).map((w, i) => (
+                    <tr key={i} style={{borderBottom:'1px solid var(--border)', cursor:'pointer', background: waveFilter === w.activation_wave ? 'var(--accent-light)' : 'transparent'}}
+                        onClick={() => { setWaveFilter(waveFilter === w.activation_wave ? '' : w.activation_wave); setStatusFilter(w.execution_status); setRxPage(0); }}>
+                      <td style={{padding:'8px 12px', fontWeight:600}}>{waveLabel(w.activation_wave)}</td>
+                      <td style={{padding:'8px 12px'}}>
+                        <span style={{display:'inline-block', padding:'2px 8px', borderRadius:4, fontSize:11, fontWeight:600, color:'#fff', background: statusColor(w.execution_status)}}>
+                          {w.execution_status}
+                        </span>
+                      </td>
+                      <td style={{padding:'8px 12px', textAlign:'right', fontWeight:600}}>{fmt(w.entities)}</td>
+                      <td style={{padding:'8px 12px', textAlign:'right', color: w.projected_incremental_usd < 0 ? 'var(--danger)' : 'var(--success)'}}>{fmtUsd(w.projected_incremental_usd)}</td>
+                      <td style={{padding:'8px 12px', textAlign:'right'}}>{fmtUsd(w.total_revenue_at_risk_usd)}</td>
+                      <td style={{padding:'8px 12px', textAlign:'right', color: w.avg_holdout_lift_ppt < 0 ? 'var(--danger)' : 'var(--success)'}}>{w.avg_holdout_lift_ppt > 0 ? '+' : ''}{w.avg_holdout_lift_ppt}</td>
+                      <td style={{padding:'8px 12px', fontSize:11, color:'var(--text-secondary)', maxWidth:220, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}} title={w.execution_guidance}>{w.execution_guidance}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Channel Breakdown */}
+          <div className="card" style={{padding:20, marginBottom:24}}>
+            <h3 style={{fontWeight:600, marginBottom:16}}><Icon d={icons.barChart} size={16} /> Channel Prescriptions</h3>
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:16}}>
+              {(data.by_channel || []).map((ch, i) => (
+                <div key={i} className="card" style={{padding:16, cursor:'pointer', border: channelFilter === ch.channel ? '1px solid var(--accent)' : '1px solid var(--border)'}}
+                     onClick={() => { setChannelFilter(channelFilter === ch.channel ? '' : ch.channel); setRxPage(0); }}>
+                  <div style={{fontSize:15, fontWeight:700, textTransform:'uppercase', marginBottom:8}}>{ch.channel}</div>
+                  <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, fontSize:12}}>
+                    <div><span className="kpi-label">Entities</span><div style={{fontWeight:600}}>{fmt(ch.entities)}</div></div>
+                    <div><span className="kpi-label">Consentable</span><div style={{fontWeight:600, color:'var(--success)'}}>{fmt(ch.consentable)}</div></div>
+                    <div><span className="kpi-label">Projected Incr.</span><div style={{fontWeight:600, color: ch.projected_incremental_usd < 0 ? 'var(--danger)' : 'var(--success)'}}>{fmtK(ch.projected_incremental_usd)}</div></div>
+                    <div><span className="kpi-label">Confidence</span><div style={{fontWeight:600}}>{(ch.avg_confidence * 100).toFixed(1)}%</div></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Export Button + Message */}
+          <div className="card" style={{padding:20, marginBottom:24, display:'flex', alignItems:'center', gap:16, flexWrap:'wrap'}}>
+            <button className="btn btn-primary" onClick={handleExport} style={{display:'flex', alignItems:'center', gap:8}}>
+              <Icon d={icons.send} size={16} /> Export to Braze
+            </button>
+            <button className="btn btn-ghost" onClick={handleExport} style={{display:'flex', alignItems:'center', gap:8}}>
+              <Icon d={icons.send} size={16} /> Export to SFMC
+            </button>
+            <span style={{fontSize:12, color:'var(--text-muted)'}}>Push entity-level prescriptions to activation platforms</span>
+            {exportMsg && (
+              <div role="alert" aria-live="assertive" style={{width:'100%', marginTop:8, padding:'12px 16px', borderRadius:'var(--radius)', background:'var(--success-bg)', color:'var(--success)', fontSize:13, lineHeight:1.5}}>
+                <Icon d={icons.checkCircle} size={14} /> {exportMsg}
+              </div>
+            )}
+          </div>
+
+          {/* Entity Prescriptions Table */}
+          <div className="card" style={{padding:20, marginBottom:24}}>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16, flexWrap:'wrap', gap:8}}>
+              <h3 style={{fontWeight:600}}><Icon d={icons.clipboardList} size={16} /> Entity Prescriptions</h3>
+              <div style={{display:'flex', gap:8, flexWrap:'wrap'}}>
+                <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setRxPage(0); }} style={{padding:'4px 8px', borderRadius:4, background:'var(--bg-secondary)', border:'1px solid var(--border)', color:'var(--text-primary)', fontSize:12}}>
+                  <option value="">All Statuses</option>
+                  <option value="ACTIVATE_PRIORITY">Activate Priority</option>
+                  <option value="ACTIVATE_MEASURED">Activate Measured</option>
+                  <option value="TEST_AND_LEARN">Test and Learn</option>
+                  <option value="CONSENT_BLOCKED">Consent Blocked</option>
+                  <option value="DO_NOT_ACTIVATE">Do Not Activate</option>
+                </select>
+                <select value={waveFilter} onChange={e => { setWaveFilter(e.target.value); setRxPage(0); }} style={{padding:'4px 8px', borderRadius:4, background:'var(--bg-secondary)', border:'1px solid var(--border)', color:'var(--text-primary)', fontSize:12}}>
+                  <option value="">All Waves</option>
+                  <option value="WEEK_1">Week 1</option>
+                  <option value="WEEK_2">Week 2</option>
+                  <option value="WEEK_3">Week 3</option>
+                  <option value="WEEK_4">Week 4</option>
+                  <option value="BLOCKED">Blocked</option>
+                </select>
+                <select value={channelFilter} onChange={e => { setChannelFilter(e.target.value); setRxPage(0); }} style={{padding:'4px 8px', borderRadius:4, background:'var(--bg-secondary)', border:'1px solid var(--border)', color:'var(--text-primary)', fontSize:12}}>
+                  <option value="">All Channels</option>
+                  {(data.by_channel || []).map((ch, i) => <option key={i} value={ch.channel}>{ch.channel}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {prescriptions && (
+              <>
+                <div style={{fontSize:12, color:'var(--text-secondary)', marginBottom:12}}>
+                  {fmt(prescriptions.total)} entities matched | Showing {prescriptions.prescriptions.length} | Page {rxPage + 1}
+                </div>
+                <div style={{overflowX:'auto'}}>
+                  <table style={{width:'100%', borderCollapse:'collapse', fontSize:12}}>
+                    <caption style={{textAlign:'left', fontSize:11, color:'var(--text-secondary)', padding:'0 0 8px', captionSide:'top'}}>Entity Prescriptions — Individual activation recommendations with priority, channel, and consent status</caption>
+                    <thead>
+                      <tr style={{borderBottom:'2px solid var(--border)'}}>
+                        <th style={{padding:'6px 8px', textAlign:'left', color:'var(--text-secondary)'}}>Entity</th>
+                        <th style={{padding:'6px 8px', textAlign:'left', color:'var(--text-secondary)'}}>Segment</th>
+                        <th style={{padding:'6px 8px', textAlign:'left', color:'var(--text-secondary)'}}>Risk Tier</th>
+                        <th style={{padding:'6px 8px', textAlign:'left', color:'var(--text-secondary)'}}>Motion</th>
+                        <th style={{padding:'6px 8px', textAlign:'left', color:'var(--text-secondary)'}}>Channel</th>
+                        <th style={{padding:'6px 8px', textAlign:'left', color:'var(--text-secondary)'}}>Wave</th>
+                        <th style={{padding:'6px 8px', textAlign:'left', color:'var(--text-secondary)'}}>Status</th>
+                        <th style={{padding:'6px 8px', textAlign:'right', color:'var(--text-secondary)'}}>Priority</th>
+                        <th style={{padding:'6px 8px', textAlign:'right', color:'var(--text-secondary)'}}>Lift (ppt)</th>
+                        <th style={{padding:'6px 8px', textAlign:'right', color:'var(--text-secondary)'}}>Incr. USD</th>
+                        <th style={{padding:'6px 8px', textAlign:'center', color:'var(--text-secondary)'}}>Consent</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {prescriptions.prescriptions.map((rx, i) => (
+                        <tr key={i} style={{borderBottom:'1px solid var(--border)'}}>
+                          <td style={{padding:'6px 8px'}}>
+                            <a className="entity-link" href="#" onClick={(e) => { e.preventDefault(); }}>{rx.entity_id}</a>
+                            <div style={{fontSize:10, color:'var(--text-muted)'}}>{rx.value_segment}</div>
+                          </td>
+                          <td style={{padding:'6px 8px'}}>{rx.customer_segment}</td>
+                          <td style={{padding:'6px 8px'}}>
+                            <span style={{padding:'2px 6px', borderRadius:4, fontSize:10, fontWeight:600,
+                              color: rx.churn_risk_tier === 'CRITICAL' ? 'var(--danger)' : rx.churn_risk_tier === 'HIGH' ? 'var(--warning)' : 'var(--text-secondary)',
+                              background: rx.churn_risk_tier === 'CRITICAL' ? 'var(--danger-bg)' : rx.churn_risk_tier === 'HIGH' ? 'var(--warning-bg)' : 'transparent'
+                            }}>{rx.churn_risk_tier}</span>
+                          </td>
+                          <td style={{padding:'6px 8px', fontSize:11}}>{rx.marketing_motion}</td>
+                          <td style={{padding:'6px 8px', fontWeight:600, textTransform:'uppercase', fontSize:11}}>{rx.prescribed_channel}</td>
+                          <td style={{padding:'6px 8px'}}>{waveLabel(rx.activation_wave)}</td>
+                          <td style={{padding:'6px 8px'}}>
+                            <span style={{padding:'2px 6px', borderRadius:4, fontSize:10, fontWeight:600, color:'#fff', background: statusColor(rx.execution_status)}}>
+                              {rx.execution_status}
+                            </span>
+                          </td>
+                          <td style={{padding:'6px 8px', textAlign:'right', fontWeight:600}}>{rx.action_priority_score}</td>
+                          <td style={{padding:'6px 8px', textAlign:'right', color: rx.true_lift_ppt < 0 ? 'var(--danger)' : 'var(--success)'}}>{rx.true_lift_ppt > 0 ? '+' : ''}{rx.true_lift_ppt}</td>
+                          <td style={{padding:'6px 8px', textAlign:'right', color: rx.projected_incremental_usd < 0 ? 'var(--danger)' : 'var(--success)', fontWeight:600}}>{fmtUsd(rx.projected_incremental_usd)}</td>
+                          <td style={{padding:'6px 8px', textAlign:'center'}}>
+                            {rx.consent_cleared
+                              ? <span style={{color:'var(--success)'}} title="Consent cleared">\u2713</span>
+                              : <span style={{color:'var(--danger)'}} title={rx.do_not_contact ? 'Do Not Contact' : 'No consent'}>\u2717</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div style={{display:'flex', justifyContent:'center', gap:12, marginTop:12}}>
+                  <button className="btn btn-ghost btn-sm" disabled={rxPage === 0} onClick={() => setRxPage(p => Math.max(0, p - 1))}>Previous</button>
+                  <span style={{fontSize:12, color:'var(--text-secondary)', alignSelf:'center'}}>Page {rxPage + 1} of {Math.max(1, Math.ceil(prescriptions.total / PER_PAGE))}</span>
+                  <button className="btn btn-ghost btn-sm" disabled={(rxPage + 1) * PER_PAGE >= prescriptions.total} onClick={() => setRxPage(p => p + 1)}>Next</button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Suppression Overview */}
+          {supp && supp.summary && (
+            <div className="card" style={{padding:20, marginBottom:24, borderLeft:'4px solid var(--danger)'}}>
+              <h3 style={{fontWeight:600, marginBottom:16}}><Icon d={icons.shieldCheck} size={16} /> Suppression Intelligence</h3>
+              <div className="kpi-grid" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))', gap:16, marginBottom:16}}>
+                <div style={{textAlign:'center'}}>
+                  <div style={{fontSize:24, fontWeight:700, color:'var(--danger)'}}>{fmt(supp.summary.total_suppressed)}</div>
+                  <div className="kpi-label">Entities Suppressed</div>
+                </div>
+                <div style={{textAlign:'center'}}>
+                  <div style={{fontSize:24, fontWeight:700, color:'var(--text-muted)'}}>{fmt(supp.summary.consent_blocked)}</div>
+                  <div className="kpi-label">Consent Blocked</div>
+                </div>
+                <div style={{textAlign:'center'}}>
+                  <div style={{fontSize:24, fontWeight:700, color:'var(--danger)'}}>{fmt(supp.summary.negative_roi)}</div>
+                  <div className="kpi-label">Negative ROI</div>
+                </div>
+                <div style={{textAlign:'center'}}>
+                  <div style={{fontSize:24, fontWeight:700, color:'var(--success)'}}>{fmtUsd(supp.summary.total_waste_prevented_usd)}</div>
+                  <div className="kpi-label">Waste Prevented</div>
+                </div>
+              </div>
+
+              {/* Reason breakdown */}
+              {(supp.by_reason || []).map((r, i) => (
+                <div key={i} style={{display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid var(--border)', fontSize:13}}>
+                  <span>{r.reason}</span>
+                  <span style={{display:'flex', gap:16}}>
+                    <span style={{fontWeight:600}}>{fmt(r.entities)} entities</span>
+                    <span style={{color:'var(--success)', fontWeight:600}}>{fmtUsd(r.waste_prevented_usd)} saved</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Differentiator */}
+          <div style={{marginTop:12, padding:'12px 16px', background:'var(--accent)11', borderRadius:6, fontSize:12, color:'var(--accent)', lineHeight:1.5}}>
+            <span style={{fontWeight:700}}>CustomerLake Insight:</span> {data.narrative?.differentiator}
+          </div>
+
+          <div style={{fontSize:11, color:'var(--text-secondary)', marginTop:12, textAlign:'right'}}>Source: activation_execution_plan + activation_wave_summary + suppression_list | {data.data_origin}</div>
         </div>
       );
     }
@@ -8440,6 +8743,7 @@
         { id: 'incrementality', label: 'Incrementality', icon: icons.trendingUp },
         { id: 'closedloop', label: 'Closed Loop', icon: icons.refreshCw },
         { id: 'learning-loop', label: 'Learning Loop', icon: icons.activity },
+        { id: 'activation-intel', label: 'Activation Intel', icon: icons.send },
         // --- MEASUREMENT ---
         { section: 'MEASUREMENT' },
         { id: 'confidence', label: 'Stat. Confidence', icon: icons.lock },
@@ -8497,6 +8801,7 @@
           case 'waste-exposure': return <WasteExposurePage />;
           case 'reoptimization': return <ReoptimizationPage />;
           case 'learning-loop': return <CampaignLearningLoopPage />;
+          case 'activation-intel': return <ActivationIntelligencePage />;
           case 'board-ready': return <BoardReadyPage />;
           case 'spend-transparency': return <SpendTransparencyPage />;
           case 'lifecycle': return <LifecyclePage />;
