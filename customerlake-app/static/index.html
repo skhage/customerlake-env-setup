@@ -5561,8 +5561,8 @@
         id: 3, key: 'measure', label: 'MEASURE', duration: '3 min',
         color: 'var(--warning)', bg: 'var(--warning-bg)',
         talk: 'Every other CDP inflates ROI with naive last-touch attribution. CustomerLake runs holdout experiments and reports HONEST incrementality — even when the numbers are uncomfortable.',
-        pages: ['campaigns', 'incrementality', 'confidence'],
-        pageLabels: ['Campaigns', 'Incrementality', 'Stat. Confidence'],
+        pages: ['campaigns', 'incrementality', 'confidence', 'attribution-truth', 'conversion-narrative'],
+        pageLabels: ['Campaigns', 'Incrementality', 'Stat. Confidence', 'Attribution Truth', 'Conversion Narrative'],
         primary: 'incrementality',
         metrics: [
           { label: 'True Portfolio ROI', key: 'roi', static: '37%' },
@@ -6382,6 +6382,225 @@
     }
 
     // ---- Activation Intelligence Page (CMO-368: the "so what" demo moment) ----
+    function AttributionTruthPage() {
+      const [data, setData] = useState(null);
+      const [error, setError] = useState(null);
+      const [showMethodology, setShowMethodology] = useState(false);
+
+      useEffect(() => {
+        api('/api/attribution-truth').then(setData).catch(e => setError(e.message));
+      }, []);
+
+      if (error) return <ErrorCard message={error} onRetry={() => { setError(null); api('/api/attribution-truth').then(setData).catch(e => setError(e.message)); }} />;
+      if (!data) return <div aria-live="polite" role="status"><LoadingShimmer /></div>;
+
+      const k = data.kpis || {};
+      const fmt = (v) => v == null ? '\u2014' : Number(v).toLocaleString();
+      const fmtUsd = (v) => v == null ? '\u2014' : '$' + Number(v).toLocaleString(undefined, {maximumFractionDigits:0});
+      const fmtX = (v) => v == null ? '\u2014' : Number(v).toFixed(1) + 'x';
+      const fmtPct = (v) => v == null ? '\u2014' : Number(v).toFixed(2) + ' ppt';
+
+      const channelBadge = (note) => {
+        if (!note) return { color: 'var(--text-muted)', label: 'N/A' };
+        if (note.startsWith('VALUE_DESTRUCTION')) return { color: 'var(--danger)', label: 'VALUE DESTRUCTION' };
+        if (note.startsWith('EXTREME_OVERSTATEMENT')) return { color: 'var(--warning)', label: 'EXTREME OVERSTATEMENT' };
+        if (note.startsWith('WITHIN_RANGE')) return { color: 'var(--success)', label: 'WITHIN RANGE' };
+        return { color: 'var(--text-muted)', label: 'UNCLASSIFIED' };
+      };
+
+      const ltv = data.ltv_calibration || {};
+
+      return (
+        <div className="page-content">
+          <div className="page-header">
+            <h2 style={{fontWeight:600}}><Icon d={icons.alertTriangle} size={22} /> Attribution Truth</h2>
+            <p className="page-subtitle">Full-attribution vs holdout-based incrementality — exposing the real story (CMO-369)</p>
+          </div>
+
+          {/* Hero KPIs */}
+          <div className="kpi-grid" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:16, marginBottom:24}}>
+            <div className="card" style={{padding:16, textAlign:'center'}}>
+              <div style={{fontSize:28, fontWeight:700, color:'var(--accent)'}}>{fmt(k.channels_analyzed)}</div>
+              <div className="kpi-label">Channels Audited</div>
+            </div>
+            <div className="card" style={{padding:16, textAlign:'center'}}>
+              <div style={{fontSize:28, fontWeight:700, color:'var(--danger)'}}>{fmtUsd(k.total_organic_miscredited_usd)}</div>
+              <div className="kpi-label">Organic Miscredited</div>
+            </div>
+            <div className="card" style={{padding:16, textAlign:'center'}}>
+              <div style={{fontSize:28, fontWeight:700, color: (k.total_incremental_revenue_usd||0) < 0 ? 'var(--danger)' : 'var(--success)'}}>{fmtUsd(k.total_incremental_revenue_usd)}</div>
+              <div className="kpi-label">True Incremental Revenue</div>
+            </div>
+            <div className="card" style={{padding:16, textAlign:'center'}}>
+              <div style={{fontSize:28, fontWeight:700, color:'var(--warning)'}}>{k.overstatement_ratio ? fmtX(k.overstatement_ratio) : '\u2014'}</div>
+              <div className="kpi-label">Attribution Overstatement</div>
+            </div>
+            <div className="card" style={{padding:16, textAlign:'center'}}>
+              <div style={{fontSize:28, fontWeight:700, color:'var(--success)'}}>{fmt(k.channels_creating_value)}</div>
+              <div className="kpi-label">Channels Creating Value</div>
+            </div>
+            <div className="card" style={{padding:16, textAlign:'center'}}>
+              <div style={{fontSize:28, fontWeight:700, color:'var(--danger)'}}>{fmt(k.channels_destroying_value)}</div>
+              <div className="kpi-label">Channels Destroying Value</div>
+            </div>
+          </div>
+
+          {/* Differentiator narrative */}
+          <div className="card" style={{padding:20, marginBottom:24, borderLeft:'3px solid var(--accent)'}}>
+            <div style={{fontSize:13, color:'var(--text-primary)', lineHeight:1.6}}>{data.narrative?.headline}</div>
+            <div style={{fontSize:12, color:'var(--text-secondary)', marginTop:8, fontStyle:'italic'}}>{data.narrative?.differentiator}</div>
+          </div>
+
+          {/* Channel Truth Table */}
+          <div className="card" style={{padding:20, marginBottom:24}}>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16}}>
+              <h3 style={{fontWeight:600}}><Icon d={icons.barChart} size={16} /> Channel-by-Channel Attribution Audit</h3>
+              <button onClick={() => setShowMethodology(!showMethodology)} style={{background:'var(--accent-light)', color:'var(--accent)', border:'none', borderRadius:'var(--radius)', padding:'6px 12px', fontSize:12, cursor:'pointer'}}>
+                {showMethodology ? 'Hide' : 'Show'} Methodology
+              </button>
+            </div>
+            {showMethodology && (
+              <div style={{background:'var(--bg-secondary)', borderRadius:'var(--radius)', padding:16, marginBottom:16, fontSize:12, color:'var(--text-secondary)', lineHeight:1.6}}>
+                {data.narrative?.methodology}
+              </div>
+            )}
+            <div style={{overflowX:'auto'}}>
+              <table style={{width:'100%', borderCollapse:'collapse', fontSize:13}}>
+                <caption style={{textAlign:'left', fontSize:11, color:'var(--text-secondary)', padding:'0 0 8px', captionSide:'top'}}>Channel attribution audit — full-attribution ROAS vs holdout-based incremental ROAS with CPA</caption>
+                <thead>
+                  <tr style={{borderBottom:'2px solid var(--border)'}}>
+                    <th style={{padding:'8px 12px', textAlign:'left', color:'var(--text-secondary)'}}>Channel</th>
+                    <th style={{padding:'8px 12px', textAlign:'right', color:'var(--text-secondary)'}}>Pushed</th>
+                    <th style={{padding:'8px 12px', textAlign:'right', color:'var(--text-secondary)'}}>Cost</th>
+                    <th style={{padding:'8px 12px', textAlign:'right', color:'var(--text-secondary)'}}>CPA</th>
+                    <th style={{padding:'8px 12px', textAlign:'right', color:'var(--text-secondary)'}}>Full-Attr ROAS</th>
+                    <th style={{padding:'8px 12px', textAlign:'right', color:'var(--text-secondary)'}}>Incr. ROAS</th>
+                    <th style={{padding:'8px 12px', textAlign:'right', color:'var(--text-secondary)'}}>True Lift</th>
+                    <th style={{padding:'8px 12px', textAlign:'right', color:'var(--text-secondary)'}}>Incr. Revenue</th>
+                    <th style={{padding:'8px 12px', textAlign:'right', color:'var(--text-secondary)'}}>Organic Miscredited</th>
+                    <th style={{padding:'8px 12px', textAlign:'left', color:'var(--text-secondary)'}}>Verdict</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.channels || []).map((c, i) => {
+                    const badge = channelBadge(c.cmo_methodology_note);
+                    return (
+                      <tr key={i} style={{borderBottom:'1px solid var(--border)'}}>
+                        <td style={{padding:'8px 12px', fontWeight:600, textTransform:'capitalize'}}>{c.channel?.replace('_', ' ')}</td>
+                        <td style={{padding:'8px 12px', textAlign:'right'}}>{fmt(c.activations_pushed)}</td>
+                        <td style={{padding:'8px 12px', textAlign:'right'}}>{fmtUsd(c.campaign_cost_usd)}</td>
+                        <td style={{padding:'8px 12px', textAlign:'right', fontWeight:600}}>{c.cpa_usd != null ? '$' + Number(c.cpa_usd).toFixed(2) : '\u2014'}</td>
+                        <td style={{padding:'8px 12px', textAlign:'right', color:'var(--text-muted)', textDecoration:'line-through'}}>{fmtX(c.full_attribution_roas_x)}</td>
+                        <td style={{padding:'8px 12px', textAlign:'right', fontWeight:700, color: (c.incremental_roas_x||0) < 0 ? 'var(--danger)' : 'var(--success)'}}>{fmtX(c.incremental_roas_x)}</td>
+                        <td style={{padding:'8px 12px', textAlign:'right', color: (c.avg_true_lift_ppt||0) < 0 ? 'var(--danger)' : 'var(--success)'}}>{fmtPct(c.avg_true_lift_ppt)}</td>
+                        <td style={{padding:'8px 12px', textAlign:'right', fontWeight:600, color: (c.incremental_revenue_usd||0) < 0 ? 'var(--danger)' : 'var(--success)'}}>{fmtUsd(c.incremental_revenue_usd)}</td>
+                        <td style={{padding:'8px 12px', textAlign:'right', color:'var(--warning)'}}>{fmtUsd(c.organic_revenue_miscredited_usd)}</td>
+                        <td style={{padding:'8px 12px'}}>
+                          <span style={{display:'inline-block', padding:'2px 8px', borderRadius:12, fontSize:10, fontWeight:600, background: badge.color === 'var(--danger)' ? 'var(--danger-bg)' : badge.color === 'var(--warning)' ? 'var(--warning-bg)' : badge.color === 'var(--success)' ? 'var(--success-bg)' : 'var(--info-bg)', color: badge.color}}>{badge.label}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Consent Impact */}
+          <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(300px, 1fr))', gap:16, marginBottom:24}}>
+            <div className="card" style={{padding:20}}>
+              <h3 style={{fontWeight:600, marginBottom:16}}><Icon d={icons.lock} size={16} /> Consent Impact by Channel</h3>
+              <div style={{overflowX:'auto'}}>
+                <table style={{width:'100%', borderCollapse:'collapse', fontSize:13}}>
+                  <caption style={{textAlign:'left', fontSize:11, color:'var(--text-secondary)', padding:'0 0 8px', captionSide:'top'}}>Consent-cleared vs consent-blocked entities per channel</caption>
+                  <thead>
+                    <tr style={{borderBottom:'2px solid var(--border)'}}>
+                      <th style={{padding:'6px 10px', textAlign:'left', color:'var(--text-secondary)'}}>Channel</th>
+                      <th style={{padding:'6px 10px', textAlign:'right', color:'var(--text-secondary)'}}>Consented</th>
+                      <th style={{padding:'6px 10px', textAlign:'right', color:'var(--text-secondary)'}}>Blocked</th>
+                      <th style={{padding:'6px 10px', textAlign:'right', color:'var(--text-secondary)'}}>Block Rate</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(data.channels || []).filter(c => c.consented_entities || c.consent_blocked_entities).map((c, i) => {
+                      const total = (c.consented_entities||0) + (c.consent_blocked_entities||0);
+                      const blockRate = total > 0 ? ((c.consent_blocked_entities||0) / total * 100).toFixed(1) : '\u2014';
+                      return (
+                        <tr key={i} style={{borderBottom:'1px solid var(--border)'}}>
+                          <td style={{padding:'6px 10px', textTransform:'capitalize'}}>{c.channel?.replace('_', ' ')}</td>
+                          <td style={{padding:'6px 10px', textAlign:'right', color:'var(--success)'}}>{fmt(c.consented_entities)}</td>
+                          <td style={{padding:'6px 10px', textAlign:'right', color:'var(--danger)'}}>{fmt(c.consent_blocked_entities)}</td>
+                          <td style={{padding:'6px 10px', textAlign:'right', color:'var(--warning)'}}>{blockRate}%</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* LTV Calibration Panel */}
+            <div className="card" style={{padding:20}}>
+              <h3 style={{fontWeight:600, marginBottom:16}}><Icon d={icons.trendingDown} size={16} /> LTV Calibration Transparency</h3>
+              <p style={{fontSize:12, color:'var(--text-secondary)', marginBottom:16}}>Raw ML model vs calibrated realistic values. Telco ARPU-aligned ($30–100/mo \u00D7 6–120 month lifetimes).</p>
+              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:16}}>
+                <div style={{background:'var(--danger-bg)', borderRadius:'var(--radius)', padding:12, textAlign:'center'}}>
+                  <div style={{fontSize:10, color:'var(--danger)', textTransform:'uppercase', fontWeight:600}}>Raw Model Avg</div>
+                  <div style={{fontSize:22, fontWeight:700, color:'var(--danger)', textDecoration:'line-through'}}>{fmtUsd(ltv.avg_ltv_raw)}</div>
+                </div>
+                <div style={{background:'var(--success-bg)', borderRadius:'var(--radius)', padding:12, textAlign:'center'}}>
+                  <div style={{fontSize:10, color:'var(--success)', textTransform:'uppercase', fontWeight:600}}>Calibrated Avg</div>
+                  <div style={{fontSize:22, fontWeight:700, color:'var(--success)'}}>{fmtUsd(ltv.avg_ltv_calibrated)}</div>
+                </div>
+              </div>
+              <div style={{fontSize:12, color:'var(--text-secondary)', lineHeight:1.6}}>
+                <div>Method: <strong>{ltv.ltv_calibration_method || 'N/A'}</strong></div>
+                <div>Range: {fmtUsd(ltv.min_ltv)} – {fmtUsd(ltv.max_ltv)} (floor ${ltv.ltv_floor_usd}, ceiling ${ltv.ltv_ceiling_usd})</div>
+                <div>Records: {fmt(ltv.total_records)}</div>
+                <div style={{marginTop:8, color:'var(--warning)'}}>Reduction: {ltv.avg_ltv_raw && ltv.avg_ltv_calibrated ? ((1 - ltv.avg_ltv_calibrated/ltv.avg_ltv_raw) * 100).toFixed(1) : '\u2014'}% from raw model</div>
+              </div>
+            </div>
+          </div>
+
+          {/* LTV by Channel */}
+          {data.ltv_by_channel && data.ltv_by_channel.length > 0 && (
+            <div className="card" style={{padding:20, marginBottom:24}}>
+              <h3 style={{fontWeight:600, marginBottom:16}}><Icon d={icons.layers} size={16} /> LTV Calibration by Channel</h3>
+              <div style={{overflowX:'auto'}}>
+                <table style={{width:'100%', borderCollapse:'collapse', fontSize:13}}>
+                  <caption style={{textAlign:'left', fontSize:11, color:'var(--text-secondary)', padding:'0 0 8px', captionSide:'top'}}>Calibrated vs raw LTV and revenue-at-risk per activation channel</caption>
+                  <thead>
+                    <tr style={{borderBottom:'2px solid var(--border)'}}>
+                      <th style={{padding:'6px 10px', textAlign:'left', color:'var(--text-secondary)'}}>Channel</th>
+                      <th style={{padding:'6px 10px', textAlign:'right', color:'var(--text-secondary)'}}>Entities</th>
+                      <th style={{padding:'6px 10px', textAlign:'right', color:'var(--text-secondary)'}}>Avg LTV (Raw)</th>
+                      <th style={{padding:'6px 10px', textAlign:'right', color:'var(--text-secondary)'}}>Avg LTV (Calibrated)</th>
+                      <th style={{padding:'6px 10px', textAlign:'right', color:'var(--text-secondary)'}}>Overstatement</th>
+                      <th style={{padding:'6px 10px', textAlign:'right', color:'var(--text-secondary)'}}>Avg RAR (Calibrated)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.ltv_by_channel.map((c, i) => (
+                      <tr key={i} style={{borderBottom:'1px solid var(--border)'}}>
+                        <td style={{padding:'6px 10px', textTransform:'capitalize'}}>{c.channel?.replace('_', ' ')}</td>
+                        <td style={{padding:'6px 10px', textAlign:'right'}}>{fmt(c.entities)}</td>
+                        <td style={{padding:'6px 10px', textAlign:'right', color:'var(--danger)', textDecoration:'line-through'}}>{fmtUsd(c.avg_ltv_raw)}</td>
+                        <td style={{padding:'6px 10px', textAlign:'right', color:'var(--success)', fontWeight:600}}>{fmtUsd(c.avg_ltv_calibrated)}</td>
+                        <td style={{padding:'6px 10px', textAlign:'right', color:'var(--warning)'}}>{fmtX(c.overstatement_factor)}</td>
+                        <td style={{padding:'6px 10px', textAlign:'right'}}>{fmtUsd(c.avg_rar_calibrated)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <SimulationBadge origin={data.data_origin} version={data.app_version} />
+        </div>
+      );
+    }
+
     function ActivationIntelligencePage() {
       const [data, setData] = useState(null);
       const [supp, setSupp] = useState(null);
@@ -8720,10 +8939,202 @@
       );
     }
 
+    // ---- Conversion Narrative Page (CMO-373 CRITICAL: pivot board to conversions) ----
+    function ConversionNarrativePage() {
+      const [data, setData] = useState(null);
+      const [error, setError] = useState(null);
+      const [showMethodology, setShowMethodology] = useState(false);
+
+      useEffect(() => {
+        api('/api/conversion-narrative').then(setData).catch(e => setError(e.message));
+      }, []);
+
+      if (error) return <ErrorCard message={error} onRetry={() => { setError(null); api('/api/conversion-narrative').then(setData).catch(e => setError(e.message)); }} />;
+      if (!data) return <div aria-live="polite" role="status"><LoadingShimmer /></div>;
+
+      const k = data.kpis || {};
+      const fmt = (v) => v == null ? '\u2014' : Number(v).toLocaleString();
+      const fmtUsd = (v) => v == null ? '\u2014' : '$' + Number(v).toLocaleString(undefined, {maximumFractionDigits:0});
+      const fmtPct = (v) => v == null ? '\u2014' : Number(v).toFixed(1) + '%';
+
+      const actionColor = (a) => {
+        if (a === 'SCALE') return 'var(--success)';
+        if (a === 'OPTIMIZE_OVERHEAD') return 'var(--warning)';
+        if (a === 'CUT' || a === 'EXIT') return 'var(--danger)';
+        return 'var(--text-muted)';
+      };
+      const actionBg = (a) => {
+        if (a === 'SCALE') return 'var(--success-bg)';
+        if (a === 'OPTIMIZE_OVERHEAD') return 'var(--warning-bg)';
+        if (a === 'CUT' || a === 'EXIT') return 'var(--danger-bg)';
+        return 'var(--bg-secondary)';
+      };
+
+      return (
+        <div className="page-content">
+          <div className="page-header">
+            <h2 style={{fontWeight:600}}><Icon d={icons.target} size={22} /> Conversion Narrative</h2>
+            <p className="page-subtitle">CMO-373: Board headline pivoted from estimated revenue to holdout-proven conversions</p>
+          </div>
+
+          {/* HERO: The new board headline */}
+          <div className="card" style={{padding:24, marginBottom:24, borderLeft:'4px solid var(--accent)', background:'var(--accent)08'}}>
+            <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:1.5, color:'var(--text-muted)', marginBottom:8}}>New Board Headline</div>
+            <div style={{fontSize:36, fontWeight:700, color:'var(--accent)', lineHeight:1.2}}>{fmt(k.headline_conversions)}</div>
+            <div style={{fontSize:15, color:'var(--text-primary)', marginTop:4}}>Holdout-Proven Incremental Conversions</div>
+            <div style={{fontSize:12, color:'var(--text-secondary)', marginTop:12, lineHeight:1.6, maxWidth:700}}>{data.narrative?.pivot_case}</div>
+          </div>
+
+          {/* KPI Grid */}
+          <div className="kpi-grid" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:12, marginBottom:24}}>
+            <div className="card" style={{padding:14, textAlign:'center'}}>
+              <div style={{fontSize:26, fontWeight:700, color:'var(--success)'}}>{fmt(k.positive_incremental)}</div>
+              <div className="kpi-label">Value-Creating</div>
+            </div>
+            <div className="card" style={{padding:14, textAlign:'center'}}>
+              <div style={{fontSize:26, fontWeight:700, color:'var(--danger)'}}>{fmt(k.negative_incremental)}</div>
+              <div className="kpi-label">Value-Destroying</div>
+            </div>
+            <div className="card" style={{padding:14, textAlign:'center'}}>
+              <div style={{fontSize:26, fontWeight:700, color:'var(--warning)'}}>{fmtPct(k.organic_pct)}</div>
+              <div className="kpi-label">Organic (Not Marketing)</div>
+            </div>
+            <div className="card" style={{padding:14, textAlign:'center'}}>
+              <div style={{fontSize:26, fontWeight:700, color:'var(--accent)'}}>{k.best_cpa_usd ? fmtUsd(k.best_cpa_usd) : '\u2014'}</div>
+              <div className="kpi-label">Best CPA ({k.best_cpa_channel || '\u2014'})</div>
+            </div>
+            <div className="card" style={{padding:14, textAlign:'center'}}>
+              <div style={{fontSize:26, fontWeight:700, color:'var(--text-primary)'}}>{k.portfolio_cpa_usd ? fmtUsd(k.portfolio_cpa_usd) : '\u2014'}</div>
+              <div className="kpi-label">Portfolio CPA</div>
+            </div>
+            <div className="card" style={{padding:14, textAlign:'center'}}>
+              <div style={{fontSize:26, fontWeight:700, color:'var(--text-muted)'}}>{k.legacy_cpa_usd ? fmtUsd(k.legacy_cpa_usd) : '\u2014'}</div>
+              <div className="kpi-label">Legacy CDP CPA</div>
+            </div>
+          </div>
+
+          {/* The Organic Illusion */}
+          <div className="card" style={{padding:20, marginBottom:24}}>
+            <h3 style={{fontWeight:600, marginBottom:12}}><Icon d={icons.alertCircle} size={16} /> The Organic Illusion</h3>
+            <div style={{fontSize:13, color:'var(--text-primary)', lineHeight:1.6, marginBottom:16}}>{data.narrative?.organic_illusion}</div>
+            <div style={{display:'flex', gap:8, flexWrap:'wrap'}}>
+              <div style={{flex:1, minWidth:120, background:'var(--bg-secondary)', borderRadius:'var(--radius)', padding:12, textAlign:'center'}}>
+                <div style={{fontSize:22, fontWeight:700}}>{fmt(k.total_treatment_conversions)}</div>
+                <div style={{fontSize:11, color:'var(--text-muted)'}}>Treatment Conversions</div>
+              </div>
+              <div style={{flex:'0 0 40px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, color:'var(--text-muted)'}}>=</div>
+              <div style={{flex:1, minWidth:120, background:'var(--danger-bg)', borderRadius:'var(--radius)', padding:12, textAlign:'center'}}>
+                <div style={{fontSize:22, fontWeight:700, color:'var(--danger)'}}>{fmt(k.total_organic_conversions)}</div>
+                <div style={{fontSize:11, color:'var(--text-muted)'}}>Organic (would happen anyway)</div>
+              </div>
+              <div style={{flex:'0 0 40px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, color:'var(--text-muted)'}}>+</div>
+              <div style={{flex:1, minWidth:120, background:'var(--success-bg)', borderRadius:'var(--radius)', padding:12, textAlign:'center'}}>
+                <div style={{fontSize:22, fontWeight:700, color:'var(--success)'}}>{fmt(k.headline_conversions)}</div>
+                <div style={{fontSize:11, color:'var(--text-muted)'}}>Truly Incremental</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Channel Conversion Scorecard */}
+          <div className="card" style={{padding:20, marginBottom:24}}>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16}}>
+              <h3 style={{fontWeight:600}}><Icon d={icons.barChart} size={16} /> Channel Conversion Scorecard</h3>
+              <button onClick={() => setShowMethodology(!showMethodology)} style={{background:'var(--accent-light)', color:'var(--accent)', border:'none', borderRadius:'var(--radius)', padding:'6px 12px', fontSize:11, cursor:'pointer'}}>
+                {showMethodology ? 'Hide' : 'Show'} Methodology
+              </button>
+            </div>
+            {showMethodology && (
+              <div style={{background:'var(--bg-secondary)', borderRadius:'var(--radius)', padding:16, marginBottom:16, fontSize:12, color:'var(--text-secondary)', lineHeight:1.6}}>
+                Holdout-normalized incremental conversions: treatment conversion rate minus holdout conversion rate, scaled to treatment population. Channels with negative incremental conversions destroy value — their marketing suppresses organic conversions. CPA is delivery cost per incremental conversion. Budget action: SCALE (profitable both cost bases), OPTIMIZE_OVERHEAD (delivery profitable, fully-loaded not), EXIT (negative incremental).
+              </div>
+            )}
+            <div style={{overflowX:'auto'}}>
+              <table style={{width:'100%', borderCollapse:'collapse', fontSize:13}}>
+                <caption style={{textAlign:'left', fontSize:11, color:'var(--text-secondary)', padding:'0 0 8px', captionSide:'top'}}>Channel conversion scorecard — holdout-measured incremental conversions per channel with budget action</caption>
+                <thead>
+                  <tr style={{borderBottom:'2px solid var(--border)'}}>
+                    <th style={{padding:'8px 10px', textAlign:'left', color:'var(--text-secondary)'}}>Channel</th>
+                    <th style={{padding:'8px 10px', textAlign:'right', color:'var(--text-secondary)'}}>Sends</th>
+                    <th style={{padding:'8px 10px', textAlign:'right', color:'var(--text-secondary)'}}>Conversions</th>
+                    <th style={{padding:'8px 10px', textAlign:'right', color:'var(--text-secondary)'}}>Organic</th>
+                    <th style={{padding:'8px 10px', textAlign:'right', color:'var(--text-secondary)', fontWeight:700}}>Incremental</th>
+                    <th style={{padding:'8px 10px', textAlign:'right', color:'var(--text-secondary)'}}>Treat CVR</th>
+                    <th style={{padding:'8px 10px', textAlign:'right', color:'var(--text-secondary)'}}>Holdout CVR</th>
+                    <th style={{padding:'8px 10px', textAlign:'right', color:'var(--text-secondary)'}}>Delivery CPA</th>
+                    <th style={{padding:'8px 10px', textAlign:'right', color:'var(--text-secondary)'}}>Legacy CPA</th>
+                    <th style={{padding:'8px 10px', textAlign:'right', color:'var(--text-secondary)'}}>Gap</th>
+                    <th style={{padding:'8px 10px', textAlign:'left', color:'var(--text-secondary)'}}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.channels || []).map((c, i) => {
+                    const incr = c.incremental_conversions || 0;
+                    return (
+                      <tr key={i} style={{borderBottom:'1px solid var(--border)'}}>
+                        <td style={{padding:'8px 10px', fontWeight:600, textTransform:'capitalize'}}>{c.channel?.replace('_', ' ')}</td>
+                        <td style={{padding:'8px 10px', textAlign:'right'}}>{fmt(c.treatment_sends)}</td>
+                        <td style={{padding:'8px 10px', textAlign:'right'}}>{fmt(c.treatment_conversions)}</td>
+                        <td style={{padding:'8px 10px', textAlign:'right', color:'var(--text-muted)'}}>{fmt(c.expected_organic_in_treatment)}</td>
+                        <td style={{padding:'8px 10px', textAlign:'right', fontWeight:700, color: incr < 0 ? 'var(--danger)' : incr > 0 ? 'var(--success)' : 'var(--text-muted)'}}>{fmt(incr)}</td>
+                        <td style={{padding:'8px 10px', textAlign:'right'}}>{c.treatment_cvr_pct != null ? c.treatment_cvr_pct + '%' : '\u2014'}</td>
+                        <td style={{padding:'8px 10px', textAlign:'right'}}>{c.holdout_cvr_pct != null ? c.holdout_cvr_pct + '%' : '\u2014'}</td>
+                        <td style={{padding:'8px 10px', textAlign:'right', fontWeight:600}}>{c.cpa_delivery_usd != null ? '$' + Number(c.cpa_delivery_usd).toFixed(2) : '\u2014'}</td>
+                        <td style={{padding:'8px 10px', textAlign:'right', color:'var(--text-muted)', textDecoration:'line-through'}}>{c.legacy_cpa != null ? '$' + Number(c.legacy_cpa).toFixed(2) : '\u2014'}</td>
+                        <td style={{padding:'8px 10px', textAlign:'right', color:'var(--warning)'}}>{c.attribution_gap_x ? c.attribution_gap_x + 'x' : '\u2014'}</td>
+                        <td style={{padding:'8px 10px'}}>
+                          <span style={{display:'inline-block', padding:'2px 8px', borderRadius:12, fontSize:11, fontWeight:600, color: actionColor(c.budget_action), background: actionBg(c.budget_action)}}>
+                            {c.budget_action || '\u2014'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Legacy CDP vs CustomerLake */}
+          <div className="card" style={{padding:20, marginBottom:24, borderLeft:'3px solid var(--accent)'}}>
+            <h3 style={{fontWeight:600, marginBottom:12}}><Icon d={icons.zap} size={16} /> Why Only CustomerLake</h3>
+            <div style={{fontSize:13, color:'var(--text-primary)', lineHeight:1.6}}>{data.narrative?.differentiator}</div>
+            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginTop:16}}>
+              <div style={{background:'var(--danger-bg)', borderRadius:'var(--radius)', padding:16}}>
+                <div style={{fontSize:11, textTransform:'uppercase', color:'var(--danger)', letterSpacing:1, marginBottom:4}}>Legacy CDP Says</div>
+                <div style={{fontSize:20, fontWeight:700}}>{fmt(k.total_treatment_conversions)} conversions</div>
+                <div style={{fontSize:12, color:'var(--text-secondary)'}}>CPA: {k.legacy_cpa_usd ? fmtUsd(k.legacy_cpa_usd) : '\u2014'}/conversion</div>
+                <div style={{fontSize:11, color:'var(--text-muted)', marginTop:4}}>All treatment conversions credited to marketing</div>
+              </div>
+              <div style={{background:'var(--success-bg)', borderRadius:'var(--radius)', padding:16}}>
+                <div style={{fontSize:11, textTransform:'uppercase', color:'var(--success)', letterSpacing:1, marginBottom:4}}>CustomerLake Proves</div>
+                <div style={{fontSize:20, fontWeight:700}}>{fmt(k.headline_conversions)} incremental</div>
+                <div style={{fontSize:12, color:'var(--text-secondary)'}}>CPA: {k.portfolio_cpa_usd ? fmtUsd(k.portfolio_cpa_usd) : '\u2014'}/conversion</div>
+                <div style={{fontSize:11, color:'var(--text-muted)', marginTop:4}}>Holdout-measured — only truly caused by marketing</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Board Recommendation */}
+          <div className="card" style={{padding:20, marginBottom:24, background:'var(--bg-secondary)'}}>
+            <h3 style={{fontWeight:600, marginBottom:12}}><Icon d={icons.briefcase} size={16} /> Board Recommendation</h3>
+            <div style={{fontSize:13, lineHeight:1.8}}>
+              <div style={{marginBottom:8}}><strong>Lead with:</strong> "{fmt(k.headline_conversions)} holdout-proven incremental conversions across {fmt(k.channels_measured)} channels"</div>
+              <div style={{marginBottom:8}}><strong>Secondary:</strong> "Estimated revenue: {fmtUsd(Math.round(data.channels?.reduce((s,c) => s + (c.incremental_revenue_usd||0), 0) || 0))} (LTV-dependent, directional only)"</div>
+              <div style={{marginBottom:8}}><strong>Key insight:</strong> "{fmt(k.channels_destroying_value)} of {fmt(k.channels_measured)} channels destroy value — only discoverable with holdout measurement"</div>
+              <div><strong>Action:</strong> "Scale SMS ({fmt(data.channels?.[0]?.incremental_conversions)} incremental, {fmtUsd(data.channels?.[0]?.cpa_delivery_usd)} CPA). Exit email and paid social (negative incremental)."</div>
+            </div>
+          </div>
+
+          <div style={{fontSize:11, color:'var(--text-muted)', textAlign:'right'}}>Source: customerlake_cpa_incremental (CHANNEL) | {data.methodology} | {data.data_origin}</div>
+        </div>
+      );
+    }
+
       const pages = [
         // --- BOARD DECK: Demo-safe pages a board member finds in <60s (CMO-354) ---
         { section: 'BOARD DECK' },
         { id: 'demo', label: 'Demo Walkthrough', icon: icons.megaphone },
+        { id: 'conversion-narrative', label: 'Conversion Narrative', icon: icons.target },
         { id: 'board-narrative', label: 'Board Narrative', icon: icons.briefcase },
         { id: 'executive', label: 'Exec Summary', icon: icons.award },
         { id: 'board-ready', label: 'Board Ready', icon: icons.checkCircle },
@@ -8746,6 +9157,7 @@
         { id: 'activation-intel', label: 'Activation Intel', icon: icons.send },
         // --- MEASUREMENT ---
         { section: 'MEASUREMENT' },
+        { id: 'attribution-truth', label: 'Attribution Truth', icon: icons.alertTriangle },
         { id: 'confidence', label: 'Stat. Confidence', icon: icons.lock },
         { id: 'channel-maturity', label: 'Channel Maturity', icon: icons.layers },
         { id: 'cpa-sensitivity', label: 'CPA Sensitivity', icon: icons.percent },
@@ -8802,6 +9214,8 @@
           case 'reoptimization': return <ReoptimizationPage />;
           case 'learning-loop': return <CampaignLearningLoopPage />;
           case 'activation-intel': return <ActivationIntelligencePage />;
+          case 'attribution-truth': return <AttributionTruthPage />;
+          case 'conversion-narrative': return <ConversionNarrativePage />;
           case 'board-ready': return <BoardReadyPage />;
           case 'spend-transparency': return <SpendTransparencyPage />;
           case 'lifecycle': return <LifecyclePage />;

@@ -33,7 +33,7 @@ _pg_conn = None
 CATALOG = "cdm_tmforum"
 
 # Single source of truth for app version (DRY pattern)
-APP_VERSION = "77.0.0"
+APP_VERSION = "79.0.0"
 
 # ---------------------------------------------------------------------------
 # Materialized table aliases (CMO-138 / APP-CACHED-VIEWS + V2 performance fix)
@@ -6969,6 +6969,252 @@ async def activation_suppression():
             "app_version": APP_VERSION,
         }
         return cache_set("activation_suppression", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# Attribution Truth (CMO-369 — honest attribution vs full-attribution ROAS)
+# ---------------------------------------------------------------------------
+VIEW_ATTRIBUTION_BRIDGE = f"{CATALOG}._metrics.customerlake_cmo369_funnel_attribution_bridge"
+VIEW_ACTIVATION_LOG_REALISTIC = f"{CATALOG}._metrics.customerlake_activation_log_realistic"
+VIEW_CPA_INCREMENTAL = f"{CATALOG}._metrics.customerlake_cpa_incremental"
+
+
+@app.get("/api/attribution-truth")
+async def attribution_truth():
+    """Attribution Truth overview: full-attribution vs holdout incrementality per channel.
+
+    CMO-369 response — expose how full-attribution ROAS massively overstates
+    reality. Shows honest CPA and holdout-based incremental ROAS per channel.
+    Also surfaces LTV calibration stats from activation_log_realistic.
+    CustomerLake differentiator: no legacy CDP does holdout-based attribution comparison.
+    """
+    cached = cache_get("attribution_truth")
+    if cached:
+        return cached
+    try:
+        channels = sql_query(f"""
+            SELECT channel, row_type,
+                   activations_pushed, delivered, conversions,
+                   ROUND(campaign_cost_usd, 2) as campaign_cost_usd,
+                   ROUND(full_attribution_revenue_usd, 0) as full_attribution_revenue_usd,
+                   ROUND(full_attribution_roas_x, 1) as full_attribution_roas_x,
+                   ROUND(cpa_usd, 2) as cpa_usd,
+                   entities_in_plan, positive_lift_entities, negative_lift_entities,
+                   ROUND(avg_true_lift_ppt, 2) as avg_true_lift_ppt,
+                   ROUND(incremental_revenue_usd, 0) as incremental_revenue_usd,
+                   ROUND(organic_revenue_miscredited_usd, 0) as organic_revenue_miscredited_usd,
+                   ROUND(attribution_overstatement_x, 1) as attribution_overstatement_x,
+                   ROUND(incremental_roas_x, 1) as incremental_roas_x,
+                   consented_entities, consent_blocked_entities,
+                   funnel_attribution_model, incremental_measurement_model,
+                   cmo_methodology_note
+            FROM {VIEW_ATTRIBUTION_BRIDGE}
+            ORDER BY CASE row_type WHEN 'CHANNEL' THEN 0 ELSE 1 END,
+                     activations_pushed DESC
+        """)
+
+        channel_rows = [c for c in channels if c.get('row_type') == 'CHANNEL']
+        total_row = [c for c in channels if c.get('row_type') == 'TOTAL']
+
+        total_organic = sum(c['organic_revenue_miscredited_usd'] or 0 for c in channel_rows)
+        total_incremental = sum(c['incremental_revenue_usd'] or 0 for c in channel_rows if c.get('incremental_revenue_usd') is not None)
+        total_full_attr = sum(c['full_attribution_revenue_usd'] or 0 for c in channel_rows)
+        channels_destroying_value = sum(1 for c in channel_rows if c.get('incremental_revenue_usd') is not None and c['incremental_revenue_usd'] < 0)
+        channels_creating_value = sum(1 for c in channel_rows if c.get('incremental_revenue_usd') is not None and c['incremental_revenue_usd'] > 0)
+
+        # LTV calibration summary from activation_log_realistic
+        ltv_stats = sql_query(f"""
+            SELECT
+                COUNT(*) as total_records,
+                ROUND(AVG(ltv_predicted), 0) as avg_ltv_calibrated,
+                ROUND(MEDIAN(ltv_predicted), 0) as median_ltv_calibrated,
+                ROUND(MIN(ltv_predicted), 0) as min_ltv,
+                ROUND(MAX(ltv_predicted), 0) as max_ltv,
+                ROUND(AVG(ltv_predicted_raw), 0) as avg_ltv_raw,
+                ROUND(MEDIAN(ltv_predicted_raw), 0) as median_ltv_raw,
+                ROUND(AVG(revenue_at_risk), 0) as avg_rar_calibrated,
+                ROUND(AVG(revenue_at_risk_raw), 0) as avg_rar_raw,
+                ltv_calibration_method,
+                ltv_floor_usd, ltv_ceiling_usd
+            FROM {VIEW_ACTIVATION_LOG_REALISTIC}
+            WHERE ltv_predicted IS NOT NULL AND ltv_predicted > 0
+            GROUP BY ltv_calibration_method, ltv_floor_usd, ltv_ceiling_usd
+        """)
+
+        ltv_by_channel = sql_query(f"""
+            SELECT destination_type as channel,
+                   COUNT(*) as entities,
+                   ROUND(AVG(ltv_predicted), 0) as avg_ltv_calibrated,
+                   ROUND(AVG(ltv_predicted_raw), 0) as avg_ltv_raw,
+                   ROUND(AVG(ltv_predicted_raw) / NULLIF(AVG(ltv_predicted), 0), 1) as overstatement_factor,
+                   ROUND(AVG(revenue_at_risk), 0) as avg_rar_calibrated,
+                   ROUND(AVG(revenue_at_risk_raw), 0) as avg_rar_raw
+            FROM {VIEW_ACTIVATION_LOG_REALISTIC}
+            WHERE ltv_predicted IS NOT NULL AND ltv_predicted > 0
+            GROUP BY destination_type
+            ORDER BY entities DESC
+        """)
+
+        kpis = {
+            "channels_analyzed": len(channel_rows),
+            "channels_creating_value": channels_creating_value,
+            "channels_destroying_value": channels_destroying_value,
+            "total_organic_miscredited_usd": total_organic,
+            "total_incremental_revenue_usd": total_incremental,
+            "total_full_attribution_usd": total_full_attr,
+            "overstatement_ratio": round(total_full_attr / abs(total_incremental), 1) if total_incremental and total_incremental != 0 else None,
+        }
+
+        result = {
+            "kpis": kpis,
+            "channels": channel_rows,
+            "portfolio_total": total_row[0] if total_row else None,
+            "ltv_calibration": ltv_stats[0] if ltv_stats else {},
+            "ltv_by_channel": ltv_by_channel,
+            "narrative": {
+                "headline": (
+                    f"{len(channel_rows)} channels audited. "
+                    f"Full-attribution credits ${total_full_attr:,.0f} in revenue — "
+                    f"holdout measurement proves only ${total_incremental:,.0f} is incremental. "
+                    f"${total_organic:,.0f} organic revenue miscredited to marketing."
+                ),
+                "differentiator": (
+                    "Legacy CDPs report full-attribution ROAS — crediting organic conversions to marketing. "
+                    "CustomerLake runs holdout-based incrementality measurement at the entity level, exposing "
+                    "which channels truly create value vs. which merely take credit. This is the difference "
+                    "between a $47M revenue story and $-27K reality."
+                ),
+                "methodology": (
+                    "Full-attribution (LAST_TOUCH_30DAY) credits all conversions within 30 days of last touch. "
+                    "Holdout incrementality (randomized 10% control) measures TRUE lift by comparing treatment "
+                    "vs. holdout conversion rates. Channels with negative incremental revenue DESTROY value — "
+                    "their conversions would have happened organically."
+                ),
+            },
+            "data_origin": "SYNTHETIC_MODELED",
+            "app_version": APP_VERSION,
+        }
+        return cache_set("attribution_truth", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# Conversion Narrative — CMO-373 CRITICAL: Pivot board from revenue to conversions
+# ---------------------------------------------------------------------------
+@app.get("/api/conversion-narrative")
+async def conversion_narrative():
+    """Conversion Narrative: board-ready conversion-first metrics.
+
+    CMO-373 response — pivots the board headline from fabricated revenue
+    ($210K estimated from LTV) to holdout-proven incremental conversions (200).
+    Revenue is estimated. Conversions are measured. This is the honest board.
+    CustomerLake differentiator: no legacy CDP reports incremental conversions
+    from holdout experiments.
+    """
+    cached = cache_get("conversion_narrative")
+    if cached:
+        return cached
+    try:
+        # Channel-level CPA data — the core of the conversion narrative
+        channels = sql_query(f"""
+            SELECT channel, treatment_sends, holdout_sends,
+                   treatment_conversions, holdout_conversions,
+                   ROUND(treatment_cvr_pct, 2) as treatment_cvr_pct,
+                   ROUND(holdout_cvr_pct, 2) as holdout_cvr_pct,
+                   expected_organic_in_treatment,
+                   incremental_conversions, incremental_conversion_flag,
+                   ROUND(delivery_cost_usd, 2) as delivery_cost_usd,
+                   ROUND(cpa_delivery_usd, 2) as cpa_delivery_usd,
+                   ROUND(cpa_fully_loaded_usd, 2) as cpa_fully_loaded_usd,
+                   ROUND(incremental_revenue_usd, 0) as incremental_revenue_usd,
+                   ROUND(delivery_roi_x, 2) as delivery_roi_x,
+                   budget_action,
+                   ROUND(legacy_cdp_would_report_cpa, 2) as legacy_cpa,
+                   ROUND(attribution_gap_x, 1) as attribution_gap_x,
+                   customerlake_differentiator,
+                   methodology, data_origin
+            FROM {VIEW_CPA_INCREMENTAL}
+            WHERE granularity = 'CHANNEL'
+            ORDER BY incremental_conversions DESC
+        """)
+
+        # Compute aggregate KPIs
+        total_treatment_sends = sum(c['treatment_sends'] or 0 for c in channels)
+        total_treatment_conv = sum(c['treatment_conversions'] or 0 for c in channels)
+        total_holdout_conv = sum(c['holdout_conversions'] or 0 for c in channels)
+        total_organic = sum(c['expected_organic_in_treatment'] or 0 for c in channels)
+        total_incremental = sum(c['incremental_conversions'] or 0 for c in channels)
+        total_delivery_cost = sum(c['delivery_cost_usd'] or 0 for c in channels)
+        positive_channels = [c for c in channels if (c['incremental_conversions'] or 0) > 0]
+        negative_channels = [c for c in channels if (c['incremental_conversions'] or 0) < 0]
+        positive_incr = sum(c['incremental_conversions'] or 0 for c in positive_channels)
+        negative_incr = sum(c['incremental_conversions'] or 0 for c in negative_channels)
+        organic_pct = round(total_organic / total_treatment_conv * 100, 1) if total_treatment_conv else 0
+
+        # Best CPA (lowest among positive channels)
+        cpas = [c['cpa_delivery_usd'] for c in positive_channels if c.get('cpa_delivery_usd')]
+        best_cpa = min(cpas) if cpas else None
+        best_cpa_channel = next((c['channel'] for c in positive_channels if c.get('cpa_delivery_usd') == best_cpa), None) if best_cpa else None
+
+        # Portfolio CPA (total cost / total positive incremental)
+        portfolio_cpa = round(total_delivery_cost / positive_incr, 2) if positive_incr > 0 else None
+
+        # Legacy CDP comparison
+        legacy_total_cpa = round(total_delivery_cost / total_treatment_conv, 2) if total_treatment_conv else None
+
+        kpis = {
+            "headline_conversions": total_incremental,
+            "channels_measured": len(channels),
+            "channels_creating_value": len(positive_channels),
+            "channels_destroying_value": len(negative_channels),
+            "total_treatment_sends": total_treatment_sends,
+            "total_treatment_conversions": total_treatment_conv,
+            "total_organic_conversions": total_organic,
+            "organic_pct": organic_pct,
+            "positive_incremental": positive_incr,
+            "negative_incremental": negative_incr,
+            "total_delivery_cost_usd": round(total_delivery_cost, 2),
+            "portfolio_cpa_usd": portfolio_cpa,
+            "legacy_cpa_usd": legacy_total_cpa,
+            "best_cpa_usd": best_cpa,
+            "best_cpa_channel": best_cpa_channel,
+            "cpa_gap_x": round(portfolio_cpa / legacy_total_cpa, 1) if portfolio_cpa and legacy_total_cpa else None,
+        }
+
+        result = {
+            "kpis": kpis,
+            "channels": channels,
+            "narrative": {
+                "headline": (
+                    f"{total_incremental} Holdout-Proven Incremental Conversions — "
+                    f"not ${round(sum(c['incremental_revenue_usd'] or 0 for c in channels)):,} estimated revenue. "
+                    f"Revenue depends on LTV models. Conversions are directly measured."
+                ),
+                "organic_illusion": (
+                    f"Of {total_treatment_conv:,} treatment conversions, {total_organic:,} ({organic_pct}%) "
+                    f"would have happened without marketing. Only {total_incremental} are truly incremental. "
+                    f"Legacy CDPs credit all {total_treatment_conv:,} to marketing."
+                ),
+                "pivot_case": (
+                    "Revenue headline ($210K to $503K depending on LTV calibration) changes with every model update. "
+                    "Conversions (200 incremental) are stable — directly measured via holdout. "
+                    "Board credibility requires leading with what is measured, not what is estimated."
+                ),
+                "differentiator": (
+                    "No legacy CDP — Braze, Iterable, Salesforce CDP — reports incremental conversions. "
+                    "They report total conversions as if marketing caused all of them. "
+                    f"CustomerLake holdout experiments prove {organic_pct}% are organic. "
+                    "This is the single most valuable measurement capability in the platform."
+                ),
+            },
+            "data_origin": "SYNTHETIC_REALISTIC",
+            "methodology": "HOLDOUT_NORMALIZED_INCREMENTAL",
+            "app_version": APP_VERSION,
+        }
+        return cache_set("conversion_narrative", result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
