@@ -273,3 +273,17 @@ src/notebooks/_sync_*.py
 /DA-PROVENANCE-*.ipynb
 /DEVOPS-*.ipynb
 src/daily_cache_refresh.ipynb
+
+# Lowercase pm- prefix agent notebooks (proactive audit, 2026-10-16)
+/pm-*.ipynb
+/pm-run-*.ipynb
+
+# Agent scratch notebooks with date suffixes (@devops proactive audit, 2026-10-16)
+/data_planner_audit_*.ipynb
+/ml_engineer_fixes_*.ipynb
+
+# Future-proofing: catch-all for QA and DA agent notebooks (@devops R142 advisory, 2026-10-17)
+# QA agent may create QA-* notebooks for test execution
+/QA-*.ipynb
+# Broaden DA-* to catch any future DA agent notebook prefix (DA-PROFILING-*, DA-AUDIT-*, etc.)
+/DA-*.ipynb

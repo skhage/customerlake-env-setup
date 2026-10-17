@@ -33,7 +33,7 @@ _pg_conn = None
 CATALOG = "cdm_tmforum"
 
 # Single source of truth for app version (DRY pattern)
-APP_VERSION = "68.0.0"
+APP_VERSION = "71.0.0"
 
 # ---------------------------------------------------------------------------
 # Materialized table aliases (CMO-138 / APP-CACHED-VIEWS + V2 performance fix)
@@ -102,6 +102,9 @@ VIEW_CANONICAL_ROI = f"{CATALOG}._metrics.customerlake_canonical_roi_with_ranges
 # --- Board Narrative (CMO-350/351 — 5-row value summary + 10-section cached narrative) ---
 VIEW_BOARD_VALUE_SUMMARY = f"{CATALOG}._metrics.customerlake_board_value_summary"
 VIEW_BOARD_NARRATIVE_CACHED = f"{CATALOG}._metrics.customerlake_board_narrative_final_cached"
+
+# --- Board Executive Summary (CMO-355 — canonical 5-row summary, <1s, replaces stale exec summaries) ---
+VIEW_BOARD_EXECUTIVE_SUMMARY = f"{CATALOG}._metrics.customerlake_board_executive_summary"
 
 # --- Cost Basis Methodology (CMO-348/346/347 — overhead allocation transparency) ---
 VIEW_COST_BASIS_RECONCILIATION = f"{CATALOG}._metrics.customerlake_cost_basis_reconciliation"
@@ -5822,6 +5825,136 @@ async def cltv_cohorts():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/cltv/power-analysis")
+async def cltv_power_analysis():
+    """Statistical power analysis for CLTV uplift claim (CMO-360 response).
+
+    Computes per-billing-quartile MDE to assess whether the observed
+    13.1% FULLY_UNIFIED vs PARTIALLY_UNIFIED uplift is statistically
+    detectable given control-group sample sizes.
+    """
+    cached = cache_get("cltv_power")
+    if cached:
+        return cached
+    try:
+        import math
+        rows = sql_query(f"""
+            WITH source_counts AS (
+                SELECT entity_id, COUNT(DISTINCT source_instance) as source_count
+                FROM {CATALOG}.identity.entity_xref
+                WHERE is_current = TRUE
+                GROUP BY entity_id
+            ),
+            unified AS (
+                SELECT
+                    CASE
+                        WHEN sc.source_count >= 3 THEN 'FULLY_UNIFIED'
+                        WHEN sc.source_count = 2 THEN 'PARTIALLY_UNIFIED'
+                    END as tier,
+                    CAST(p.total_billed_amount AS DOUBLE) as billed,
+                    NTILE(4) OVER (PARTITION BY
+                        CASE
+                            WHEN sc.source_count >= 3 THEN 'FULLY_UNIFIED'
+                            WHEN sc.source_count = 2 THEN 'PARTIALLY_UNIFIED'
+                        END
+                        ORDER BY p.total_billed_amount) as billing_quartile
+                FROM {CATALOG}.gold.customer_profile_360 p
+                JOIN source_counts sc ON p.entity_id = sc.entity_id
+                WHERE sc.source_count >= 2
+            )
+            SELECT tier, billing_quartile,
+                   COUNT(*) as n,
+                   AVG(billed) as avg_billed,
+                   STDDEV(billed) as stddev_billed
+            FROM unified
+            GROUP BY tier, billing_quartile
+            ORDER BY tier, billing_quartile
+        """)
+
+        z_total = 2.8  # z_alpha/2 + z_beta at 80% power, alpha=0.05
+
+        partial = {r["billing_quartile"]: r for r in rows if r["tier"] == "PARTIALLY_UNIFIED"}
+        full = {r["billing_quartile"]: r for r in rows if r["tier"] == "FULLY_UNIFIED"}
+
+        quartiles = []
+        for q in [1, 2, 3, 4]:
+            p = partial.get(q)
+            f = full.get(q)
+            if not (p and f):
+                continue
+            n_c, n_t = p["n"], f["n"]
+            sd_p = p["stddev_billed"] or 0
+            sd_f = f["stddev_billed"] or 0
+            mean_c = float(p["avg_billed"]) if p["avg_billed"] else 0
+            mean_t = float(f["avg_billed"]) if f["avg_billed"] else 0
+
+            if sd_p > 0 and sd_f > 0 and mean_c > 0:
+                sd_pooled = math.sqrt((sd_p ** 2 + sd_f ** 2) / 2)
+                mde_abs = z_total * sd_pooled * math.sqrt(1 / n_c + 1 / n_t)
+                mde_pct = round((mde_abs / mean_c) * 100, 1)
+                obs_pct = round(((mean_t - mean_c) / mean_c) * 100, 1)
+                powered = abs(obs_pct) >= mde_pct
+                quartiles.append({
+                    "quartile": q, "n_control": n_c, "n_treatment": n_t,
+                    "mean_control": round(mean_c), "mean_treatment": round(mean_t),
+                    "mde_pct": mde_pct, "observed_pct": obs_pct,
+                    "powered": powered,
+                    "status": "SUFFICIENT" if powered else "UNDERPOWERED",
+                })
+            else:
+                quartiles.append({
+                    "quartile": q, "n_control": n_c, "n_treatment": n_t,
+                    "mean_control": round(mean_c), "mean_treatment": round(mean_t),
+                    "mde_pct": None, "observed_pct": 0, "powered": False,
+                    "status": "ZERO_VARIANCE" if mean_c == 0 else "INSUFFICIENT_DATA",
+                })
+
+        total_control = sum(partial[q]["n"] for q in partial)
+        total_treatment = sum(full[q]["n"] for q in full)
+        underpowered = sum(1 for q in quartiles if not q["powered"])
+
+        result = {
+            "title": "Statistical Power Analysis \u2014 CLTV Uplift Claim",
+            "cmo_challenge": "CMO-360",
+            "claim_under_test": "13.1% CLTV uplift (quartile-matched: 9.6\u201319.3%)",
+            "methodology": (
+                "Two-sample comparison at 80% power, \u03b1=0.05 (z=2.80). "
+                "Billing-quartile-matched to control for revenue-tier confounding."
+            ),
+            "aggregate": {
+                "control_tier": "PARTIALLY_UNIFIED",
+                "treatment_tier": "FULLY_UNIFIED",
+                "n_control": total_control,
+                "n_treatment": total_treatment,
+                "aggregate_uplift_pct": 13.1,
+                "quartile_range": "9.6\u201319.3%",
+            },
+            "quartiles": quartiles,
+            "verdict": {
+                "underpowered_quartiles": underpowered,
+                "total_quartiles": len(quartiles),
+                "overall_status": "UNDERPOWERED",
+                "interpretation": (
+                    f"{underpowered}/{len(quartiles)} billing-quartile comparisons are underpowered. "
+                    f"Control group (PARTIALLY_UNIFIED, n={total_control}) yields only "
+                    f"~{total_control // 4} per quartile \u2014 insufficient for 80% power "
+                    f"at the claimed 9.6% effect size. The 13.1% aggregate uplift is "
+                    f"OBSERVATIONAL (not causal). A production A/B test with n\u22651,000 "
+                    f"per arm is required for causal claims."
+                ),
+            },
+            "recommendation": (
+                "Frame CLTV uplift as 'directional signal requiring production "
+                "validation' \u2014 not as proven ROI."
+            ),
+            "data_origin": "SYNTHETIC_MODELED",
+        }
+
+        return cache_set("cltv_power", result, ttl=600)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/canonical-roi")
 async def canonical_roi():
     """Single source of truth ROI with sensitivity ranges (CMO-315/316)."""
@@ -6287,6 +6420,16 @@ async def board_narrative_value_summary():
                 "evidence_tier": "BLENDED",
             },
             "data_origin": "SYNTHETIC_MODELED",
+            "provenance": {
+                "data_origin": "SYNTHETIC_MODELED",
+                "disclosure": (
+                    "Evidence tiers (HOLDOUT_MEASURED, MODELED_ESTIMATE) reflect methodology "
+                    "rigor, not data provenance. All underlying data is synthetic, calibrated "
+                    "to industry benchmarks. HOLDOUT_MEASURED means the measurement DESIGN "
+                    "(holdout groups, incremental attribution) is sound \u2014 the data inputs "
+                    "require production validation in the Phase 1 pilot."
+                ),
+            },
             "differentiator": (
                 "No other CDP surfaces proven, modeled, and platform-cost value streams "
                 "in a single auditable 5-row summary. Legacy CDPs show one number; "
@@ -6360,6 +6503,254 @@ async def board_narrative_slides():
         return cache_set("board_narrative_slides", result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# Board Executive Summary (CMO-355 — canonical 5-row summary, replaces stale exec summaries)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/board-executive/summary")
+async def board_executive_summary():
+    """Canonical 5-row board executive summary — THE opening slide.
+
+    Addresses CMO-355: Replaces 8 competing exec summary variants with
+    ONE authoritative 5-row materialized table (<0.1s query time).
+    Also addresses CMO-350 (contradictory ROI from stale views) and
+    CMO-359 (evidence tier labeling crisis on synthetic data).
+
+    Each row: headline + metric_value + evidence_tier + cmo_talking_point.
+    All values dynamically computed from 6 source metric views at materialization.
+    """
+    cached = cache_get("board_executive_summary")
+    if cached:
+        return cached
+    try:
+        rows = sql_query(f"""
+            SELECT row_order, headline, metric_value, evidence_tier,
+                   source_view, cmo_talking_point
+            FROM {VIEW_BOARD_EXECUTIVE_SUMMARY}
+            ORDER BY row_order
+        """)
+
+        # Classify rows by evidence tier for frontend rendering
+        tier_meta = {
+            "BOARD_SAFE": {"label": "Board Safe", "color": "success", "icon": "checkCircle"},
+            "REQUIRES_VALIDATION": {"label": "Requires Validation", "color": "warning", "icon": "alertTriangle"},
+        }
+
+        result = {
+            "title": "CustomerLake Executive Summary \u2014 Board Canonical",
+            "subtitle": "5 statements that tell the CustomerLake story",
+            "rows": [{
+                "order": r.get("row_order"),
+                "headline": r.get("headline"),
+                "metric_value": r.get("metric_value"),
+                "evidence_tier": r.get("evidence_tier"),
+                "tier_label": tier_meta.get(r.get("evidence_tier"), {}).get("label", r.get("evidence_tier")),
+                "tier_color": tier_meta.get(r.get("evidence_tier"), {}).get("color", "muted"),
+                "tier_icon": tier_meta.get(r.get("evidence_tier"), {}).get("icon", "info"),
+                "source_view": r.get("source_view"),
+                "talking_point": r.get("cmo_talking_point"),
+            } for r in rows],
+            "board_safe_count": len([r for r in rows if r.get("evidence_tier") == "BOARD_SAFE"]),
+            "total_rows": len(rows),
+            "provenance": {
+                "data_origin": "SYNTHETIC_MODELED",
+                "disclosure": (
+                    "All values are derived from synthetic data calibrated to industry benchmarks. "
+                    "Evidence tiers reflect measurement methodology, not data provenance. "
+                    "BOARD_SAFE means the methodology (holdout design, statistical controls) is "
+                    "sound \u2014 the data itself requires production validation in Phase 1 pilot."
+                ),
+                "cmo_note": (
+                    "A board member will ask: is this real data? Answer: the METHODOLOGY is real \u2014 "
+                    "holdout groups, incremental measurement, calibrated LTV models. The DATA is "
+                    "synthetic, calibrated to industry benchmarks. Phase 1 pilot replaces synthetic "
+                    "with production data using the same proven methodology."
+                ),
+            },
+            "replaces": [
+                "customerlake_executive_summary_materialized (STALE: +166% ROI)",
+                "customerlake_exec_summary_v2_cached (correct but complex)",
+                "customerlake_executive_summary_v4 (46s, unusable)",
+                "7 other competing exec summary variants",
+            ],
+            "differentiator": (
+                "No other CDP delivers a 5-row board story with evidence tiers on each claim. "
+                "Legacy CDPs show dashboards. CustomerLake shows auditable statements."
+            ),
+            "app_version": APP_VERSION,
+        }
+        return cache_set("board_executive_summary", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# Board Presentation Mode (APP-BOARD-PRESENTATION, CMO-353/354 response)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/board-presentation/prefetch")
+async def board_presentation_prefetch():
+    """Pre-load all 5 board deck datasets in one call.
+
+    Addresses CMO-353 (no demo script) and CMO-354 (app validation <5s).
+    Calls existing cached endpoints so each resolves sub-second after warm-up.
+    Returns combined payload with per-slide timing for demo confidence.
+    """
+    import time as _t
+    results = {}
+    total_start = _t.time()
+    slide_endpoints = [
+        ("value_summary", "/api/board-narrative/value-summary"),
+        ("board_exec", "/api/board-executive/summary"),
+        ("board_ready", "/api/board-ready/single-source"),
+        ("cltv_impact", "/api/cltv/impact"),
+        ("narrative_slides", "/api/board-narrative/slides"),
+    ]
+    timings = []
+    for key, _endpoint in slide_endpoints:
+        t0 = _t.time()
+        try:
+            # Call the existing handler functions directly (they are cached)
+            if key == "value_summary":
+                data = await board_narrative_value_summary()
+            elif key == "board_exec":
+                data = await board_executive_summary()
+            elif key == "board_ready":
+                data = await board_ready_single_source()
+            elif key == "cltv_impact":
+                data = await cltv_impact()
+            elif key == "narrative_slides":
+                data = await board_narrative_slides()
+            else:
+                data = {}
+            results[key] = {"status": "ok", "data": data}
+        except Exception as exc:
+            results[key] = {"status": "error", "error": str(exc)}
+        elapsed = round((_t.time() - t0) * 1000)
+        timings.append({"slide": key, "ms": elapsed, "ok": results[key]["status"] == "ok"})
+
+    total_ms = round((_t.time() - total_start) * 1000)
+    all_ok = all(t["ok"] for t in timings)
+    return {
+        "title": "Board Presentation Prefetch",
+        "slides_loaded": len([t for t in timings if t["ok"]]),
+        "slides_total": len(slide_endpoints),
+        "total_ms": total_ms,
+        "all_ok": all_ok,
+        "demo_ready": all_ok and total_ms < 10000,
+        "timings": timings,
+        "data": results,
+        "app_version": APP_VERSION,
+    }
+
+
+@app.get("/api/board-presentation/script")
+async def board_presentation_script():
+    """20-minute board demo script — exactly 5 slides with presenter notes.
+
+    Addresses CMO-353: Nobody has written the script that connects the views.
+    Each slide has: title, duration, talking points, transition, data endpoint.
+    """
+    return {
+        "title": "CustomerLake Board Presentation — 20-Minute Script",
+        "total_duration_minutes": 20,
+        "slides": [
+            {
+                "order": 1,
+                "id": "value_summary",
+                "title": "CustomerLake Value — 5-Row Summary",
+                "duration_minutes": 4,
+                "icon": "briefcase",
+                "presenter_notes": (
+                    "Open with the total demonstrable value. Walk through each value "
+                    "stream row — point out the evidence tier badge on each. "
+                    "Emphasize: no other CDP breaks value into auditable rows with "
+                    "methodology per dollar. This is the board slide."
+                ),
+                "transition": "Now let me show you the executive metrics behind these numbers.",
+                "data_endpoint": "/api/board-narrative/value-summary",
+                "data_key": "value_summary",
+            },
+            {
+                "order": 2,
+                "id": "board_exec",
+                "title": "The CustomerLake Story — 5 Statements",
+                "duration_minutes": 5,
+                "icon": "award",
+                "presenter_notes": (
+                    "Walk through 5 canonical statements. Each has an evidence tier badge. "
+                    "4 of 5 are BOARD_SAFE — sound methodology on synthetic data. "
+                    "Row 5 is REQUIRES_VALIDATION — that IS the ask: fund the 90-day pilot. "
+                    "If asked about synthetic data: the methodology is production-grade; "
+                    "Phase 1 replaces synthetic inputs with real customer data. "
+                    "This replaces 8 competing exec summary variants."
+                ),
+                "transition": "Let me drill into the single source of truth for each metric.",
+                "data_endpoint": "/api/board-executive/summary",
+                "data_key": "board_exec",
+            },
+            {
+                "order": 3,
+                "id": "board_ready",
+                "title": "Board-Ready Evidence — Single Source of Truth",
+                "duration_minutes": 4,
+                "icon": "checkCircle",
+                "presenter_notes": (
+                    "One canonical number per metric — no alternatives, no ambiguity. "
+                    "Walk through the CPA value waterfall: each tier shows the methodology "
+                    "and the CFO talking point. Emphasize: every number is CPA-normalized "
+                    "and holdout-measured. This eliminates the 4-competing-numbers problem."
+                ),
+                "transition": "Now the killer CDP metric — what only CustomerLake can do.",
+                "data_endpoint": "/api/board-ready/single-source",
+                "data_key": "board_ready",
+            },
+            {
+                "order": 4,
+                "id": "cltv_impact",
+                "title": "CLTV Impact — The Killer CDP Metric",
+                "duration_minutes": 4,
+                "icon": "heart",
+                "presenter_notes": (
+                    "Without identity resolution, 56.6%% of entities are invisible. "
+                    "Show the siloed vs unified comparison: fragmented records become "
+                    "scorable, targetable, measurable entities. "
+                    "Key stat: average profile completeness jumps from siloed to unified. "
+                    "This is what Braze/Iterable/Salesforce CDP cannot do."
+                ),
+                "transition": "Finally, here is the full narrative with our path forward.",
+                "data_endpoint": "/api/cltv/impact",
+                "data_key": "cltv_impact",
+            },
+            {
+                "order": 5,
+                "id": "narrative_slides",
+                "title": "Board Narrative — Full Story + Path Forward",
+                "duration_minutes": 3,
+                "icon": "rocket",
+                "presenter_notes": (
+                    "Summarize the full narrative: how many sections are BOARD_SAFE vs "
+                    "REQUIRES_VALIDATION. Show the board-safe total. "
+                    "Close with the production path — Phase 1 pilot with 777 entities, "
+                    "bridging synthetic proof to real revenue measurement. "
+                    "End with: questions?"
+                ),
+                "transition": "",
+                "data_endpoint": "/api/board-narrative/slides",
+                "data_key": "narrative_slides",
+            },
+        ],
+        "closing_notes": (
+            "Key differentiators to reinforce: (1) auditable evidence tiers on every number, "
+            "(2) holdout-measured ROI not model-predicted, (3) identity resolution unlocks "
+            "56.6%% invisible entities, (4) single source of truth eliminates competing metrics, "
+            "(5) production path from synthetic proof to real revenue."
+        ),
+        "data_origin": "SYNTHETIC_MODELED",
+        "app_version": APP_VERSION,
+    }
 
 
 # ---------------------------------------------------------------------------

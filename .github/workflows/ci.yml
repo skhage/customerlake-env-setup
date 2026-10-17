@@ -2,6 +2,7 @@
 # Owner: @devops (Release Engineering)
 # Updated by @devops agent run 27 (2026-10-06): validate all 3 targets, add YAML lint
 # Updated by @devops DEVOPS-V98-REGRESSION-RCA (2026-10-15): add app regression guard
+# Updated by @devops DEVOPS-AUDIT-R139 (2026-10-16): fix page-count regex (was matching 0 pages)
 name: CI - Bundle Validate
 
 on:
@@ -106,7 +107,7 @@ jobs:
           # --- index.html checks ---
           if [ -f "$INDEX" ]; then
             LINE_COUNT=$(wc -l < "$INDEX")
-            PAGE_COUNT=$(grep -cP "case\s+'[^']+':\s*$" "$INDEX" || true)
+            PAGE_COUNT=$(grep -cP "case\s+'[^']+':" "$INDEX" || true)
             MIN_LINES=$(python3 -c "import json; print(json.load(open('$BASELINE'))['index_html']['min_lines'])")
             MIN_PAGES=$(python3 -c "import json; print(json.load(open('$BASELINE'))['index_html']['min_pages'])")
 

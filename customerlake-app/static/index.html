@@ -609,6 +609,128 @@
       .demo-step-icon { width: 40px; height: 40px; font-size: 18px; }
       .demo-step-bar { overflow-x: auto; }
     }
+    /* --- Board Presentation Mode (APP-BOARD-PRESENTATION) --- */
+    .presentation-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: var(--bg-primary);
+      display: flex;
+      flex-direction: column;
+    }
+    .presentation-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 24px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .presentation-topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .presentation-progress {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .presentation-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--bg-hover);
+      transition: all 0.2s;
+    }
+    .presentation-dot.active { background: var(--accent); transform: scale(1.3); }
+    .presentation-dot.done { background: var(--success); }
+    .presentation-timer {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .presentation-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 40px 64px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .presentation-slide {
+      max-width: 960px;
+      width: 100%;
+    }
+    .presentation-slide-number {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .presentation-slide-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 24px;
+    }
+    .presentation-nav-arrows {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .presentation-nav-btn {
+      padding: 6px 14px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .presentation-nav-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .presentation-nav-btn:disabled { opacity: 0.3; cursor: default; }
+    .presentation-notes-bar {
+      flex-shrink: 0;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      padding: 12px 24px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .presentation-notes-toggle {
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: inherit;
+      text-decoration: underline;
+    }
+    .present-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 24px;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--accent), #818cf8);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .present-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    @media (max-width: 768px) {
+      .presentation-body { padding: 24px 16px; }
+      .presentation-slide-title { font-size: 22px; }
+    }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -3725,7 +3847,7 @@
               <div className="card" style={{padding:20, marginBottom:24, border:'1px solid var(--accent)', background:'linear-gradient(135deg, var(--bg-card) 0%, rgba(79,143,247,0.06) 100%)'}}>
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16, flexWrap:'wrap', gap:8}}>
                   <div>
-                    <h3 style={{fontSize:16, fontWeight:700, color:'var(--accent)'}}>The CustomerLake Pipeline</h3>
+                    <h3 style={{fontSize:16, fontWeight:600, color:'var(--accent)'}}>The CustomerLake Pipeline</h3>
                     <p style={{fontSize:12, color:'var(--text-muted)'}}>SCORE \u2192 SEGMENT \u2192 TARGET \u2192 ACTIVATE \u2192 MEASURE \u2192 LEARN \u2014 end-to-end, causal, closed-loop</p>
                   </div>
                   <div style={{textAlign:'right'}}>
@@ -4166,7 +4288,7 @@
 
           {/* ROI CONFIDENCE WATERFALL */}
           <div className="card" style={{padding:20, marginBottom:24}}>
-            <h3 style={{fontSize:16, fontWeight:700, marginBottom:4}}>ROI Confidence Waterfall</h3>
+            <h3 style={{fontSize:16, fontWeight:600, marginBottom:4}}>ROI Confidence Waterfall</h3>
             <p style={{fontSize:12, color:'var(--text-muted)', marginBottom:16}}>5 scenarios from ultra-conservative to worst-case \u2014 the claim strengthens under rigor</p>
             <div style={{display:'flex', flexDirection:'column', gap:12}}>
               {(scenarios || []).map((s, i) => (
@@ -4218,7 +4340,7 @@
               <div className="card" style={{padding:24, marginBottom:24, border:'1px solid var(--accent)', background:'linear-gradient(135deg, var(--bg-card) 0%, rgba(79,143,247,0.06) 100%)'}}>
                 <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
                   <Icon d={icons.lock} size={18} />
-                  <h3 style={{fontSize:16, fontWeight:700, color:'var(--accent)', margin:0}}>Power Analysis Transparency</h3>
+                  <h3 style={{fontSize:16, fontWeight:600, color:'var(--accent)', margin:0}}>Power Analysis Transparency</h3>
                 </div>
                 <p style={{fontSize:13, color:'var(--text-secondary)', marginBottom:20, lineHeight:1.6}}>
                   We don't just tell you what works \u2014 we tell you where we need more data.
@@ -4314,7 +4436,7 @@
 
           {/* SEGMENT-LEVEL EVIDENCE TABLE */}
           <div className="card" style={{padding:20, marginBottom:24}}>
-            <h3 style={{fontSize:16, fontWeight:700, marginBottom:4}}>Segment-Level Statistical Evidence</h3>
+            <h3 style={{fontSize:16, fontWeight:600, marginBottom:4}}>Segment-Level Statistical Evidence</h3>
             <p style={{fontSize:12, color:'var(--text-muted)', marginBottom:16}}>Every segment tested with z-statistic, confidence interval, and power analysis</p>
             <div className="table-scroll">
               <table>
@@ -6007,7 +6129,7 @@
       return (
         <div style={{maxWidth:960, margin:'0 auto'}}>
           <div style={{marginBottom:24}}>
-            <h2 style={{fontSize:22, fontWeight:700}}><Icon d={icons.checkCircle} size={22} /> {source.title}</h2>
+            <h2 style={{fontSize:22, fontWeight:600}}><Icon d={icons.checkCircle} size={22} /> {source.title}</h2>
             <p style={{fontSize:13, color:'var(--text-secondary)', marginTop:4}}>{source.subtitle}</p>
           </div>
 
@@ -6038,7 +6160,7 @@
           {/* Value Waterfall */}
           {tiers.length > 0 && (
             <div className="card" style={{padding:20, marginBottom:24}}>
-              <h3 style={{fontSize:16, fontWeight:700, marginBottom:4}}>CPA Value Waterfall</h3>
+              <h3 style={{fontSize:16, fontWeight:600, marginBottom:4}}>CPA Value Waterfall</h3>
               <p style={{fontSize:12, color:'var(--text-secondary)', marginBottom:16}}>Read top-to-bottom for the complete demo story. DO NOT sum — tier 7 is the composite upper-bound.</p>
               {tiers.map(t => {
                 const barColor = tierColors[t.category] || 'var(--text-muted)';
@@ -6081,7 +6203,7 @@
             const catMeta = catLabels[catKey] || { label: catKey, color: 'var(--text-muted)' };
             return (
               <div key={catKey} className="card" style={{padding:20, marginBottom:16}}>
-                <h3 style={{fontSize:15, fontWeight:700, marginBottom:12, color: catMeta.color}}>{catMeta.label}</h3>
+                <h3 style={{fontSize:15, fontWeight:600, marginBottom:12, color: catMeta.color}}>{catMeta.label}</h3>
                 <div className="table-scroll">
                   <table style={{width:'100%', borderCollapse:'collapse'}}>
                     <caption className="kpi-label" style={{captionSide:'top', textAlign:'left', marginBottom:8}}>{catMeta.label} metrics</caption>
@@ -6376,12 +6498,302 @@
       );
     }
 
+    // ---- Board Presentation Mode (APP-BOARD-PRESENTATION, CMO-353/354) ----
+    function BoardPresentationMode({ onExit }) {
+      const [currentSlide, setCurrentSlide] = useState(0);
+      const [script, setScript] = useState(null);
+      const [prefetchData, setPrefetchData] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      const [showNotes, setShowNotes] = useState(true);
+      const [elapsed, setElapsed] = useState(0);
+      const startTimeRef = useRef(Date.now());
+
+      // Prefetch all data + script on mount
+      useEffect(() => {
+        setLoading(true);
+        Promise.all([
+          api('/api/board-presentation/script'),
+          api('/api/board-presentation/prefetch'),
+        ]).then(([s, p]) => {
+          setScript(s);
+          setPrefetchData(p);
+          setLoading(false);
+          startTimeRef.current = Date.now();
+        }).catch(e => { setError(e.message); setLoading(false); });
+      }, []);
+
+      // Timer
+      useEffect(() => {
+        if (loading) return;
+        const iv = setInterval(() => setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000)), 1000);
+        return () => clearInterval(iv);
+      }, [loading]);
+
+      // Keyboard navigation
+      useEffect(() => {
+        const handler = (e) => {
+          if (e.key === 'Escape') onExit();
+          if (e.key === 'ArrowRight' || e.key === ' ') {
+            e.preventDefault();
+            setCurrentSlide(s => Math.min(s + 1, (script?.slides?.length || 5) - 1));
+          }
+          if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            setCurrentSlide(s => Math.max(s - 1, 0));
+          }
+          if (e.key === 'n' || e.key === 'N') setShowNotes(n => !n);
+        };
+        document.addEventListener('keydown', handler);
+        return () => document.removeEventListener('keydown', handler);
+      }, [script]);
+
+      const fmtTime = (s) => `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+
+      if (loading) return (
+        <div className="presentation-overlay" role="dialog" aria-label="Board Presentation loading">
+          <div style={{display:'flex', alignItems:'center', justifyContent:'center', flex:1, flexDirection:'column', gap:16}}>
+            <LoadingShimmer />
+            <p style={{color:'var(--text-muted)', fontSize:14}}>Loading board presentation data...</p>
+          </div>
+        </div>
+      );
+      if (error) return (
+        <div className="presentation-overlay" role="dialog" aria-label="Board Presentation error">
+          <div style={{display:'flex', alignItems:'center', justifyContent:'center', flex:1}}>
+            <ErrorCard message={error} onRetry={onExit} />
+          </div>
+        </div>
+      );
+
+      const slides = script?.slides || [];
+      const slide = slides[currentSlide] || {};
+      const dataKey = slide.data_key || '';
+      const slideData = prefetchData?.data?.[dataKey];
+      const timing = (prefetchData?.timings || []).find(t => t.slide === dataKey);
+      const totalSlides = slides.length;
+      const iconKey = slide.icon || 'briefcase';
+      const slideIcon = icons[iconKey] || icons.briefcase;
+
+      // Render slide-specific content based on prefetched data
+      const renderSlideContent = () => {
+        if (!slideData || slideData.status !== 'ok') {
+          return <div className="card" style={{textAlign:'center', padding:40}}><Icon d={icons.alertCircle} size={32} /><p style={{marginTop:8, color:'var(--text-muted)'}}>Data unavailable for this slide</p></div>;
+        }
+        const d = slideData.data || {};
+        switch (dataKey) {
+          case 'value_summary': {
+            const streams = d.value_streams || [];
+            const total = d.total || {};
+            return (
+              <div>
+                <div className="card" style={{border:'2px solid var(--accent)', marginBottom:16}}>
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                    <div>
+                      <div className="kpi-label">Total Demonstrable Value</div>
+                      <div style={{fontSize:36, fontWeight:700, color:'var(--accent)', marginTop:4}}>{fmtCur(total.amount_usd)}</div>
+                    </div>
+                    <span className="badge badge-info">{streams.length} value streams</span>
+                  </div>
+                </div>
+                <div className="kpi-grid">{streams.map((s,i) => (
+                  <div key={i} className="kpi-card">
+                    <div className="kpi-label">{s.category?.replace(/_/g,' ')}</div>
+                    <div className="kpi-value" style={{fontSize:22}}>{fmtCur(s.amount_usd)}</div>
+                    <div className="kpi-sub"><span className={`badge badge-${s.tier_color === 'success' ? 'success' : s.tier_color === 'warning' ? 'warning' : 'info'}`}>{s.tier_label}</span></div>
+                    {s.board_one_liner && <div style={{fontSize:12, color:'var(--text-muted)', marginTop:6}}>{s.board_one_liner}</div>}
+                  </div>
+                ))}</div>
+              </div>
+            );
+          }
+          case 'board_exec': {
+            const execRows = d.rows || [];
+            const prov = d.provenance || {};
+            return (
+              <div>
+                <div style={{display:'flex', gap:8, marginBottom:16, alignItems:'center'}}>
+                  <span className="badge badge-success">{d.board_safe_count || 0}/{d.total_rows || 0} Board Safe</span>
+                  <span style={{fontSize:12, color:'var(--text-muted)'}}>Canonical 5-row summary (CMO-355)</span>
+                </div>
+                {execRows.map((r, i) => (
+                  <div key={i} className="card" style={{marginBottom:12, borderLeft: `4px solid var(--${r.tier_color === 'success' ? 'success' : r.tier_color === 'warning' ? 'warning' : 'text-muted'})`}}>
+                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:15, fontWeight:600, marginBottom:4}}>{r.headline}</div>
+                        <div style={{fontSize:13, color:'var(--text-secondary)', marginBottom:8}}>{r.metric_value}</div>
+                        {r.talking_point && <div style={{fontSize:12, color:'var(--text-muted)', lineHeight:1.5}}>{r.talking_point}</div>}
+                      </div>
+                      <span className={`badge badge-${r.tier_color === 'success' ? 'success' : r.tier_color === 'warning' ? 'warning' : 'info'}`} style={{flexShrink:0, marginLeft:12}}>{r.tier_label}</span>
+                    </div>
+                  </div>
+                ))}
+                {prov.disclosure && (
+                  <div className="card" style={{background:'var(--bg-hover)', border:'1px solid var(--border)', marginTop:16}}>
+                    <div style={{display:'flex', gap:8, alignItems:'flex-start'}}>
+                      <Icon d={icons.info} size={14} style={{flexShrink:0, marginTop:2, color:'var(--text-muted)'}} />
+                      <div>
+                        <div style={{fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:0.5, color:'var(--text-muted)', marginBottom:4}}>Data Provenance</div>
+                        <div style={{fontSize:12, color:'var(--text-muted)', lineHeight:1.5}}>{prov.disclosure}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          }
+          case 'exec_summary': {
+            const h = d.hero_kpis || {};
+            return (
+              <div className="kpi-grid">
+                <div className="kpi-card"><div className="kpi-label">Portfolio Revenue</div><div className="kpi-value">{fmtCur(h.total_portfolio_revenue)}</div><div className="kpi-sub">Identity-resolved customer base</div></div>
+                <div className="kpi-card"><div className="kpi-label">Revenue at Risk (Calibrated)</div><div className="kpi-value" style={{color:'var(--warning)'}}>{fmtCur(h.revenue_at_risk_calibrated)}</div><div className="kpi-sub">Churn probability \u00D7 calibrated LTV</div></div>
+                <div className="kpi-card"><div className="kpi-label">Incremental ROI</div><div className="kpi-value" style={{color: h.incremental_roi_x >= 0 ? 'var(--success)' : 'var(--danger)'}}>{h.incremental_roi_x != null ? h.incremental_roi_x.toFixed(2) + 'x' : '\u2014'}</div><div className="kpi-sub">Holdout-measured, not model-predicted</div></div>
+                <div className="kpi-card"><div className="kpi-label">Snapshot Date</div><div className="kpi-value" style={{fontSize:18}}>{d.snapshot_date || '\u2014'}</div><div className="kpi-sub">Materialized for demo performance</div></div>
+              </div>
+            );
+          }
+          case 'board_ready': {
+            const cats = d.categories || {};
+            const catKeys = Object.keys(cats);
+            return (
+              <div>
+                {catKeys.map(cat => (
+                  <div key={cat} className="card" style={{marginBottom:12}}>
+                    <h4 style={{fontSize:13, fontWeight:600, textTransform:'uppercase', letterSpacing:0.5, marginBottom:8, color:'var(--text-muted)'}}>{cat.replace(/_/g,' ')}</h4>
+                    <table><caption className="kpi-label" style={{captionSide:'top', textAlign:'left', marginBottom:8}}>{cat.replace(/_/g,' ')} board metrics</caption><thead><tr><th>Metric</th><th>Value</th><th>Confidence</th><th>Talking Point</th></tr></thead>
+                    <tbody>{(cats[cat] || []).map((m,i) => (
+                      <tr key={i}><td style={{fontWeight:500}}>{m.name}</td><td>{m.value} {m.unit}</td><td><span className={`badge ${m.confidence === 'HIGH' ? 'badge-success' : m.confidence === 'MEDIUM' ? 'badge-warning' : 'badge-info'}`}>{m.confidence}</span></td><td style={{fontSize:12, color:'var(--text-muted)'}}>{m.talking_point}</td></tr>
+                    ))}</tbody></table>
+                  </div>
+                ))}
+              </div>
+            );
+          }
+          case 'cltv_impact': {
+            const h = d.hero_kpis || {};
+            const sv = d.siloed_vs_unified || {};
+            return (
+              <div>
+                <div className="kpi-grid">
+                  <div className="kpi-card"><div className="kpi-label">Invisible Without CustomerLake</div><div className="kpi-value" style={{color:'var(--danger)'}}>{fmtPct(h.pct_invisible)}</div><div className="kpi-sub">{fmt(h.siloed_entities)} siloed fragments</div></div>
+                  <div className="kpi-card"><div className="kpi-label">Visible With CustomerLake</div><div className="kpi-value" style={{color:'var(--success)'}}>{fmtPct(h.pct_visible)}</div><div className="kpi-sub">{fmt(h.unified_entities)} unified entities</div></div>
+                  <div className="kpi-card"><div className="kpi-label">Revenue Unlocked</div><div className="kpi-value">{fmtCur(h.revenue_unlocked)}</div><div className="kpi-sub">By identity resolution</div></div>
+                  <div className="kpi-card"><div className="kpi-label">Revenue Under Management</div><div className="kpi-value">{fmtCur(h.revenue_under_management)}</div><div className="kpi-sub">Unified + scorable + reachable</div></div>
+                </div>
+                {sv.siloed && sv.unified && (
+                  <div className="card" style={{marginTop:16}}>
+                    <h4 className="card-title">Siloed vs Unified Comparison</h4>
+                    <table><caption className="kpi-label" style={{captionSide:'top', textAlign:'left', marginBottom:8}}>Siloed vs Unified entity comparison</caption><thead><tr><th>Metric</th><th>Siloed</th><th>Unified</th></tr></thead><tbody>
+                      <tr><td>Entity Count</td><td>{fmt(sv.siloed.entity_count)}</td><td style={{color:'var(--success)'}}>{fmt(sv.unified.entity_count)}</td></tr>
+                      <tr><td>Avg Completeness</td><td>{fmtPct(sv.siloed.avg_completeness)}</td><td style={{color:'var(--success)'}}>{fmtPct(sv.unified.avg_completeness)}</td></tr>
+                      <tr><td>Total Revenue</td><td>{fmtCur(sv.siloed.total_revenue)}</td><td style={{color:'var(--success)'}}>{fmtCur(sv.unified.total_revenue)}</td></tr>
+                    </tbody></table>
+                  </div>
+                )}
+              </div>
+            );
+          }
+          case 'narrative_slides': {
+            const sl = d.slides || [];
+            const sm = d.summary || {};
+            return (
+              <div>
+                <div className="kpi-grid" style={{marginBottom:16}}>
+                  <div className="kpi-card"><div className="kpi-label">Board Safe</div><div className="kpi-value" style={{color:'var(--success)'}}>{sm.board_safe_count || 0}</div><div className="kpi-sub">{fmtCur(sm.board_safe_total_usd)} total</div></div>
+                  <div className="kpi-card"><div className="kpi-label">Needs Validation</div><div className="kpi-value" style={{color:'var(--warning)'}}>{sm.requires_validation_count || 0}</div></div>
+                  <div className="kpi-card"><div className="kpi-label">Hypothesis</div><div className="kpi-value" style={{color:'var(--accent)'}}>{sm.hypothesis_count || 0}</div></div>
+                  <div className="kpi-card"><div className="kpi-label">Total Sections</div><div className="kpi-value">{sl.length}</div></div>
+                </div>
+                {sl.slice(0, 6).map((s,i) => (
+                  <div key={i} className="card" style={{marginBottom:8}}>
+                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                      <div style={{fontWeight:600, fontSize:14}}>{s.title}</div>
+                      <span className={`badge ${s.evidence_level === 'BOARD_SAFE' ? 'badge-success' : s.evidence_level === 'REQUIRES_VALIDATION' ? 'badge-warning' : s.evidence_level === 'HYPOTHESIS' ? 'badge-info' : 'badge-neutral'}`}>{s.evidence_level?.replace(/_/g,' ')}</span>
+                    </div>
+                    {s.value_usd ? <div style={{fontSize:18, fontWeight:700, marginTop:4}}>{fmtCur(s.value_usd)}</div> : null}
+                    {s.talking_point && <div style={{fontSize:12, color:'var(--text-muted)', marginTop:6}}>{s.talking_point}</div>}
+                  </div>
+                ))}
+              </div>
+            );
+          }
+          default:
+            return <div className="card"><p style={{color:'var(--text-muted)'}}>Slide content loading...</p></div>;
+        }
+      };
+
+      return (
+        <div className="presentation-overlay" role="dialog" aria-label="Board Presentation">
+          {/* Top bar: progress dots, timer, exit */}
+          <div className="presentation-topbar">
+            <div className="presentation-topbar-left">
+              <span style={{fontWeight:600, fontSize:14, color:'var(--accent)'}}>CustomerLake Board Deck</span>
+              <div className="presentation-progress" role="tablist" aria-label="Presentation slides">
+                {slides.map((s, i) => (
+                  <button key={i}
+                    className={`presentation-dot ${i === currentSlide ? 'active' : i < currentSlide ? 'done' : ''}`}
+                    onClick={() => setCurrentSlide(i)}
+                    aria-label={`Slide ${i+1}: ${s.title}`}
+                    aria-selected={i === currentSlide}
+                    role="tab"
+                    style={{border:'none', cursor:'pointer'}}
+                  />
+                ))}
+              </div>
+              <span className="presentation-timer">{fmtTime(elapsed)} / {script?.total_duration_minutes || 20}:00</span>
+              {timing && <span style={{fontSize:11, color: timing.ok ? 'var(--success)' : 'var(--danger)'}}>{timing.ms}ms</span>}
+            </div>
+            <div className="presentation-nav-arrows">
+              <button className="presentation-nav-btn" disabled={currentSlide === 0} onClick={() => setCurrentSlide(s => s-1)} aria-label="Previous slide">&larr; Prev</button>
+              <span style={{fontSize:13, color:'var(--text-muted)'}}>{currentSlide+1} / {totalSlides}</span>
+              <button className="presentation-nav-btn" disabled={currentSlide === totalSlides-1} onClick={() => setCurrentSlide(s => s+1)} aria-label="Next slide">Next &rarr;</button>
+              <button className="presentation-nav-btn" onClick={onExit} aria-label="Exit presentation" style={{color:'var(--danger)', borderColor:'var(--danger)'}}>Exit</button>
+            </div>
+          </div>
+
+          {/* Slide body */}
+          <div className="presentation-body">
+            <div className="presentation-slide">
+              <div className="presentation-slide-number">Slide {currentSlide+1} of {totalSlides} &mdash; {slide.duration_minutes} min</div>
+              <h2 className="presentation-slide-title"><Icon d={slideIcon} size={28} /> {slide.title}</h2>
+              {renderSlideContent()}
+              {slide.transition && currentSlide < totalSlides - 1 && (
+                <div style={{marginTop:24, padding:'12px 16px', background:'var(--accent-light)', borderRadius:8, fontSize:13, color:'var(--accent)', fontStyle:'italic'}}>
+                  <strong>Transition:</strong> {slide.transition}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Presenter notes bar */}
+          {showNotes && (
+            <div className="presentation-notes-bar">
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:16}}>
+                <div>
+                  <strong style={{color:'var(--text-primary)', fontSize:12, textTransform:'uppercase', letterSpacing:0.5}}>Presenter Notes</strong>
+                  <div style={{marginTop:4}}>{slide.presenter_notes}</div>
+                </div>
+                <button className="presentation-notes-toggle" onClick={() => setShowNotes(false)}>Hide (N)</button>
+              </div>
+            </div>
+          )}
+          {!showNotes && (
+            <div style={{padding:'4px 24px', background:'var(--bg-secondary)', borderTop:'1px solid var(--border)'}}>
+              <button className="presentation-notes-toggle" onClick={() => setShowNotes(true)}>Show Notes (N)</button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
     function App() {
       const [page, setPage] = useState('demo');
       const [mobileNavOpen, setMobileNavOpen] = useState(false);
       const [demoMode, setDemoMode] = useState(false);
       const [demoStep, setDemoStep] = useState(1);
       const [appVersion, setAppVersion] = useState('…');
+      const [presentationMode, setPresentationMode] = useState(false);
 
       // V74-FIX-VERSION-FOOTER: fetch live version from /api/health
       useEffect(() => {
@@ -6684,7 +7096,7 @@
 
       return (
         <div style={{maxWidth:1100, margin:'0 auto'}}>
-          <h2 style={{fontSize:22, fontWeight:700, marginBottom:4}}><Icon d={icons.percent} size={22} /> CPA Sensitivity Analysis</h2>
+          <h2 style={{fontSize:22, fontWeight:600, marginBottom:4}}><Icon d={icons.percent} size={22} /> CPA Sensitivity Analysis</h2>
           <p style={{fontSize:13, color:'var(--text-secondary)', marginBottom:16}}>{data.subtitle} <ProvenanceBadge synthetic={true} /></p>
 
           {/* PROVENANCE DISCLOSURE BANNER */}
@@ -6727,7 +7139,7 @@
 
           {/* SCENARIO CHART — horizontal bar visualization */}
           <div className="card" style={{padding:20, marginBottom:24}}>
-            <h3 style={{fontSize:16, fontWeight:700, marginBottom:16}}>Revenue by Lift Scenario</h3>
+            <h3 style={{fontSize:16, fontWeight:600, marginBottom:16}}>Revenue by Lift Scenario</h3>
             {data.scenarios.filter(r => r.scenario_code !== 'S5_ZERO_LIFT').map((r, i) => {
               const barWidth = Math.max(Math.abs(r.incremental_revenue_usd || 0) / maxRev * 100, 2);
               const isPositive = (r.net_profit_usd || 0) > 0;
@@ -6781,7 +7193,7 @@
 
           {/* DETAILED SCENARIO TABLE */}
           <div className="card" style={{padding:20, marginBottom:24}}>
-            <h3 style={{fontSize:16, fontWeight:700, marginBottom:12}}>Scenario Detail</h3>
+            <h3 style={{fontSize:16, fontWeight:600, marginBottom:12}}>Scenario Detail</h3>
             <div style={{overflowX:'auto'}}>
               <table>
                 <caption className="kpi-label" style={{captionSide:'top', textAlign:'left', marginBottom:8}}>CVR scenario analysis with investment verdicts</caption>
@@ -6815,7 +7227,7 @@
 
           {/* METHODOLOGY NOTES */}
           <div className="card" style={{padding:20, marginBottom:24}}>
-            <h3 style={{fontSize:16, fontWeight:700, marginBottom:12}}>Methodology Notes</h3>
+            <h3 style={{fontSize:16, fontWeight:600, marginBottom:12}}>Methodology Notes</h3>
             {data.scenarios.map((r, i) => (
               <div key={i} style={{padding:'8px 12px', marginBottom:8, background:'var(--bg-hover)', borderRadius:6, fontSize:12, lineHeight:1.5}}>
                 <span style={{fontWeight:700, color:'var(--accent)'}}>{r.lift_pct_of_observed}% Lift:</span>{' '}
@@ -6852,7 +7264,7 @@
 
       return (
         <div style={{maxWidth:1100, margin:'0 auto'}}>
-          <h2 style={{fontSize:22, fontWeight:700, marginBottom:4}}><Icon d={icons.calendar} size={22} /> Production Path</h2>
+          <h2 style={{fontSize:22, fontWeight:600, marginBottom:4}}><Icon d={icons.calendar} size={22} /> Production Path</h2>
           <p style={{fontSize:13, color:'var(--text-secondary)', marginBottom:16}}>{roadmap.subtitle} <ProvenanceBadge synthetic={true} /></p>
 
           {/* PROVENANCE DISCLOSURE BANNER — CMO-306/310 */}
@@ -6869,7 +7281,7 @@
 
           {/* ROADMAP HERO */}
           <div className="card" style={{padding:20, marginBottom:24}}>
-            <h3 style={{fontSize:16, fontWeight:700, marginBottom:4}}>{roadmap.title}</h3>
+            <h3 style={{fontSize:16, fontWeight:600, marginBottom:4}}>{roadmap.title}</h3>
             <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(120px, 1fr))', gap:16, marginBottom:16, marginTop:12}}>
               <div className="kpi-card">
                 <div className="kpi-label">Total Phases</div>
@@ -6912,7 +7324,7 @@
           {/* VALIDATION PLAN — CMO-314 */}
           {plan && (
             <div className="card" style={{padding:20, marginBottom:24}}>
-              <h3 style={{fontSize:16, fontWeight:700, marginBottom:4}}>{plan.title}</h3>
+              <h3 style={{fontSize:16, fontWeight:600, marginBottom:4}}>{plan.title}</h3>
               <p style={{fontSize:12, color:'var(--text-secondary)', marginBottom:12}}>{plan.subtitle}</p>
 
               {plan.urgency_banner && (
@@ -6994,6 +7406,7 @@
     function CLTVImpactPage() {
       const [impact, setImpact] = useState(null);
       const [cohorts, setCohorts] = useState(null);
+      const [powerAnalysis, setPowerAnalysis] = useState(null);
       const [error, setError] = useState(null);
 
       useEffect(() => {
@@ -7002,6 +7415,8 @@
           api('/api/cltv/cohorts'),
         ]).then(([imp, coh]) => { setImpact(imp); setCohorts(coh); })
           .catch(e => setError(e.message));
+        // Power analysis is non-blocking (CMO-360 response)
+        api('/api/cltv/power-analysis').then(setPowerAnalysis).catch(() => {});
       }, []);
 
       if (error) return <ErrorCard message={error} onRetry={() => { setError(null); window.location.reload(); }} />;
@@ -7175,12 +7590,78 @@
             </div>
           )}
 
+          {/* Statistical Power Disclosure (CMO-360 Response, v71.0.0) */}
+          {powerAnalysis && powerAnalysis.quartiles && (
+            <div className="card" style={{padding:16, marginBottom:24, borderLeft:'3px solid var(--danger)'}}>
+              <div style={{fontSize:15, fontWeight:700, marginBottom:12, display:'flex', alignItems:'center', gap:8}}>
+                <Icon d={icons.alertTriangle} size={18} />
+                Statistical Power Disclosure
+                <span className="badge badge-danger" style={{marginLeft:8}}>CMO-360</span>
+              </div>
+
+              {/* UNDERPOWERED Warning */}
+              <div role="alert" style={{background:'var(--danger-bg)', border:'1px solid var(--danger)', borderRadius:'var(--radius)', padding:'12px 16px', marginBottom:16, fontSize:12, color:'var(--danger)', lineHeight:1.5}}>
+                <span style={{fontWeight:700}}>UNDERPOWERED:</span> {powerAnalysis.verdict.interpretation}
+              </div>
+
+              {/* Quartile MDE Table */}
+              <div className="table-scroll">
+                <table style={{width:'100%', borderCollapse:'collapse'}}>
+                  <caption className="kpi-label" style={{captionSide:'top', textAlign:'left', marginBottom:8}}>
+                    Billing-quartile-matched power analysis (80% power, \u03b1=0.05)
+                  </caption>
+                  <thead>
+                    <tr style={{borderBottom:'1px solid var(--border)'}}>
+                      <th style={{textAlign:'left', padding:'6px 12px', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.5px', color:'var(--text-muted)'}}>Quartile</th>
+                      <th style={{textAlign:'right', padding:'6px 12px', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.5px', color:'var(--text-muted)'}}>Control n</th>
+                      <th style={{textAlign:'right', padding:'6px 12px', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.5px', color:'var(--text-muted)'}}>Treatment n</th>
+                      <th style={{textAlign:'right', padding:'6px 12px', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.5px', color:'var(--text-muted)'}}>Observed</th>
+                      <th style={{textAlign:'right', padding:'6px 12px', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.5px', color:'var(--text-muted)'}}>MDE Required</th>
+                      <th style={{textAlign:'center', padding:'6px 12px', fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.5px', color:'var(--text-muted)'}}>Power</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {powerAnalysis.quartiles.map(q => (
+                      <tr key={q.quartile} style={{borderBottom:'1px solid var(--border)'}}>
+                        <td style={{padding:'6px 12px', fontSize:13, fontWeight:600}}>Q{q.quartile}</td>
+                        <td style={{textAlign:'right', padding:'6px 12px', fontSize:13}}>{fmt(q.n_control)}</td>
+                        <td style={{textAlign:'right', padding:'6px 12px', fontSize:13}}>{fmt(q.n_treatment)}</td>
+                        <td style={{textAlign:'right', padding:'6px 12px', fontSize:13, color: q.observed_pct > 0 ? 'var(--success)' : q.observed_pct < 0 ? 'var(--danger)' : 'var(--text-secondary)'}}>
+                          {q.observed_pct != null ? (q.observed_pct > 0 ? '+' : '') + q.observed_pct.toFixed(1) + '%' : '\u2014'}
+                        </td>
+                        <td style={{textAlign:'right', padding:'6px 12px', fontSize:13, color:'var(--text-secondary)'}}>
+                          {q.mde_pct != null ? '\u00b1' + q.mde_pct.toFixed(1) + '%' : 'N/A'}
+                        </td>
+                        <td style={{textAlign:'center', padding:'6px 12px'}}>
+                          <span className={'badge ' + (q.powered ? 'badge-success' : q.status === 'ZERO_VARIANCE' ? 'badge-neutral' : 'badge-danger')}>
+                            {q.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Methodology + Recommendation */}
+              <div style={{marginTop:12, fontSize:12, color:'var(--text-secondary)', lineHeight:1.5}}>
+                <span style={{fontWeight:700}}>Methodology:</span> {powerAnalysis.methodology}
+              </div>
+              <div style={{marginTop:8, fontSize:12, color:'var(--warning)', lineHeight:1.5}}>
+                <span style={{fontWeight:700}}>Recommendation:</span> {powerAnalysis.recommendation}
+              </div>
+              <div style={{fontSize:11, color:'var(--text-muted)', marginTop:8, textAlign:'right'}}>
+                Control: {powerAnalysis.aggregate.control_tier} (n={fmt(powerAnalysis.aggregate.n_control)}) vs Treatment: {powerAnalysis.aggregate.treatment_tier} (n={fmt(powerAnalysis.aggregate.n_treatment)})
+              </div>
+            </div>
+          )}
+
           {/* Differentiator */}
           <div style={{marginTop:12, padding:'12px 16px', background:'var(--accent)11', borderRadius:6, fontSize:12, color:'var(--accent)', lineHeight:1.5}}>
             <span style={{fontWeight:700}}>CustomerLake Insight:</span> {impact.differentiator}
           </div>
 
-          <div style={{fontSize:11, color:'var(--text-secondary)', marginTop:12, textAlign:'right'}}>Source: customerlake_cltv_impact_measurement + customerlake_cltv_cohort_analysis</div>
+          <div style={{fontSize:11, color:'var(--text-secondary)', marginTop:12, textAlign:'right'}}>Source: customerlake_cltv_impact_measurement + customerlake_cltv_cohort_analysis + power_analysis</div>
         </div>
       );
     }
@@ -7237,7 +7718,7 @@
           </div>
 
           {/* HERO: Waste headline */}
-          <div className="card" style={{padding:20, marginBottom:24, borderLeft:'4px solid var(--danger)', background:'linear-gradient(135deg, var(--bg-card) 0%, rgba(239,68,68,0.04) 100%)'}}>
+          <div className="card" style={{padding:20, marginBottom:24, borderLeft:'4px solid var(--danger)', background:'linear-gradient(135deg, var(--bg-card) 0%, rgba(248,113,113,0.04) 100%)'}}>
             <div style={{fontSize:13, fontWeight:700, color:'var(--danger)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8}}>The Moat: Waste Detection</div>
             <div style={{fontSize:28, fontWeight:700, color:'var(--text-primary)', lineHeight:1.3}}>
               {fmtUsd(h.delivery_waste_usd)} in marketing spend <span style={{color:'var(--danger)'}}>DESTROYS</span> {fmt(h.conversions_destroyed)} conversions
@@ -7277,7 +7758,7 @@
           <div className="card" style={{padding:20, marginBottom:24}}>
             <div style={{fontSize:15, fontWeight:600, marginBottom:16}}>Legacy CDP vs CustomerLake: paid_social + email</div>
             <div style={{display:'grid', gridTemplateColumns:'1fr 40px 1fr', gap:16, alignItems:'center'}}>
-              <div style={{background:'rgba(239,68,68,0.06)', borderRadius:'var(--radius)', padding:16, textAlign:'center'}}>
+              <div style={{background:'rgba(248,113,113,0.06)', borderRadius:'var(--radius)', padding:16, textAlign:'center'}}>
                 <div style={{fontSize:11, fontWeight:600, color:'var(--text-muted)', textTransform:'uppercase', marginBottom:8}}>Braze / Salesforce CDP Reports</div>
                 <div style={{fontSize:36, fontWeight:700, color:'var(--danger)'}}>{fmt(lvc.legacy_reported_conversions)}</div>
                 <div style={{fontSize:13, color:'var(--text-secondary)'}}>\"conversions\" (last-touch attributed)</div>
@@ -7311,7 +7792,7 @@
                     <div><span style={{color:'var(--text-muted)'}}>Evidence:</span> {c.evidence_strength}</div>
                   </div>
                   {c.kill_switch && (
-                    <div style={{marginTop:8, padding:'6px 10px', background:'rgba(239,68,68,0.08)', borderRadius:4, fontSize:11, color:'var(--danger)', fontWeight:600}}>
+                    <div style={{marginTop:8, padding:'6px 10px', background:'rgba(248,113,113,0.08)', borderRadius:4, fontSize:11, color:'var(--danger)', fontWeight:600}}>
                       <Icon d={icons.alertTriangle} size={12} /> KILL SWITCH: Holdout ({Number(c.holdout_cvr_pct).toFixed(1)}%) outperforms treatment ({Number(c.treatment_cvr_pct).toFixed(1)}%)
                     </div>
                   )}
@@ -7421,7 +7902,7 @@
           <div className="card" style={{padding:20, marginBottom:24}}>
             <div style={{fontSize:15, fontWeight:600, marginBottom:12}}>Budget Optimizer: Motion \u00d7 Risk Tier Grid</div>
             <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(120px, 1fr))', gap:12}}>
-              <div style={{textAlign:'center', padding:12, background:'rgba(239,68,68,0.06)', borderRadius:'var(--radius)'}}>
+              <div style={{textAlign:'center', padding:12, background:'rgba(248,113,113,0.06)', borderRadius:'var(--radius)'}}>
                 <div style={{fontSize:24, fontWeight:700, color:'var(--danger)'}}>{data.optimizer_summary.suppress_cells}</div>
                 <div style={{fontSize:11, color:'var(--text-muted)'}}>SUPPRESS</div>
               </div>
@@ -7452,9 +7933,10 @@
     }
 
     // ---- Board Narrative Page (CMO-350/351 — 5-row value summary + cached full narrative) ----
-    function BoardNarrativePage() {
+    function BoardNarrativePage({ onPresent }) {
       const [valueSummary, setValueSummary] = useState(null);
       const [slides, setSlides] = useState(null);
+      const [boardExec, setBoardExec] = useState(null);
       const [loading, setLoading] = useState(true);
       const [error, setError] = useState(null);
       const [expandedSlide, setExpandedSlide] = useState(null);
@@ -7464,9 +7946,11 @@
         Promise.all([
           api('/api/board-narrative/value-summary'),
           api('/api/board-narrative/slides'),
-        ]).then(([v, s]) => {
+          api('/api/board-executive/summary'),
+        ]).then(([v, s, be]) => {
           setValueSummary(v);
           setSlides(s);
+          setBoardExec(be);
           setLoading(false);
         }).catch(e => { setError(e.message); setLoading(false); });
       }, []);
@@ -7508,11 +7992,18 @@
 
       return (
         <div>
-          <div className="page-header">
-            <h2><Icon d={icons.briefcase} size={22} /> Board Narrative</h2>
-            <p style={{color:'var(--text-secondary)', margin:'4px 0 0'}}>
-              CMO-351 response: The 5-row executive summary. CMO-350 fix: cached narrative (sub-second).
-            </p>
+          <div className="page-header" style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
+            <div>
+              <h2><Icon d={icons.briefcase} size={22} /> Board Narrative</h2>
+              <p style={{color:'var(--text-secondary)', margin:'4px 0 0'}}>
+                CMO-351 response: The 5-row executive summary. CMO-350 fix: cached narrative (sub-second).
+              </p>
+            </div>
+            {onPresent && (
+              <button className="present-btn" onClick={onPresent} aria-label="Enter board presentation mode">
+                <Icon d={icons.play} size={16} /> Present to Board
+              </button>
+            )}
           </div>
 
           {/* SIMULATION ENVIRONMENT provenance banner (CMO-306/310) */}
@@ -7521,18 +8012,50 @@
             <span style={{fontSize:13}}>SIMULATION ENVIRONMENT: All values derived from synthetic data calibrated to industry benchmarks. Production validation required before board use.</span>
           </div>
 
+          {/* === SECTION 0: Board Executive Summary (CMO-355 canonical 5 statements) === */}
+          {boardExec && boardExec.rows && boardExec.rows.length > 0 && (
+            <div className="card" style={{marginBottom:24}}>
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12}}>
+                <h3 style={{margin:0}}><Icon d={icons.award} size={18} /> The CustomerLake Story</h3>
+                <span className="badge badge-success">{boardExec.board_safe_count}/{boardExec.total_rows} Board Safe</span>
+              </div>
+              <p style={{color:'var(--text-muted)', fontSize:12, margin:'0 0 16px'}}>5 canonical statements that replace 8 competing exec summaries. Source: board_executive_summary (CMO-355).</p>
+              <div style={{display:'flex', flexDirection:'column', gap:8}}>
+                {boardExec.rows.map((r, i) => (
+                  <div key={i} style={{display:'flex', alignItems:'flex-start', gap:12, padding:'12px 16px', background:'var(--bg-hover)', borderRadius:8, borderLeft: `4px solid ${r.tier_color === 'success' ? 'var(--success)' : r.tier_color === 'warning' ? 'var(--warning)' : 'var(--text-muted)'}`}}>
+                    <div style={{width:28, height:28, borderRadius:'50%', background: r.tier_color === 'success' ? 'var(--success)22' : 'var(--warning)22', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop:2}}>
+                      <span style={{fontSize:14, fontWeight:700, color: r.tier_color === 'success' ? 'var(--success)' : 'var(--warning)'}}>{r.order}</span>
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:14, fontWeight:600, marginBottom:2}}>{r.headline}</div>
+                      <div style={{fontSize:13, color:'var(--text-secondary)', marginBottom:4}}>{r.metric_value}</div>
+                      {r.talking_point && <div style={{fontSize:11, color:'var(--text-muted)', lineHeight:1.5}}>{r.talking_point}</div>}
+                    </div>
+                    <span className={`badge badge-${r.tier_color === 'success' ? 'success' : 'warning'}`} style={{flexShrink:0}}>{r.tier_label}</span>
+                  </div>
+                ))}
+              </div>
+              {boardExec.provenance && (
+                <div style={{marginTop:12, padding:'8px 12px', background:'var(--bg-hover)', borderRadius:6, border:'1px solid var(--border)'}}>
+                  <div style={{fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:0.5, color:'var(--text-muted)', marginBottom:4}}>Data Provenance</div>
+                  <div style={{fontSize:11, color:'var(--text-muted)', lineHeight:1.5}}>{boardExec.provenance.disclosure}</div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* === SECTION 1: 5-Row Value Summary Hero === */}
           <div className="card" style={{marginBottom:24}}>
             <h3 style={{margin:'0 0 4px'}}>CustomerLake Annual Value \u2014 5-Row Summary</h3>
             <p style={{color:'var(--text-muted)', fontSize:12, margin:'0 0 16px'}}>One row per value stream. This IS the board slide.</p>
 
             {/* Total hero */}
-            <div style={{background:'var(--card-bg)', border:'2px solid var(--accent)', borderRadius:10, padding:'16px 20px', marginBottom:16, display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+            <div style={{background:'var(--bg-card)', border:'2px solid var(--accent)', borderRadius:10, padding:'16px 20px', marginBottom:16, display:'flex', justifyContent:'space-between', alignItems:'center'}}>
               <div>
                 <div style={{fontSize:12, fontWeight:700, color:'var(--accent)', textTransform:'uppercase', letterSpacing:1}}>Total Demonstrable Value</div>
                 <div style={{fontSize:28, fontWeight:700, color:'var(--text-primary)', marginTop:4}}>{fmtUsdK(total.amount_usd)}</div>
               </div>
-              <span style={{fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:4, background:'var(--accent)22', color:'var(--accent)'}}>BLENDED</span>
+              <span style={{fontSize:10, fontWeight:700, padding:'4px 8px', borderRadius:4, background:'var(--accent)22', color:'var(--accent)'}}>BLENDED</span>
             </div>
 
             {/* Value stream rows */}
@@ -7542,7 +8065,7 @@
                 const isNeg = s.amount_usd < 0;
                 const tierColor = tierColors[s.tier_color] || 'var(--text-muted)';
                 return (
-                  <div key={i} style={{background:'var(--surface)', borderRadius:8, padding:'12px 16px', border:'1px solid var(--border)'}}>
+                  <div key={i} style={{background:'var(--bg-card)', borderRadius:8, padding:'12px 16px', border:'1px solid var(--border)'}}>
                     <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6}}>
                       <div style={{display:'flex', alignItems:'center', gap:8}}>
                         <span style={{fontSize:14, fontWeight:700, color:'var(--text-primary)'}}>{s.order}.</span>
@@ -7583,7 +8106,7 @@
                   <div key={i} style={{border:'1px solid var(--border)', borderRadius:8, overflow:'hidden', transition:'all 0.2s'}}>
                     <button
                       onClick={() => setExpandedSlide(isExpanded ? null : i)}
-                      style={{width:'100%', padding:'12px 16px', background: isExpanded ? 'var(--surface)' : 'transparent', border:'none', cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', textAlign:'left'}}
+                      style={{width:'100%', padding:'12px 16px', background: isExpanded ? 'var(--bg-card)' : 'transparent', border:'none', cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center', textAlign:'left'}}
                       aria-expanded={isExpanded}
                     >
                       <div style={{display:'flex', alignItems:'center', gap:10, flex:1, minWidth:0}}>
@@ -7756,7 +8279,7 @@
 
           {/* OVERHEAD ALLOCATION BREAKDOWN */}
           <div className="card" style={{padding:20, marginBottom:24}}>
-            <h3 style={{fontSize:16, fontWeight:700, marginBottom:4}}>Overhead Allocation by Channel</h3>
+            <h3 style={{fontSize:16, fontWeight:600, marginBottom:4}}>Overhead Allocation by Channel</h3>
             <p style={{fontSize:12, color:'var(--text-muted)', marginBottom:16}}>How fixed platform costs get distributed across channels — and why low-volume channels get absurd multipliers</p>
             <table style={{width:'100%', borderCollapse:'collapse'}}>
               <caption className="kpi-label" style={{captionSide:'top', textAlign:'left', marginBottom:8}}>Per-channel cost basis and ROI comparison</caption>
@@ -7808,7 +8331,7 @@
 
           {/* P&L RECONCILIATION */}
           <div className="card" style={{padding:20, marginBottom:24}}>
-            <h3 style={{fontSize:16, fontWeight:700, marginBottom:4}}>Investment P&L Reconciliation</h3>
+            <h3 style={{fontSize:16, fontWeight:600, marginBottom:4}}>Investment P&L Reconciliation</h3>
             <p style={{fontSize:12, color:'var(--text-muted)', marginBottom:12}}>How $1.3M–$1.6M positive P&L coexists with -0.90x fully-loaded ROI</p>
             <div style={{padding:'10px 14px', background:'var(--info-bg)', borderRadius:6, fontSize:12, color:'var(--info)', marginBottom:16, lineHeight:1.6}}>
               <strong>The Paradox Explained:</strong> {pnlSummary.paradox_explanation}
@@ -7848,7 +8371,7 @@
 
           {/* TCO LEGACY COMPARISON */}
           <div className="card" style={{padding:20, marginBottom:24}}>
-            <h3 style={{fontSize:16, fontWeight:700, marginBottom:4}}>Platform TCO vs Legacy CDP</h3>
+            <h3 style={{fontSize:16, fontWeight:600, marginBottom:4}}>Platform TCO vs Legacy CDP</h3>
             <p style={{fontSize:12, color:'var(--text-muted)', marginBottom:16}}>Annual platform cost by category with legacy CDP equivalent benchmarks</p>
             {tcoWarnings.length > 0 && (
               <div style={{padding:'10px 14px', background:'var(--danger-bg)', borderRadius:6, border:'1px solid var(--danger)', fontSize:12, color:'var(--danger)', marginBottom:16, lineHeight:1.5}}>
@@ -7982,10 +8505,15 @@
           case 'cltv-impact': return <CLTVImpactPage />;
           case 'spend-optimization': return <SpendOptimizationPage />;
           case 'cost-methodology': return <CostMethodologyPage />;
-          case 'board-narrative': return <BoardNarrativePage />;
+          case 'board-narrative': return <BoardNarrativePage onPresent={() => setPresentationMode(true)} />;
           default: return <OverviewPage />;
         }
       };
+
+      // Board Presentation Mode overlay
+      if (presentationMode) {
+        return <BoardPresentationMode onExit={() => setPresentationMode(false)} />;
+      }
 
       return (
         <div className="app-layout">

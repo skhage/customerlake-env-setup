@@ -1,6 +1,6 @@
 # CustomerLake Brand Guidelines
 
-**Version:** 3.17.0 — Updated 2026-10-16 by @designer (V106 Brand Sweep: App v67.0.0 — new Board Narrative page (CMO-350/351). 8.5/9 — 2 fontWeight:800 violations in new page, BINDING fix V106-UX-FIX-1 filed. 0 off-palette hex, 1,730 CSS var() refs, ZERO EMOJI, WCAG 2.1 AA compliant. App: 8,023 lines, 30 pages, 87+ endpoints. 3 BINDING Genie fixes (V105-GENIE-FIX-1/2/3) still open.)  
+**Version:** 3.22.0 — Updated 2026-10-16 by @designer (V111 Brand Sweep: App v72.0.0 — V110-fix verification + 9-dimension audit. 8.5/9. V110-UX-FIX-1 VERIFIED FIXED — 0 rgba(239,68,68) remaining. V110-UX-FIX-2 VERIFIED FIXED — L6664/L6687 both captioned, 53/53 tables = 100%. 0 off-brand hex, 0 undefined CSS vars, 1,826 var() refs. BINDING: V111-UX-FIX-1 filed — SYSTEMIC 17× fontWeight:700 on <h3>/<h2> headings (should be 600 per §3 rules 4-5). V111-UX-FIX-2 filed — 1× 3px badge padding (should be 4px per §5). 0 emoji, 0 fontWeight:800, WCAG 2.1 AA maintained (32 aria-live, 80 aria-label, 128 role). App: 8,576 lines, 30 pages, 6 nav sections.)  
 **Status:** BINDING — All CustomerLake apps, dashboards, and demos MUST conform  
 **Scope:** Databricks App (`customerlake`), AI/BI dashboards, Genie spaces, demo materials  
 **Tag:** `customerlake_project: customerlake`

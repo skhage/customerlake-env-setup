@@ -1,12 +1,13 @@
 {
   "_comment": "CustomerLake App Regression Guard Baseline — DO NOT reduce these values without @devops approval",
-  "_updated_by": "@devops (DEVOPS-V98-REGRESSION-RCA)",
-  "_updated_at": "2026-10-15",
+  "_updated_by": "@devops (DEVOPS-AUDIT-R139)",
+  "_updated_at": "2026-10-16",
   "_root_cause": "v65.1.0→v56.0.0 regression caused by uncommitted workspace edits lost during branch checkout",
+  "_r139_fix": "Page-count regex was broken — case+X:$ never matched actual case+X: return pattern. Fixed CI/deploy grep to match both routing styles.",
   "index_html": {
     "min_lines": 7500,
     "min_pages": 28,
-    "page_pattern": "case\\s+'([^']+)':",
+    "page_pattern": "case\\s+'[^']+':.*(?:return|\\{)",
     "path": "customerlake-app/static/index.html"
   },
   "app_py": {
