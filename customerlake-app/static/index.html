@@ -9130,9 +9130,373 @@
       );
     }
 
+    // ---- Budget Waste Headline (CMO-375: 92% of budget destroys value) ----
+    function BudgetWasteHeadlinePage() {
+      const [data, setData] = useState(null);
+      const [error, setError] = useState(null);
+
+      useEffect(() => {
+        api('/api/budget-waste-headline').then(setData).catch(e => setError(e.message));
+      }, []);
+
+      if (error) return <ErrorCard message={error} onRetry={() => { setError(null); api('/api/budget-waste-headline').then(setData).catch(e => setError(e.message)); }} />;
+      if (!data) return <div aria-live="polite" role="status"><LoadingShimmer /></div>;
+
+      const k = data.kpis || {};
+      const fmt = (v) => v == null ? '\u2014' : Number(v).toLocaleString();
+      const fmtUsd = (v) => v == null ? '\u2014' : '$' + Number(v).toLocaleString(undefined, {maximumFractionDigits:0});
+      const fmtPct = (v) => v == null ? '\u2014' : Number(v).toFixed(1) + '%';
+      const fmtRoi = (v) => v == null ? '\u2014' : Number(v).toFixed(1) + 'x';
+
+      const actionColor = (a) => {
+        if (a === 'SCALE') return 'var(--success)';
+        if (a === 'OPTIMIZE_OVERHEAD') return 'var(--warning)';
+        if (a === 'CUT' || a === 'EXIT') return 'var(--danger)';
+        return 'var(--text-muted)';
+      };
+      const actionBg = (a) => {
+        if (a === 'SCALE') return 'var(--success-bg)';
+        if (a === 'OPTIMIZE_OVERHEAD') return 'var(--warning-bg)';
+        if (a === 'CUT' || a === 'EXIT') return 'var(--danger-bg)';
+        return 'var(--bg-secondary)';
+      };
+
+      return (
+        <div className="page-content">
+          <div className="page-header">
+            <h2 style={{fontWeight:600}}><Icon d={icons.scissors} size={22} /> Budget Waste Headline</h2>
+            <p className="page-subtitle">CMO-375: {k.waste_pct}% of delivery budget destroys value — this IS the board headline</p>
+          </div>
+
+          {/* HERO: The waste headline */}
+          <div className="card" style={{padding:24, marginBottom:24, borderLeft:'4px solid var(--danger)', background:'var(--danger-bg)'}}>
+            <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:1.5, color:'var(--danger)', marginBottom:8}}>Board Headline</div>
+            <div style={{fontSize:42, fontWeight:700, color:'var(--danger)', lineHeight:1.2}}>{fmtPct(k.waste_pct)}</div>
+            <div style={{fontSize:16, fontWeight:600, color:'var(--text-primary)', marginTop:4}}>of Delivery Budget Destroys Value</div>
+            <div style={{fontSize:13, color:'var(--text-secondary)', marginTop:12, lineHeight:1.6, maxWidth:700}}>
+              {fmtUsd(k.waste_cost_usd)} spent on {k.channels_destructive} destructive channels that destroy {fmt(k.waste_conversions_destroyed)} conversions.
+              Meanwhile, {fmtUsd(k.efficient_cost_usd)} on {k.channels_profitable} profitable channels generates {fmt(k.efficient_conversions)} incremental conversions.
+            </div>
+          </div>
+
+          {/* Contrast: SMS vs Paid Social */}
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:24}}>
+            <div className="card" style={{padding:20, borderLeft:'4px solid var(--success)', background:'var(--success-bg)'}}>
+              <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:1.5, color:'var(--success)', marginBottom:6}}>Best Channel: {k.best_channel?.toUpperCase()}</div>
+              <div style={{fontSize:32, fontWeight:700, color:'var(--success)'}}>{fmt(k.best_channel_conversions)}</div>
+              <div style={{fontSize:13, color:'var(--text-secondary)'}}>conversions at {fmtRoi(k.best_channel_roi_x)} ROI</div>
+              <div style={{fontSize:20, fontWeight:600, color:'var(--success)', marginTop:8}}>{fmtUsd(k.best_channel_cost_usd)}</div>
+              <div style={{fontSize:12, color:'var(--text-muted)'}}>delivery cost | CPA: {fmtUsd(k.sms_cpa_usd)}</div>
+            </div>
+            <div className="card" style={{padding:20, borderLeft:'4px solid var(--danger)', background:'var(--danger-bg)'}}>
+              <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:1.5, color:'var(--danger)', marginBottom:6}}>Worst Channel: {k.worst_channel?.toUpperCase()}</div>
+              <div style={{fontSize:32, fontWeight:700, color:'var(--danger)'}}>{fmt(k.worst_channel_conversions)}</div>
+              <div style={{fontSize:13, color:'var(--text-secondary)'}}>conversions DESTROYED</div>
+              <div style={{fontSize:20, fontWeight:600, color:'var(--danger)', marginTop:8}}>{fmtUsd(k.worst_channel_cost_usd)}</div>
+              <div style={{fontSize:12, color:'var(--text-muted)'}}>spent destroying value</div>
+            </div>
+          </div>
+
+          {/* KPI Grid: Portfolio numbers from conversion pivot */}
+          <div className="kpi-grid" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:12, marginBottom:24}}>
+            <div className="card" style={{padding:14, textAlign:'center'}}>
+              <div style={{fontSize:26, fontWeight:700, color:'var(--accent)'}}>{fmt(k.headline_conversions)}</div>
+              <div className="kpi-label">Incremental Conversions</div>
+            </div>
+            <div className="card" style={{padding:14, textAlign:'center'}}>
+              <div style={{fontSize:26, fontWeight:700, color:'var(--success)'}}>{fmtUsd(k.revenue_usd)}</div>
+              <div className="kpi-label">Revenue (CPA Canonical)</div>
+            </div>
+            <div className="card" style={{padding:14, textAlign:'center'}}>
+              <div style={{fontSize:26, fontWeight:700, color:'var(--accent)'}}>{fmtRoi(k.delivery_roi_x)}</div>
+              <div className="kpi-label">Delivery ROI</div>
+            </div>
+            <div className="card" style={{padding:14, textAlign:'center'}}>
+              <div style={{fontSize:26, fontWeight:700, color:'var(--success)'}}>{fmtUsd(k.net_profit_usd)}</div>
+              <div className="kpi-label">Net Delivery Profit</div>
+            </div>
+            <div className="card" style={{padding:14, textAlign:'center'}}>
+              <div style={{fontSize:26, fontWeight:700, color:'var(--text-primary)'}}>{k.fragility}</div>
+              <div className="kpi-label">Fragility Assessment</div>
+            </div>
+          </div>
+
+          {/* Channel Scorecard Table */}
+          <div className="card" style={{padding:20, marginBottom:24}}>
+            <h3 style={{fontWeight:600, marginBottom:16}}><Icon d={icons.barChart} size={16} /> Channel Scorecard</h3>
+            <div style={{fontSize:12, color:'var(--text-muted)', marginBottom:12}}>Table: Channel-level budget allocation, conversions, and board actions</div>
+            <table style={{width:'100%', borderCollapse:'collapse', fontSize:13}}>
+              <thead>
+                <tr style={{borderBottom:'2px solid var(--border)'}}>
+                  <th style={{textAlign:'left', padding:'8px 6px', fontWeight:600}}>Channel</th>
+                  <th style={{textAlign:'right', padding:'8px 6px', fontWeight:600}}>Conversions</th>
+                  <th style={{textAlign:'right', padding:'8px 6px', fontWeight:600}}>Revenue</th>
+                  <th style={{textAlign:'right', padding:'8px 6px', fontWeight:600}}>Cost</th>
+                  <th style={{textAlign:'right', padding:'8px 6px', fontWeight:600}}>ROI</th>
+                  <th style={{textAlign:'center', padding:'8px 6px', fontWeight:600}}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(data.channels || []).map((c, i) => (
+                  <tr key={i} style={{borderBottom:'1px solid var(--border)', background: c.is_destructive ? 'var(--danger-bg)' : 'transparent'}}>
+                    <td style={{padding:'8px 6px', fontWeight:500}}>{c.channel?.replace('_', ' ')}</td>
+                    <td style={{padding:'8px 6px', textAlign:'right', fontWeight:600, color: c.is_destructive ? 'var(--danger)' : 'var(--success)'}}>{fmt(c.incremental_conversions)}</td>
+                    <td style={{padding:'8px 6px', textAlign:'right'}}>{fmtUsd(c.incremental_revenue_usd)}</td>
+                    <td style={{padding:'8px 6px', textAlign:'right'}}>{fmtUsd(c.delivery_cost_usd)}</td>
+                    <td style={{padding:'8px 6px', textAlign:'right', fontWeight:600, color: c.is_destructive ? 'var(--danger)' : 'var(--success)'}}>{fmtRoi(c.delivery_roi_x)}</td>
+                    <td style={{padding:'8px 6px', textAlign:'center'}}>
+                      <span style={{fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:12, color: actionColor(c.budget_action), background: actionBg(c.budget_action)}}>{c.budget_action}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Budget Allocation Visual (waste bar) */}
+          <div className="card" style={{padding:20, marginBottom:24}}>
+            <h3 style={{fontWeight:600, marginBottom:12}}><Icon d={icons.alertTriangle} size={16} /> Budget Allocation: Where the Money Goes</h3>
+            <div style={{display:'flex', borderRadius:8, overflow:'hidden', height:40, marginBottom:12}}>
+              {(data.reallocation || []).map((r, i) => {
+                if (r.current_pct < 0.5) return null;
+                return (
+                  <div key={i} style={{
+                    width: r.current_pct + '%',
+                    background: r.is_destructive ? 'var(--danger)' : 'var(--success)',
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    fontSize:10, fontWeight:600, color:'#fff',
+                    borderRight:'1px solid rgba(255,255,255,0.3)'
+                  }}>
+                    {r.current_pct >= 5 ? `${r.channel} ${r.current_pct}%` : ''}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{display:'flex', gap:16, fontSize:12}}>
+              <span><span style={{display:'inline-block', width:12, height:12, borderRadius:3, background:'var(--danger)', marginRight:4, verticalAlign:'middle'}} /> Destructive ({fmtPct(k.waste_pct)})</span>
+              <span><span style={{display:'inline-block', width:12, height:12, borderRadius:3, background:'var(--success)', marginRight:4, verticalAlign:'middle'}} /> Profitable ({fmtPct(k.efficient_pct)})</span>
+            </div>
+          </div>
+
+          {/* Reallocation Projection */}
+          <div className="card" style={{padding:20, marginBottom:24, borderLeft:'4px solid var(--accent)', background:'var(--accent)08'}}>
+            <h3 style={{fontWeight:600, marginBottom:12}}><Icon d={icons.trendingUp} size={16} /> Reallocation Projection</h3>
+            <div style={{display:'grid', gridTemplateColumns:'1fr auto 1fr', gap:16, alignItems:'center', marginBottom:16}}>
+              <div style={{textAlign:'center'}}>
+                <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:1, color:'var(--text-muted)', marginBottom:4}}>Current</div>
+                <div style={{fontSize:28, fontWeight:700, color:'var(--text-primary)'}}>{fmt(k.efficient_conversions)}</div>
+                <div style={{fontSize:12, color:'var(--text-secondary)'}}>conversions (profitable only)</div>
+              </div>
+              <div style={{fontSize:24, color:'var(--accent)'}}>\u2192</div>
+              <div style={{textAlign:'center'}}>
+                <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:1, color:'var(--accent)', marginBottom:4}}>After Reallocation</div>
+                <div style={{fontSize:28, fontWeight:700, color:'var(--accent)'}}>{fmt(k.projected_total_conversions)}</div>
+                <div style={{fontSize:12, color:'var(--text-secondary)'}}>projected (+{fmt(k.projected_reallocation_conversions)} from waste reallocation)</div>
+              </div>
+            </div>
+            <div style={{fontSize:13, color:'var(--text-primary)', lineHeight:1.6}}>{data.narrative?.reallocation_projection}</div>
+          </div>
+
+          {/* Differentiator */}
+          <div className="card" style={{padding:20, marginBottom:24}}>
+            <h3 style={{fontWeight:600, marginBottom:12}}><Icon d={icons.zap} size={16} /> Why Only CustomerLake</h3>
+            <div style={{fontSize:13, color:'var(--text-primary)', lineHeight:1.6, marginBottom:12}}>{data.narrative?.differentiator}</div>
+            <div style={{fontSize:13, fontWeight:600, color:'var(--accent)', lineHeight:1.6, padding:'12px 16px', background:'rgba(0,0,0,0.03)', borderRadius:'var(--radius)'}}>
+              {data.narrative?.board_recommendation}
+            </div>
+          </div>
+
+          <div style={{fontSize:11, color:'var(--text-muted)', textAlign:'right'}}>
+            CustomerLake v{data.app_version} | Budget Waste Headline | CMO-375 | Sources: board_conversion_pivot_cached + board_channel_scorecard
+          </div>
+        </div>
+      );
+    }
+
+    // ---- Demo Readiness Check (CMO-374: board cache misinformation pre-flight) ----
+    function DemoReadinessPage() {
+      const [data, setData] = useState(null);
+      const [error, setError] = useState(null);
+
+      useEffect(() => {
+        api('/api/demo-readiness').then(setData).catch(e => setError(e.message));
+      }, []);
+
+      if (error) return <ErrorCard message={error} />;
+      if (!data) return <LoadingCard label="Running pre-flight checks..." />;
+
+      const readinessColors = { danger: 'var(--danger)', warning: 'var(--warning)', success: 'var(--success)' };
+      const readinessLabels = { NOT_READY: 'NOT DEMO READY', CAUTION: 'CAUTION — KNOWN ISSUES', READY: 'DEMO READY' };
+      const readinessIcons = { NOT_READY: icons.alertTriangle, CAUTION: icons.alertCircle, READY: icons.checkCircle };
+      const statusColor = c => c === 'HEALTHY' ? 'var(--success)' : c === 'STALE' || c === 'STALE_ROW3' ? 'var(--danger)' : c === 'MISMATCH' ? 'var(--warning)' : 'var(--text-muted)';
+
+      return (
+        <div className="page-container">
+          <h2 className="page-title"><Icon d={readinessIcons[data.readiness] || icons.shieldCheck} /> Demo Readiness Check</h2>
+          <p className="page-subtitle">CMO-374: Pre-flight board cache integrity audit — run before every demo</p>
+
+          {/* === SECTION 0: Readiness Hero === */}
+          <div style={{background: readinessColors[data.readiness_color] || 'var(--text-muted)', borderRadius:'var(--radius-lg)', padding:'24px 32px', marginBottom:24, color:'#fff'}}>
+            <div style={{display:'flex', alignItems:'center', gap:12, marginBottom:8}}>
+              <Icon d={readinessIcons[data.readiness] || icons.shieldCheck} size={28} />
+              <span style={{fontSize:22, fontWeight:600}}>{readinessLabels[data.readiness] || data.readiness}</span>
+            </div>
+            <div style={{fontSize:15, opacity:0.95, marginBottom:12}}>{data.headline}</div>
+            <div style={{display:'flex', gap:24, flexWrap:'wrap'}}>
+              <div><span style={{fontSize:11, textTransform:'uppercase', opacity:0.8}}>Checks</span><div style={{fontSize:18, fontWeight:600}}>{data.summary.healthy}/{data.summary.total_checks} healthy</div></div>
+              <div><span style={{fontSize:11, textTransform:'uppercase', opacity:0.8}}>Critical Warnings</span><div style={{fontSize:18, fontWeight:600}}>{data.summary.warnings_critical}</div></div>
+              <div><span style={{fontSize:11, textTransform:'uppercase', opacity:0.8}}>High Warnings</span><div style={{fontSize:18, fontWeight:600}}>{data.summary.warnings_high}</div></div>
+            </div>
+          </div>
+
+          {/* === SECTION 1: Canonical Numbers (the truth) === */}
+          <div className="card" style={{marginBottom:16}}>
+            <h3 style={{fontWeight:600, marginBottom:12}}><Icon d={icons.checkCircle} size={16} /> Canonical Numbers (Source of Truth)</h3>
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:12}}>
+              <div className="kpi-card" style={{borderLeft:'3px solid var(--success)'}}>
+                <div className="kpi-label">Incremental Conversions</div>
+                <div className="kpi-value" style={{color:'var(--success)'}}>{data.canonical_numbers.conversions}</div>
+                <div style={{fontSize:10, color:'var(--text-muted)'}}>Holdout-proven, directly measured</div>
+              </div>
+              <div className="kpi-card" style={{borderLeft:'3px solid var(--accent)'}}>
+                <div className="kpi-label">Net Revenue</div>
+                <div className="kpi-value">${(data.canonical_numbers.revenue_usd || 0).toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                <div style={{fontSize:10, color:'var(--text-muted)'}}>CPA-based, LTV-calibrated</div>
+              </div>
+              <div className="kpi-card" style={{borderLeft:'3px solid var(--info)'}}>
+                <div className="kpi-label">Source</div>
+                <div style={{fontSize:12, fontWeight:600}}>cpa_incremental</div>
+                <div style={{fontSize:10, color:'var(--text-muted)'}}>{data.canonical_numbers.methodology}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* === SECTION 2: Warnings === */}
+          {data.warnings.length > 0 && (
+            <div className="card" style={{marginBottom:16, borderLeft:'3px solid var(--danger)'}}>
+              <h3 style={{fontWeight:600, marginBottom:12, color:'var(--danger)'}}><Icon d={icons.alertTriangle} size={16} /> Warnings ({data.warnings.length})</h3>
+              {data.warnings.map((w, i) => (
+                <div key={i} style={{background: w.severity === 'CRITICAL' ? 'rgba(220,53,69,0.08)' : w.severity === 'HIGH' ? 'rgba(255,152,0,0.08)' : 'rgba(0,0,0,0.03)', borderRadius:'var(--radius)', padding:'12px 16px', marginBottom:8}}>
+                  <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
+                    <span style={{fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:4, background: w.severity === 'CRITICAL' ? 'var(--danger)' : w.severity === 'HIGH' ? 'var(--warning)' : 'var(--text-muted)', color:'#fff'}}>{w.severity}</span>
+                    <span style={{fontSize:11, fontWeight:600, fontFamily:'monospace'}}>{w.code}</span>
+                  </div>
+                  <div style={{fontSize:13}}>{w.message}</div>
+                  {w.safe_alternatives && (
+                    <div style={{fontSize:11, marginTop:6, color:'var(--success)'}}>Safe alternatives: {w.safe_alternatives.join(', ')}</div>
+                  )}
+                  {w.remediation && (
+                    <div style={{fontSize:11, marginTop:4, color:'var(--text-muted)'}}>Remediation: {w.remediation}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* === SECTION 3: View Health Grid === */}
+          <div className="card" style={{marginBottom:16}}>
+            <h3 style={{fontWeight:600, marginBottom:12}}><Icon d={icons.layers} size={16} /> View Health Grid</h3>
+            <table><caption style={{captionSide:'top', textAlign:'left', fontSize:11, color:'var(--text-muted)', marginBottom:8}}>Board-facing data sources and their integrity status</caption>
+              <thead><tr>
+                <th style={{textAlign:'left', fontSize:11, padding:'8px 12px'}}>Source View</th>
+                <th style={{textAlign:'center', fontSize:11, padding:'8px 12px'}}>Status</th>
+                <th style={{textAlign:'center', fontSize:11, padding:'8px 12px'}}>Demo Safe</th>
+                <th style={{textAlign:'left', fontSize:11, padding:'8px 12px'}}>Detail</th>
+              </tr></thead>
+              <tbody>
+                {data.checks.map((c, i) => (
+                  <tr key={i} style={{borderBottom:'1px solid var(--border)'}}>
+                    <td style={{padding:'8px 12px', fontSize:12, fontFamily:'monospace'}}>{c.source}</td>
+                    <td style={{padding:'8px 12px', textAlign:'center'}}>
+                      <span style={{fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:4, background: statusColor(c.status), color:'#fff'}}>{c.status}</span>
+                    </td>
+                    <td style={{padding:'8px 12px', textAlign:'center', fontSize:14}}>
+                      {c.is_demo_safe ? <span style={{color:'var(--success)'}}>\u2713</span> : <span style={{color:'var(--danger)'}}>\u2717</span>}
+                    </td>
+                    <td style={{padding:'8px 12px', fontSize:11, color:'var(--text-muted)'}}>
+                      {c.headline_conversions != null && `${c.headline_conversions} conversions, $${(c.headline_revenue_usd||0).toLocaleString()}`}
+                      {c.gap_usd != null && `Gap: $${c.gap_usd.toLocaleString()} (${c.gap_pct > 0 ? '+' : ''}${c.gap_pct}%)`}
+                      {c.row3_stale && 'Row 3 cites $210K (canonical $503K)'}
+                      {c.slide_count != null && `${c.slide_count}/${c.expected} slides`}
+                      {c.consistent === true && `$${(c.proven_revenue_usd||0).toLocaleString()} consistent`}
+                      {c.consistent === false && `Mismatch: $${(c.proven_revenue_usd||0).toLocaleString()} vs $${(c.canonical_revenue_usd||0).toLocaleString()}`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* === SECTION 4: Channel Detail === */}
+          {data.checks[0] && data.checks[0].channel_detail && (
+            <div className="card" style={{marginBottom:16}}>
+              <h3 style={{fontWeight:600, marginBottom:12}}><Icon d={icons.barChart} size={16} /> Channel Performance (Canonical)</h3>
+              <table><caption style={{captionSide:'top', textAlign:'left', fontSize:11, color:'var(--text-muted)', marginBottom:8}}>Per-channel incremental conversions from holdout experiments</caption>
+                <thead><tr>
+                  <th style={{textAlign:'left', fontSize:11, padding:'8px 12px'}}>Channel</th>
+                  <th style={{textAlign:'right', fontSize:11, padding:'8px 12px'}}>Incr. Conv.</th>
+                  <th style={{textAlign:'right', fontSize:11, padding:'8px 12px'}}>Revenue</th>
+                  <th style={{textAlign:'right', fontSize:11, padding:'8px 12px'}}>ROI</th>
+                  <th style={{textAlign:'center', fontSize:11, padding:'8px 12px'}}>Action</th>
+                </tr></thead>
+                <tbody>
+                  {data.checks[0].channel_detail.map((ch, i) => (
+                    <tr key={i} style={{borderBottom:'1px solid var(--border)', background: ch.incremental_conversions < 0 ? 'rgba(220,53,69,0.05)' : 'transparent'}}>
+                      <td style={{padding:'8px 12px', fontSize:12, fontWeight:600}}>{ch.channel}</td>
+                      <td style={{padding:'8px 12px', textAlign:'right', fontSize:12, fontWeight:600, color: ch.incremental_conversions > 0 ? 'var(--success)' : 'var(--danger)'}}>{ch.incremental_conversions}</td>
+                      <td style={{padding:'8px 12px', textAlign:'right', fontSize:12}}>${ch.revenue_usd.toLocaleString(undefined, {maximumFractionDigits:0})}</td>
+                      <td style={{padding:'8px 12px', textAlign:'right', fontSize:12}}>{ch.roi_x.toFixed(1)}x</td>
+                      <td style={{padding:'8px 12px', textAlign:'center'}}>
+                        <span style={{fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:4, background: ch.action === 'SCALE' ? 'var(--success)' : ch.action === 'EXIT' ? 'var(--danger)' : 'var(--warning)', color:'#fff'}}>{ch.action}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* === SECTION 5: Recommended Demo Path === */}
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16}}>
+            <div className="card" style={{borderLeft:'3px solid var(--success)'}}>
+              <h3 style={{fontWeight:600, marginBottom:12, color:'var(--success)'}}><Icon d={icons.checkCircle} size={16} /> Safe Pages</h3>
+              {data.recommended_demo_path.map((p, i) => (
+                <div key={i} style={{padding:'8px 12px', marginBottom:4, background:'rgba(40,167,69,0.05)', borderRadius:'var(--radius)', cursor:'pointer'}} onClick={() => window.dispatchEvent(new CustomEvent('navigate', {detail: p.id}))}>
+                  <div style={{fontSize:13, fontWeight:600}}>{p.label}</div>
+                  <div style={{fontSize:11, color:'var(--text-muted)'}}>{p.reason}</div>
+                </div>
+              ))}
+            </div>
+            <div className="card" style={{borderLeft:'3px solid var(--danger)'}}>
+              <h3 style={{fontWeight:600, marginBottom:12, color:'var(--danger)'}}><Icon d={icons.alertTriangle} size={16} /> Unsafe Pages</h3>
+              {data.unsafe_pages.map((p, i) => (
+                <div key={i} style={{padding:'8px 12px', marginBottom:4, background:'rgba(220,53,69,0.05)', borderRadius:'var(--radius)'}}>
+                  <div style={{display:'flex', alignItems:'center', gap:8}}>
+                    <span style={{fontSize:13, fontWeight:600}}>{p.label}</span>
+                    <span style={{fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:4, background:'var(--danger)', color:'#fff'}}>{p.severity}</span>
+                  </div>
+                  <div style={{fontSize:11, color:'var(--text-muted)'}}>{p.reason}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* === SECTION 6: Demo Opener Script === */}
+          <div className="card" style={{marginBottom:16, background:'var(--bg-card)', border:'2px solid var(--accent)'}}>
+            <h3 style={{fontWeight:600, marginBottom:8}}><Icon d={icons.megaphone} size={16} /> Demo Opener (copy-paste ready)</h3>
+            <div style={{fontSize:13, lineHeight:1.7, padding:'12px 16px', background:'rgba(0,0,0,0.03)', borderRadius:'var(--radius)', fontStyle:'italic'}}>{data.demo_opener}</div>
+          </div>
+
+          <div style={{fontSize:11, color:'var(--text-muted)', textAlign:'right'}}>CustomerLake v{data.app_version} | Demo Readiness Check | CMO-374 + PM-ENFORCE-VIEW-DISCIPLINE</div>
+        </div>
+      );
+    }
+
       const pages = [
         // --- BOARD DECK: Demo-safe pages a board member finds in <60s (CMO-354) ---
         { section: 'BOARD DECK' },
+        { id: 'budget-waste', label: 'Budget Waste Headline', icon: icons.scissors },
+        { id: 'demo-readiness', label: 'Demo Readiness', icon: icons.shieldCheck },
         { id: 'demo', label: 'Demo Walkthrough', icon: icons.megaphone },
         { id: 'conversion-narrative', label: 'Conversion Narrative', icon: icons.target },
         { id: 'board-narrative', label: 'Board Narrative', icon: icons.briefcase },
@@ -9216,6 +9580,8 @@
           case 'activation-intel': return <ActivationIntelligencePage />;
           case 'attribution-truth': return <AttributionTruthPage />;
           case 'conversion-narrative': return <ConversionNarrativePage />;
+          case 'budget-waste': return <BudgetWasteHeadlinePage />;
+          case 'demo-readiness': return <DemoReadinessPage />;
           case 'board-ready': return <BoardReadyPage />;
           case 'spend-transparency': return <SpendTransparencyPage />;
           case 'lifecycle': return <LifecyclePage />;

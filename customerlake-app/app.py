@@ -33,7 +33,7 @@ _pg_conn = None
 CATALOG = "cdm_tmforum"
 
 # Single source of truth for app version (DRY pattern)
-APP_VERSION = "79.0.0"
+APP_VERSION = "81.0.0"
 
 # ---------------------------------------------------------------------------
 # Materialized table aliases (CMO-138 / APP-CACHED-VIEWS + V2 performance fix)
@@ -6980,6 +6980,10 @@ VIEW_ATTRIBUTION_BRIDGE = f"{CATALOG}._metrics.customerlake_cmo369_funnel_attrib
 VIEW_ACTIVATION_LOG_REALISTIC = f"{CATALOG}._metrics.customerlake_activation_log_realistic"
 VIEW_CPA_INCREMENTAL = f"{CATALOG}._metrics.customerlake_cpa_incremental"
 
+# --- Board Conversion Pivot + Channel Scorecard (DA-R148, CMO-375 response) ---
+VIEW_BOARD_CONVERSION_PIVOT = f"{CATALOG}._metrics.customerlake_board_conversion_pivot_cached"
+VIEW_BOARD_CHANNEL_SCORECARD = f"{CATALOG}._metrics.customerlake_board_channel_scorecard"
+
 
 @app.get("/api/attribution-truth")
 async def attribution_truth():
@@ -7215,6 +7219,421 @@ async def conversion_narrative():
             "app_version": APP_VERSION,
         }
         return cache_set("conversion_narrative", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# Demo Readiness Check (CMO-374 response — board cache misinformation pre-flight)
+# ---------------------------------------------------------------------------
+# DEMO-SAFE views (per PM-ENFORCE-VIEW-DISCIPLINE):
+#   1. board_executive_summary — canonical 5-row summary
+#   2. board_value_summary — proven/modeled value tiers
+#   3. board_narrative_final_cached — 13-slide narrative
+# STALE views (DO NOT USE for board):
+#   - executive_summary_materialized (+166% ROI fantasy)
+#   - exec_summary_v2_cached ($210K when canonical is $503K)
+
+
+@app.get("/api/demo-readiness")
+async def demo_readiness():
+    """Pre-flight readiness check for CustomerLake demo.
+
+    CMO-374 response — surfaces board cache misinformation BEFORE the demo.
+    Compares stale cached numbers vs canonical live numbers, flags mismatches,
+    and recommends which pages/endpoints are demo-safe vs dangerous.
+
+    PM-ENFORCE-VIEW-DISCIPLINE: Only 3 DEMO-SAFE views for board content.
+    CMO-373 support: Leads with conversion-based narrative, not revenue.
+    """
+    cached = cache_get("demo_readiness")
+    if cached:
+        return cached
+    try:
+        checks = []
+        warnings = []
+        pos_channels = []
+        neg_channels = []
+        total_incr_conv = 0
+        total_incr_rev = 0.0
+
+        # --- CHECK 1: Canonical CPA numbers (source of truth) ---
+        try:
+            cpa_rows = sql_query(f"""
+                SELECT channel, incremental_conversions, incremental_revenue_usd,
+                       delivery_roi_x, budget_action, methodology, data_origin
+                FROM {VIEW_CPA_INCREMENTAL}
+                WHERE granularity = 'CHANNEL'
+                ORDER BY incremental_conversions DESC
+            """)
+            total_incr_conv = sum(r['incremental_conversions'] or 0 for r in cpa_rows)
+            total_incr_rev = sum(float(r['incremental_revenue_usd'] or 0) for r in cpa_rows)
+            pos_channels = [r for r in cpa_rows if (r['incremental_conversions'] or 0) > 0]
+            neg_channels = [r for r in cpa_rows if (r['incremental_conversions'] or 0) < 0]
+            checks.append({
+                "source": "cpa_incremental (CANONICAL)",
+                "status": "HEALTHY",
+                "is_demo_safe": True,
+                "headline_conversions": total_incr_conv,
+                "headline_revenue_usd": round(total_incr_rev, 2),
+                "channels_creating_value": len(pos_channels),
+                "channels_destroying_value": len(neg_channels),
+                "channel_detail": [
+                    {
+                        "channel": r['channel'],
+                        "incremental_conversions": r['incremental_conversions'],
+                        "revenue_usd": float(r['incremental_revenue_usd'] or 0),
+                        "roi_x": float(r['delivery_roi_x'] or 0),
+                        "action": r['budget_action'],
+                    } for r in cpa_rows
+                ],
+            })
+        except Exception as e:
+            checks.append({"source": "cpa_incremental", "status": "ERROR", "error": str(e)[:200]})
+
+        # --- CHECK 2: Stale exec_summary_v2_cached vs canonical ---
+        try:
+            v2 = sql_query(f"""
+                SELECT incremental_revenue_usd, delivery_roi_x,
+                       total_campaign_spend_usd
+                FROM {VIEW_EXEC_SUMMARY_V2}
+                LIMIT 1
+            """)
+            if v2:
+                v2r = v2[0]
+                stale_rev = float(v2r.get('incremental_revenue_usd') or 0)
+                stale_roi = float(v2r.get('delivery_roi_x') or 0)
+                rev_gap = round(total_incr_rev - stale_rev, 2)
+                rev_gap_pct = round((total_incr_rev / stale_rev - 1) * 100, 1) if stale_rev else None
+                is_stale = abs(rev_gap) > 1000
+                checks.append({
+                    "source": "exec_summary_v2_cached (STALE)",
+                    "status": "STALE" if is_stale else "OK",
+                    "is_demo_safe": False,
+                    "stale_revenue_usd": stale_rev,
+                    "canonical_revenue_usd": round(total_incr_rev, 2),
+                    "gap_usd": rev_gap,
+                    "gap_pct": rev_gap_pct,
+                    "stale_roi_x": stale_roi,
+                })
+                if is_stale:
+                    warnings.append({
+                        "severity": "CRITICAL",
+                        "code": "STALE_EXEC_SUMMARY",
+                        "message": (
+                            f"exec_summary_v2_cached shows ${stale_rev:,.0f} revenue and {stale_roi}x ROI. "
+                            f"Canonical CPA shows ${total_incr_rev:,.0f} ({rev_gap_pct:+.1f}%). "
+                            f"DO NOT present Exec Summary page in demos. Use Conversion Narrative or Board Narrative instead."
+                        ),
+                        "affected_pages": ["executive"],
+                        "safe_alternatives": ["conversion-narrative", "board-narrative"],
+                    })
+        except Exception as e:
+            checks.append({"source": "exec_summary_v2_cached", "status": "ERROR", "error": str(e)[:200]})
+
+        # --- CHECK 3: board_executive_summary consistency ---
+        try:
+            board_rows = sql_query(f"""
+                SELECT row_order, headline, metric_value, evidence_tier
+                FROM {VIEW_BOARD_EXECUTIVE_SUMMARY}
+                ORDER BY row_order
+            """)
+            row3 = next((r for r in board_rows if r.get('row_order') == 3), None)
+            board_rev_stale = False
+            if row3 and '$210K' in str(row3.get('metric_value', '')):
+                board_rev_stale = True
+                warnings.append({
+                    "severity": "HIGH",
+                    "code": "BOARD_EXEC_STALE_ROW3",
+                    "message": (
+                        f"board_executive_summary row 3 still references $210K. "
+                        f"Canonical CPA shows ${total_incr_rev:,.0f}. "
+                        f"Row 3 needs refresh by @data-engineer (DE-UPDATE-NARRATIVE-CONVERSIONS-R147)."
+                    ),
+                    "affected_pages": ["board-narrative"],
+                    "remediation": "DE-UPDATE-NARRATIVE-CONVERSIONS-R147",
+                })
+            checks.append({
+                "source": "board_executive_summary (DEMO-SAFE)",
+                "status": "STALE_ROW3" if board_rev_stale else "HEALTHY",
+                "is_demo_safe": True,
+                "row_count": len(board_rows),
+                "row3_stale": board_rev_stale,
+                "rows": [{"row_order": r['row_order'], "headline": r['headline'][:80]} for r in board_rows],
+            })
+        except Exception as e:
+            checks.append({"source": "board_executive_summary", "status": "ERROR", "error": str(e)[:200]})
+
+        # --- CHECK 4: board_value_summary canonical revenue ---
+        try:
+            bvs = sql_query(f"""
+                SELECT value_category, amount_usd, evidence_tier, board_one_liner
+                FROM {VIEW_BOARD_VALUE_SUMMARY}
+                ORDER BY display_order
+            """)
+            proven_row = next((r for r in bvs if r.get('value_category') == 'PROVEN_NET_INCREMENTAL'), None)
+            bvs_rev = float(proven_row.get('amount_usd', 0)) if proven_row else None
+            bvs_consistent = bvs_rev is not None and abs(bvs_rev - total_incr_rev) < 1000
+            checks.append({
+                "source": "board_value_summary (DEMO-SAFE)",
+                "status": "HEALTHY" if bvs_consistent else "MISMATCH",
+                "is_demo_safe": True,
+                "proven_revenue_usd": bvs_rev,
+                "canonical_revenue_usd": round(total_incr_rev, 2),
+                "consistent": bvs_consistent,
+                "tiers": [{"category": r['value_category'], "amount": float(r['amount_usd'] or 0)} for r in bvs],
+            })
+        except Exception as e:
+            checks.append({"source": "board_value_summary", "status": "ERROR", "error": str(e)[:200]})
+
+        # --- CHECK 5: board_narrative_final_cached slide count ---
+        try:
+            slides = sql_query(f"""
+                SELECT COUNT(*) as slide_count FROM {VIEW_BOARD_NARRATIVE_CACHED}
+            """)
+            slide_count = slides[0]['slide_count'] if slides else 0
+            expected_slides = 13
+            checks.append({
+                "source": "board_narrative_final_cached (DEMO-SAFE)",
+                "status": "HEALTHY" if slide_count >= expected_slides else "STALE",
+                "is_demo_safe": True,
+                "slide_count": slide_count,
+                "expected": expected_slides,
+            })
+            if slide_count < expected_slides:
+                warnings.append({
+                    "severity": "MEDIUM",
+                    "code": "NARRATIVE_SLIDE_COUNT",
+                    "message": f"board_narrative has {slide_count}/{expected_slides} slides. Missing slides may cause gaps in presentation.",
+                    "affected_pages": ["board-narrative"],
+                })
+        except Exception as e:
+            checks.append({"source": "board_narrative_final_cached", "status": "ERROR", "error": str(e)[:200]})
+
+        # --- OVERALL READINESS SCORE ---
+        critical_count = sum(1 for w in warnings if w['severity'] == 'CRITICAL')
+        high_count = sum(1 for w in warnings if w['severity'] == 'HIGH')
+        healthy_count = sum(1 for c in checks if c.get('status') == 'HEALTHY')
+        total_checks = len(checks)
+
+        if critical_count > 0:
+            readiness = "NOT_READY"
+            readiness_color = "danger"
+        elif high_count > 0:
+            readiness = "CAUTION"
+            readiness_color = "warning"
+        else:
+            readiness = "READY"
+            readiness_color = "success"
+
+        # --- RECOMMENDED DEMO PATH ---
+        safe_pages = [
+            {"id": "conversion-narrative", "label": "Conversion Narrative", "reason": "CMO-373 pivot — leads with 200 holdout-proven conversions, not estimated revenue"},
+            {"id": "board-narrative", "label": "Board Narrative", "reason": "DEMO-SAFE 5-row summary + cached narrative slides"},
+            {"id": "attribution-truth", "label": "Attribution Truth", "reason": "Full-attribution vs holdout ROAS — email 38Kx to -110x"},
+            {"id": "activation-intel", "label": "Activation Intel", "reason": "Entity-level prescriptions and suppression value"},
+            {"id": "profiles", "label": "Profile Search", "reason": "AI-unified 360 degree profiles across 5 source systems"},
+            {"id": "steward", "label": "Identity Steward", "reason": "Human-in-the-loop identity resolution"},
+        ]
+        unsafe_pages = [
+            {"id": "executive", "label": "Exec Summary", "reason": "Uses stale executive_summary_materialized (+166% ROI) and exec_summary_v2_cached ($210K)", "severity": "CRITICAL"},
+        ]
+
+        result = {
+            "readiness": readiness,
+            "readiness_color": readiness_color,
+            "headline": (
+                f"{total_incr_conv} Holdout-Proven Incremental Conversions | "
+                f"${total_incr_rev:,.0f} Net Incremental Revenue"
+            ),
+            "canonical_numbers": {
+                "conversions": total_incr_conv,
+                "revenue_usd": round(total_incr_rev, 2),
+                "source": "cpa_incremental (HOLDOUT_NORMALIZED_INCREMENTAL)",
+                "methodology": "Holdout control vs treatment, per-channel CPA",
+            },
+            "checks": checks,
+            "warnings": warnings,
+            "summary": {
+                "total_checks": total_checks,
+                "healthy": healthy_count,
+                "warnings_critical": critical_count,
+                "warnings_high": high_count,
+            },
+            "recommended_demo_path": safe_pages,
+            "unsafe_pages": unsafe_pages,
+            "demo_opener": (
+                f"CustomerLake holdout experiments prove {total_incr_conv} incremental conversions "
+                f"across 5 channels — {len(pos_channels)} creating value, "
+                f"{len(neg_channels)} destroying value. "
+                f"No legacy CDP — Braze, Iterable, Salesforce — reports incremental conversions. "
+                f"They credit all conversions to marketing. We prove most are organic."
+            ),
+            "app_version": APP_VERSION,
+        }
+        return cache_set("demo_readiness", result, ttl=120)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# Budget Waste Headline — CMO-375 CRITICAL: 92% of budget destroys value
+# ---------------------------------------------------------------------------
+# Proactive response to CMO-375: "92% of budget waste should be the board headline."
+# Integrates board_conversion_pivot_cached + board_channel_scorecard (DA-R148).
+# The story: $161K on destructive channels vs $1.8K on SMS → 235 conversions.
+
+
+@app.get("/api/budget-waste-headline")
+async def budget_waste_headline():
+    """Budget Waste Headline: the 92% waste story IS the CustomerLake differentiator.
+
+    CMO-375 response — leads with budget reallocation, not aggregate revenue.
+    Shows that 92.6% of delivery spend goes to channels that destroy conversions.
+    CustomerLake differentiator: no legacy CDP can identify destructive channels
+    because they don't run holdout experiments.
+    """
+    cached = cache_get("budget_waste_headline")
+    if cached:
+        return cached
+    try:
+        # 1. Canonical pivot data (board_conversion_pivot_cached)
+        pivot_rows = sql_query(f"SELECT * FROM {VIEW_BOARD_CONVERSION_PIVOT}")
+        pivot = pivot_rows[0] if pivot_rows else {}
+
+        # 2. Channel scorecard (board_channel_scorecard)
+        channels = sql_query(f"""
+            SELECT channel, incremental_conversions,
+                   ROUND(incremental_revenue_usd, 2) as incremental_revenue_usd,
+                   ROUND(delivery_cost_usd, 2) as delivery_cost_usd,
+                   ROUND(delivery_roi_x, 2) as delivery_roi_x,
+                   budget_action, channel_rank, is_destructive,
+                   board_one_liner
+            FROM {VIEW_BOARD_CHANNEL_SCORECARD}
+            ORDER BY channel_rank
+        """)
+
+        # 3. Compute budget waste metrics
+        total_cost = float(pivot.get('delivery_cost_usd') or 0)
+        destructive = [c for c in channels if c.get('is_destructive')]
+        constructive = [c for c in channels if not c.get('is_destructive')]
+
+        waste_cost = sum(float(c['delivery_cost_usd'] or 0) for c in destructive)
+        waste_pct = round(waste_cost / total_cost * 100, 1) if total_cost > 0 else 0
+        waste_conversions = sum(c['incremental_conversions'] or 0 for c in destructive)
+
+        efficient_cost = sum(float(c['delivery_cost_usd'] or 0) for c in constructive)
+        efficient_pct = round(efficient_cost / total_cost * 100, 1) if total_cost > 0 else 0
+        efficient_conversions = sum(c['incremental_conversions'] or 0 for c in constructive)
+
+        # Best & worst channel details
+        best = constructive[0] if constructive else {}
+        worst = destructive[-1] if destructive else {}
+
+        # SMS details for CPA calculation
+        sms = next((c for c in channels if c['channel'] == 'sms'), {})
+        sms_cpa = (float(sms.get('delivery_cost_usd') or 0) /
+                   (sms.get('incremental_conversions') or 1))
+
+        # Reallocation projection: if destructive budget moved to SMS
+        projected_extra_conversions = int(waste_cost / sms_cpa) if sms_cpa > 0 else 0
+        projected_total = efficient_conversions + projected_extra_conversions
+
+        # Revenue from conversion pivot
+        revenue = float(pivot.get('revenue_secondary_usd') or 0)
+        roi = float(pivot.get('delivery_roi_x') or 0)
+        net_profit = float(pivot.get('net_delivery_profit_usd') or 0)
+
+        # Email details for board recommendation
+        email = next((c for c in destructive if c['channel'] == 'email'), {})
+        email_cost = float(email.get('delivery_cost_usd') or 0)
+
+        kpis = {
+            "waste_pct": waste_pct,
+            "waste_cost_usd": round(waste_cost, 2),
+            "waste_conversions_destroyed": abs(waste_conversions),
+            "efficient_pct": efficient_pct,
+            "efficient_cost_usd": round(efficient_cost, 2),
+            "efficient_conversions": efficient_conversions,
+            "total_delivery_cost_usd": round(total_cost, 2),
+            "headline_conversions": int(pivot.get('headline_value') or 0),
+            "revenue_usd": round(revenue, 0),
+            "delivery_roi_x": round(roi, 2),
+            "net_profit_usd": round(net_profit, 0),
+            "channels_destructive": len(destructive),
+            "channels_profitable": len(constructive),
+            "best_channel": best.get('channel', '\u2014'),
+            "best_channel_conversions": best.get('incremental_conversions', 0),
+            "best_channel_cost_usd": round(float(best.get('delivery_cost_usd') or 0), 2),
+            "best_channel_roi_x": round(float(best.get('delivery_roi_x') or 0), 1),
+            "worst_channel": worst.get('channel', '\u2014'),
+            "worst_channel_conversions": worst.get('incremental_conversions', 0),
+            "worst_channel_cost_usd": round(float(worst.get('delivery_cost_usd') or 0), 2),
+            "sms_cpa_usd": round(sms_cpa, 2),
+            "projected_reallocation_conversions": projected_extra_conversions,
+            "projected_total_conversions": projected_total,
+            "fragility": pivot.get('fragility_assessment', '\u2014'),
+            "email_verdict": pivot.get('email_verdict', '\u2014'),
+        }
+
+        # Budget reallocation table (before/after)
+        reallocation = []
+        for c in channels:
+            current_cost = float(c.get('delivery_cost_usd') or 0)
+            is_dest = c.get('is_destructive', False)
+            reallocation.append({
+                "channel": c['channel'],
+                "current_cost_usd": round(current_cost, 2),
+                "current_pct": round(current_cost / total_cost * 100, 1) if total_cost else 0,
+                "current_conversions": c['incremental_conversions'],
+                "action": c['budget_action'],
+                "is_destructive": is_dest,
+                "freed_usd": round(current_cost, 2) if is_dest else 0,
+                "roi_x": float(c.get('delivery_roi_x') or 0),
+                "one_liner": c.get('board_one_liner', ''),
+            })
+
+        narrative = {
+            "headline": (
+                f"{waste_pct}% of Delivery Budget Destroys Value \u2014 "
+                f"${waste_cost:,.0f} spent on channels that destroy {abs(waste_conversions)} conversions."
+            ),
+            "contrast": (
+                f"SMS spends ${float(sms.get('delivery_cost_usd') or 0):,.0f} "
+                f"and generates {sms.get('incremental_conversions', 0)} incremental conversions at "
+                f"${sms_cpa:.2f} CPA. "
+                f"Paid Social spends ${float(worst.get('delivery_cost_usd') or 0):,.0f} "
+                f"and destroys {abs(worst.get('incremental_conversions', 0))} conversions."
+            ),
+            "reallocation_projection": (
+                f"If destructive channel budget (${waste_cost:,.0f}) were reallocated at SMS CPA "
+                f"(${sms_cpa:.2f}/conversion), CustomerLake projects "
+                f"{projected_extra_conversions:,} additional conversions \u2014 "
+                f"{projected_total:,} total vs current {efficient_conversions}."
+            ),
+            "differentiator": (
+                "No legacy CDP \u2014 Braze, Iterable, Salesforce CDP \u2014 can identify which channels "
+                "destroy conversions. They attribute all conversions to marketing. "
+                "CustomerLake's holdout experiments reveal that paid social and email "
+                "are value-destructive. This budget waste intelligence IS the platform's value."
+            ),
+            "board_recommendation": (
+                f"EXIT paid social (${float(worst.get('delivery_cost_usd') or 0):,.0f}) and "
+                f"email (${email_cost:,.0f}). "
+                f"SCALE SMS. Projected impact: {projected_extra_conversions:,}+ additional conversions."
+            ),
+        }
+
+        result = {
+            "kpis": kpis,
+            "channels": channels,
+            "reallocation": reallocation,
+            "narrative": narrative,
+            "data_origin": pivot.get('data_origin', 'CANONICAL_CPA_NORMALIZED'),
+            "methodology": pivot.get('measurement_methodology', 'CPA_CHANNEL_LEVEL_HOLDOUT_NORMALIZED'),
+            "app_version": APP_VERSION,
+        }
+        return cache_set("budget_waste_headline", result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
