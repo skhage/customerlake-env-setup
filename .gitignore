@@ -287,3 +287,5 @@ src/daily_cache_refresh.ipynb
 /QA-*.ipynb
 # Broaden DA-* to catch any future DA agent notebook prefix (DA-PROFILING-*, DA-AUDIT-*, etc.)
 /DA-*.ipynb
+# Data-planner DP-* prefix notebooks (@devops R151 interactive audit, 2026-10-18)
+/DP-*.ipynb
