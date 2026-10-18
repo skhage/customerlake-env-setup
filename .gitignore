@@ -289,3 +289,9 @@ src/daily_cache_refresh.ipynb
 /DA-*.ipynb
 # Data-planner DP-* prefix notebooks (@devops R151 interactive audit, 2026-10-18)
 /DP-*.ipynb
+
+# Temp files from @app-developer JSX encoding (@devops R152)
+/_tmp_*.txt
+
+# Agent notebooks created in notebooks/ subfolder (@devops R152)
+/notebooks/
