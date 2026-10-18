@@ -9313,6 +9313,174 @@
       );
     }
 
+    // ---- Budget Reallocation Slide (APP-REALLOCATION-HEADLINE-R149: CMO-375 board opener) ----
+    function BudgetReallocationSlidePage() {
+      const [data, setData] = useState(null);
+      const [error, setError] = useState(null);
+
+      useEffect(() => {
+        api('/api/budget-reallocation-slide').then(setData).catch(e => setError(e.message));
+      }, []);
+
+      if (error) return <ErrorCard message={error} onRetry={() => { setError(null); api('/api/budget-reallocation-slide').then(setData).catch(e => setError(e.message)); }} />;
+      if (!data) return <div aria-live="polite" role="status"><LoadingShimmer /></div>;
+
+      const w = data.waste || {};
+      const hl = data.reallocation_headline || {};
+      const t = data.totals || {};
+      const fmt = (v) => v == null ? '\u2014' : Number(v).toLocaleString();
+      const fmtUsd = (v) => v == null ? '\u2014' : '$' + Number(v).toLocaleString(undefined, {maximumFractionDigits:0});
+      const fmtPct = (v) => v == null ? '\u2014' : Number(v).toFixed(1) + '%';
+      const fmtRoi = (v) => v == null ? '\u2014' : Number(v).toFixed(1) + 'x';
+
+      return (
+        <div className="page-content">
+          <div className="page-header">
+            <h2 style={{fontWeight:600}}><Icon d={icons.trendingUp} size={22} /> Budget Reallocation</h2>
+            <p className="page-subtitle">CMO-375: Exit destructive channels, redirect {fmtUsd(w.destructive_spend_usd)} to high-ROI channels</p>
+          </div>
+
+          {/* HERO: 92% waste headline */}
+          <div className="card" style={{padding:32, marginBottom:24, borderLeft:'4px solid var(--danger)', background:'var(--danger-bg)'}}>
+            <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:1.5, color:'var(--danger)', marginBottom:8}}>Board Headline</div>
+            <div style={{fontSize:48, fontWeight:700, color:'var(--danger)', lineHeight:1.1}}>{fmtPct(w.waste_pct)}</div>
+            <div style={{fontSize:18, fontWeight:600, color:'var(--text-primary)', marginTop:4}}>of Marketing Budget Destroys Value</div>
+            <div style={{fontSize:14, color:'var(--text-secondary)', marginTop:12, lineHeight:1.6, maxWidth:700}}>
+              {fmtUsd(w.destructive_spend_usd)} on destructive channels destroys {fmt(w.conversions_destroyed)} conversions.
+              {' '}{fmtUsd(w.constructive_spend_usd)} on productive channels creates {fmt(w.conversions_created)}.
+              {' '}Waste-to-value spend ratio: {fmt(w.waste_to_value_ratio)}x.
+            </div>
+          </div>
+
+          {/* Attribution Illusion — the killer insight */}
+          <div className="card" style={{padding:24, marginBottom:24, borderLeft:'4px solid var(--warning)'}}>
+            <h3 style={{fontWeight:600, marginBottom:12}}><Icon d={icons.alertTriangle} size={16} /> The Attribution Illusion</h3>
+            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16}}>
+              <div style={{padding:16, borderRadius:'var(--radius)', background:'rgba(248,113,113,0.08)'}}>
+                <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:1, color:'var(--danger)', marginBottom:4}}>Legacy CDP Says</div>
+                <div style={{fontSize:24, fontWeight:700, color:'var(--danger)'}}>{fmtRoi(hl.ps_attribution_roi_x)} ROI</div>
+                <div style={{fontSize:12, color:'var(--text-secondary)'}}>Paid social \u201Cbest channel\u201D at {fmtUsd(w.legacy_cpa_usd)} CPA</div>
+              </div>
+              <div style={{padding:16, borderRadius:'var(--radius)', background:'rgba(52,211,153,0.08)'}}>
+                <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:1, color:'var(--success)', marginBottom:4}}>CustomerLake Holdout Proves</div>
+                <div style={{fontSize:24, fontWeight:700, color:'var(--success)'}}>{fmtRoi(hl.ps_holdout_roi_x)} ROI</div>
+                <div style={{fontSize:12, color:'var(--text-secondary)'}}>Paid social is EXIT \u2014 destroys conversions</div>
+              </div>
+            </div>
+            <div style={{fontSize:13, color:'var(--text-primary)', lineHeight:1.6, fontStyle:'italic'}}>{w.attribution_illusion}</div>
+          </div>
+
+          {/* Reallocation Projection: Before \u2192 After */}
+          <div className="card" style={{padding:24, marginBottom:24, borderLeft:'4px solid var(--accent)'}}>
+            <h3 style={{fontWeight:600, marginBottom:16}}><Icon d={icons.trendingUp} size={16} /> Reallocation Projection (Conservative)</h3>
+            <div style={{display:'grid', gridTemplateColumns:'1fr auto 1fr', gap:20, alignItems:'center', marginBottom:20}}>
+              <div style={{textAlign:'center', padding:20, borderRadius:'var(--radius)', background:'rgba(248,113,113,0.06)'}}>
+                <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:1, color:'var(--danger)', marginBottom:6}}>Current State</div>
+                <div style={{fontSize:36, fontWeight:700, color:'var(--text-primary)'}}>{fmt(t.current_conversions)}</div>
+                <div style={{fontSize:12, color:'var(--text-secondary)'}}>net conversions</div>
+                <div style={{fontSize:13, fontWeight:500, color:'var(--danger)', marginTop:8}}>{fmtPct(w.waste_pct)} budget wasted</div>
+              </div>
+              <div style={{fontSize:32, color:'var(--accent)'}}>\u2192</div>
+              <div style={{textAlign:'center', padding:20, borderRadius:'var(--radius)', background:'rgba(52,211,153,0.06)'}}>
+                <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:1, color:'var(--success)', marginBottom:6}}>After Reallocation</div>
+                <div style={{fontSize:36, fontWeight:700, color:'var(--success)'}}>{fmt(hl.projected_conversions)}</div>
+                <div style={{fontSize:12, color:'var(--text-secondary)'}}>projected conversions (conservative)</div>
+                <div style={{fontSize:13, fontWeight:500, color:'var(--success)', marginTop:8}}>+{fmt(hl.uplift_conversions)} uplift ({fmt(hl.uplift_pct)}%)</div>
+              </div>
+            </div>
+            <div style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:12, marginBottom:16}}>
+              <div className="card" style={{padding:14, textAlign:'center', background:'var(--bg-secondary)'}}>
+                <div style={{fontSize:22, fontWeight:700, color:'var(--accent)'}}>{fmtUsd(t.freed_budget_usd)}</div>
+                <div className="kpi-label">Budget Freed</div>
+              </div>
+              <div className="card" style={{padding:14, textAlign:'center', background:'var(--bg-secondary)'}}>
+                <div style={{fontSize:22, fontWeight:700, color:'var(--success)'}}>{fmtUsd(hl.projected_revenue_usd)}</div>
+                <div className="kpi-label">Projected Revenue</div>
+              </div>
+              <div className="card" style={{padding:14, textAlign:'center', background:'var(--bg-secondary)'}}>
+                <div style={{fontSize:22, fontWeight:700, color:'var(--accent)'}}>{fmtRoi(hl.new_roi_x)}</div>
+                <div className="kpi-label">Projected ROI</div>
+              </div>
+            </div>
+            <div style={{fontSize:12, color:'var(--text-muted)', fontStyle:'italic'}}>{hl.methodology}</div>
+          </div>
+
+          {/* Per-Channel Reallocation Table */}
+          <div className="card" style={{padding:20, marginBottom:24}}>
+            <h3 style={{fontWeight:600, marginBottom:16}}><Icon d={icons.barChart} size={16} /> Channel Reallocation Detail</h3>
+            <div style={{fontSize:12, color:'var(--text-muted)', marginBottom:12}}>Per-channel marginal rate with 40\u201360% diminishing returns haircut</div>
+            <table style={{width:'100%', borderCollapse:'collapse', fontSize:12}}>
+              <thead>
+                <tr style={{borderBottom:'2px solid var(--border)'}}>
+                  <th style={{textAlign:'left', padding:'8px 6px', fontWeight:600}}>Channel</th>
+                  <th style={{textAlign:'right', padding:'8px 6px', fontWeight:600}}>Current Spend</th>
+                  <th style={{textAlign:'right', padding:'8px 6px', fontWeight:600}}>Conv Now</th>
+                  <th style={{textAlign:'right', padding:'8px 6px', fontWeight:600}}>+ Budget</th>
+                  <th style={{textAlign:'right', padding:'8px 6px', fontWeight:600}}>New Total</th>
+                  <th style={{textAlign:'right', padding:'8px 6px', fontWeight:600}}>+ Conv</th>
+                  <th style={{textAlign:'right', padding:'8px 6px', fontWeight:600}}>Total Conv</th>
+                  <th style={{textAlign:'right', padding:'8px 6px', fontWeight:600}}>Proj ROI</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(data.channels || []).map((c, i) => (
+                  <tr key={i} style={{borderBottom:'1px solid var(--border)'}}>
+                    <td style={{padding:'8px 6px', fontWeight:500, textTransform:'capitalize'}}>{(c.channel || '').replace('_', ' ')}</td>
+                    <td style={{textAlign:'right', padding:'8px 6px'}}>{fmtUsd(c.current_spend_usd)}</td>
+                    <td style={{textAlign:'right', padding:'8px 6px', fontWeight:600, color:'var(--success)'}}>{fmt(c.current_conversions)}</td>
+                    <td style={{textAlign:'right', padding:'8px 6px', color:'var(--accent)'}}>{fmtUsd(c.reallocated_from_exit_usd)}</td>
+                    <td style={{textAlign:'right', padding:'8px 6px'}}>{fmtUsd(c.new_total_spend_usd)}</td>
+                    <td style={{textAlign:'right', padding:'8px 6px', fontWeight:600, color:'var(--success)'}}>+{fmt(c.conservative_additional_conversions)}</td>
+                    <td style={{textAlign:'right', padding:'8px 6px', fontWeight:700, color:'var(--accent)'}}>{fmt(c.projected_total_conversions)}</td>
+                    <td style={{textAlign:'right', padding:'8px 6px'}}>{fmtRoi(c.projected_roi_x)}</td>
+                  </tr>
+                ))}
+                <tr style={{borderTop:'2px solid var(--border)', fontWeight:700}}>
+                  <td style={{padding:'8px 6px'}}>TOTAL</td>
+                  <td style={{textAlign:'right', padding:'8px 6px'}}>{fmtUsd(w.constructive_spend_usd)}</td>
+                  <td style={{textAlign:'right', padding:'8px 6px', color:'var(--success)'}}>{fmt(t.current_conversions)}</td>
+                  <td style={{textAlign:'right', padding:'8px 6px', color:'var(--accent)'}}>{fmtUsd(t.freed_budget_usd)}</td>
+                  <td style={{padding:'8px 6px'}}></td>
+                  <td style={{textAlign:'right', padding:'8px 6px', color:'var(--success)'}}>+{fmt(t.additional_conversions)}</td>
+                  <td style={{textAlign:'right', padding:'8px 6px', color:'var(--accent)'}}>{fmt(t.projected_conversions)}</td>
+                  <td style={{padding:'8px 6px'}}></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* SMS vs Paid Social Contrast */}
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:24}}>
+            <div className="card" style={{padding:20, borderLeft:'4px solid var(--success)', background:'rgba(52,211,153,0.05)'}}>
+              <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:1.5, color:'var(--success)', marginBottom:6}}>SMS (SCALE)</div>
+              <div style={{fontSize:13, color:'var(--text-primary)', lineHeight:1.6}}>{w.sms_reality}</div>
+            </div>
+            <div className="card" style={{padding:20, borderLeft:'4px solid var(--danger)', background:'rgba(248,113,113,0.05)'}}>
+              <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:1.5, color:'var(--danger)', marginBottom:6}}>Paid Social (EXIT) \u2014 {fmt(w.ps_to_sms_spend_ratio)}x overspend</div>
+              <div style={{fontSize:13, color:'var(--text-primary)', lineHeight:1.6}}>{w.paid_social_reality}</div>
+            </div>
+          </div>
+
+          {/* CustomerLake Differentiator */}
+          <div className="card" style={{padding:20, marginBottom:24}}>
+            <h3 style={{fontWeight:600, marginBottom:12}}><Icon d={icons.zap} size={16} /> Why Only CustomerLake</h3>
+            <div style={{fontSize:13, color:'var(--text-primary)', lineHeight:1.6, marginBottom:12}}>{hl.differentiation}</div>
+            <div style={{fontSize:13, color:'var(--text-muted)', lineHeight:1.6, fontStyle:'italic', padding:'12px 16px', background:'rgba(0,0,0,0.03)', borderRadius:'var(--radius)'}}>{hl.legacy_blind_spot}</div>
+          </div>
+
+          {/* Board Recommendation */}
+          <div className="card" style={{padding:20, marginBottom:24, borderLeft:'4px solid var(--accent)', background:'var(--accent)08'}}>
+            <h3 style={{fontWeight:600, marginBottom:8}}><Icon d={icons.checkCircle} size={16} /> Board Recommendation</h3>
+            <div style={{fontSize:14, fontWeight:600, color:'var(--accent)', lineHeight:1.6}}>{w.board_recommendation}</div>
+          </div>
+
+          <div style={{fontSize:11, color:'var(--text-muted)', textAlign:'right'}}>
+            CustomerLake v{data.app_version} | Budget Reallocation | CMO-375 | Sources: {data.data_origin}
+          </div>
+        </div>
+      );
+    }
+
     // ---- Demo Readiness Check (CMO-374: board cache misinformation pre-flight) ----
     function DemoReadinessPage() {
       const [data, setData] = useState(null);
@@ -9376,7 +9544,7 @@
             <div className="card" style={{marginBottom:16, borderLeft:'3px solid var(--danger)'}}>
               <h3 style={{fontWeight:600, marginBottom:12, color:'var(--danger)'}}><Icon d={icons.alertTriangle} size={16} /> Warnings ({data.warnings.length})</h3>
               {data.warnings.map((w, i) => (
-                <div key={i} style={{background: w.severity === 'CRITICAL' ? 'rgba(220,53,69,0.08)' : w.severity === 'HIGH' ? 'rgba(255,152,0,0.08)' : 'rgba(0,0,0,0.03)', borderRadius:'var(--radius)', padding:'12px 16px', marginBottom:8}}>
+                <div key={i} style={{background: w.severity === 'CRITICAL' ? 'rgba(248,113,113,0.08)' : w.severity === 'HIGH' ? 'rgba(251,191,36,0.08)' : 'rgba(0,0,0,0.03)', borderRadius:'var(--radius)', padding:'12px 16px', marginBottom:8}}>
                   <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:4}}>
                     <span style={{fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:4, background: w.severity === 'CRITICAL' ? 'var(--danger)' : w.severity === 'HIGH' ? 'var(--warning)' : 'var(--text-muted)', color:'#fff'}}>{w.severity}</span>
                     <span style={{fontSize:11, fontWeight:600, fontFamily:'monospace'}}>{w.code}</span>
@@ -9441,7 +9609,7 @@
                 </tr></thead>
                 <tbody>
                   {data.checks[0].channel_detail.map((ch, i) => (
-                    <tr key={i} style={{borderBottom:'1px solid var(--border)', background: ch.incremental_conversions < 0 ? 'rgba(220,53,69,0.05)' : 'transparent'}}>
+                    <tr key={i} style={{borderBottom:'1px solid var(--border)', background: ch.incremental_conversions < 0 ? 'rgba(248,113,113,0.05)' : 'transparent'}}>
                       <td style={{padding:'8px 12px', fontSize:12, fontWeight:600}}>{ch.channel}</td>
                       <td style={{padding:'8px 12px', textAlign:'right', fontSize:12, fontWeight:600, color: ch.incremental_conversions > 0 ? 'var(--success)' : 'var(--danger)'}}>{ch.incremental_conversions}</td>
                       <td style={{padding:'8px 12px', textAlign:'right', fontSize:12}}>${ch.revenue_usd.toLocaleString(undefined, {maximumFractionDigits:0})}</td>
@@ -9461,7 +9629,7 @@
             <div className="card" style={{borderLeft:'3px solid var(--success)'}}>
               <h3 style={{fontWeight:600, marginBottom:12, color:'var(--success)'}}><Icon d={icons.checkCircle} size={16} /> Safe Pages</h3>
               {data.recommended_demo_path.map((p, i) => (
-                <div key={i} style={{padding:'8px 12px', marginBottom:4, background:'rgba(40,167,69,0.05)', borderRadius:'var(--radius)', cursor:'pointer'}} onClick={() => window.dispatchEvent(new CustomEvent('navigate', {detail: p.id}))}>
+                <div key={i} style={{padding:'8px 12px', marginBottom:4, background:'rgba(52,211,153,0.05)', borderRadius:'var(--radius)', cursor:'pointer'}} onClick={() => window.dispatchEvent(new CustomEvent('navigate', {detail: p.id}))}>
                   <div style={{fontSize:13, fontWeight:600}}>{p.label}</div>
                   <div style={{fontSize:11, color:'var(--text-muted)'}}>{p.reason}</div>
                 </div>
@@ -9470,7 +9638,7 @@
             <div className="card" style={{borderLeft:'3px solid var(--danger)'}}>
               <h3 style={{fontWeight:600, marginBottom:12, color:'var(--danger)'}}><Icon d={icons.alertTriangle} size={16} /> Unsafe Pages</h3>
               {data.unsafe_pages.map((p, i) => (
-                <div key={i} style={{padding:'8px 12px', marginBottom:4, background:'rgba(220,53,69,0.05)', borderRadius:'var(--radius)'}}>
+                <div key={i} style={{padding:'8px 12px', marginBottom:4, background:'rgba(248,113,113,0.05)', borderRadius:'var(--radius)'}}>
                   <div style={{display:'flex', alignItems:'center', gap:8}}>
                     <span style={{fontSize:13, fontWeight:600}}>{p.label}</span>
                     <span style={{fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:4, background:'var(--danger)', color:'#fff'}}>{p.severity}</span>
@@ -9495,6 +9663,7 @@
       const pages = [
         // --- BOARD DECK: Demo-safe pages a board member finds in <60s (CMO-354) ---
         { section: 'BOARD DECK' },
+        { id: 'budget-reallocation', label: 'Budget Reallocation', icon: icons.trendingUp },
         { id: 'budget-waste', label: 'Budget Waste Headline', icon: icons.scissors },
         { id: 'demo-readiness', label: 'Demo Readiness', icon: icons.shieldCheck },
         { id: 'demo', label: 'Demo Walkthrough', icon: icons.megaphone },
@@ -9580,6 +9749,7 @@
           case 'activation-intel': return <ActivationIntelligencePage />;
           case 'attribution-truth': return <AttributionTruthPage />;
           case 'conversion-narrative': return <ConversionNarrativePage />;
+          case 'budget-reallocation': return <BudgetReallocationSlidePage />;
           case 'budget-waste': return <BudgetWasteHeadlinePage />;
           case 'demo-readiness': return <DemoReadinessPage />;
           case 'board-ready': return <BoardReadyPage />;

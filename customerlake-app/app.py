@@ -33,7 +33,7 @@ _pg_conn = None
 CATALOG = "cdm_tmforum"
 
 # Single source of truth for app version (DRY pattern)
-APP_VERSION = "81.0.0"
+APP_VERSION = "82.0.0"
 
 # ---------------------------------------------------------------------------
 # Materialized table aliases (CMO-138 / APP-CACHED-VIEWS + V2 performance fix)
@@ -98,6 +98,11 @@ VIEW_CLTV_COHORT = f"{CATALOG}._metrics.customerlake_cltv_cohort_analysis"
 
 # --- Canonical ROI with Ranges (CMO-315/316 — SINGLE SOURCE OF TRUTH) ---
 VIEW_CANONICAL_ROI = f"{CATALOG}._metrics.customerlake_canonical_roi_with_ranges"
+
+# --- Budget Reallocation Slide views (CMO-375, DA-R149, ML-R149) ---
+VIEW_BOARD_REALLOCATION_PROJECTION = f"{CATALOG}._metrics.customerlake_board_reallocation_projection"
+VIEW_BOARD_REALLOCATION_HEADLINE = f"{CATALOG}._metrics.customerlake_board_reallocation_headline"
+VIEW_BOARD_BUDGET_WASTE_HEADLINE = f"{CATALOG}._metrics.customerlake_board_budget_waste_headline"
 
 # --- Board Narrative (CMO-350/351 — 5-row value summary + 10-section cached narrative) ---
 VIEW_BOARD_VALUE_SUMMARY = f"{CATALOG}._metrics.customerlake_board_value_summary"
@@ -7634,6 +7639,124 @@ async def budget_waste_headline():
             "app_version": APP_VERSION,
         }
         return cache_set("budget_waste_headline", result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# Budget Reallocation Slide — CMO-375: lead with 92% waste, show reallocation
+# ---------------------------------------------------------------------------
+# APP-REALLOCATION-HEADLINE-R149: Uses DA-R149 reallocation projection + ML-R149
+# reallocation headline + DA-R149 budget waste headline views.
+# The board opens with this slide: $162K wasted → redirect to SMS/CRM/Push.
+
+VIEW_BOARD_CHANNEL_SCORECARD = f"{CATALOG}._metrics.customerlake_board_channel_scorecard"
+
+
+@app.get("/api/budget-reallocation-slide")
+async def budget_reallocation_slide():
+    """Budget Reallocation Slide: the board opener.
+
+    Leads with 92% waste headline, then shows per-channel reallocation
+    projection with conservative diminishing-returns model.
+    Sources: board_budget_waste_headline + board_reallocation_projection
+             + board_reallocation_headline + board_channel_scorecard
+    """
+    cached = cache_get("budget_reallocation_slide")
+    if cached:
+        return cached
+    try:
+        # 1. Waste headline (single row — the 92% story)
+        waste_rows = sql_query(f"SELECT * FROM {VIEW_BOARD_BUDGET_WASTE_HEADLINE}")
+        waste = waste_rows[0] if waste_rows else {}
+
+        # 2. Reallocation headline (single row — ML diminishing-returns model)
+        hl_rows = sql_query(f"SELECT * FROM {VIEW_BOARD_REALLOCATION_HEADLINE}")
+        hl = hl_rows[0] if hl_rows else {}
+
+        # 3. Per-channel reallocation projection (DA-R149 conservative model)
+        channels = sql_query(f"""
+            SELECT channel,
+                   ROUND(current_spend_usd, 2) as current_spend_usd,
+                   current_conversions,
+                   ROUND(current_revenue_usd, 2) as current_revenue_usd,
+                   ROUND(current_roi_x, 2) as current_roi_x,
+                   ROUND(reallocated_from_exit_usd, 2) as reallocated_from_exit_usd,
+                   ROUND(new_total_spend_usd, 2) as new_total_spend_usd,
+                   conservative_additional_conversions,
+                   ROUND(conservative_additional_revenue_usd, 2) as conservative_additional_revenue_usd,
+                   projected_total_conversions,
+                   ROUND(projected_total_revenue_usd, 2) as projected_total_revenue_usd,
+                   ROUND(projected_roi_x, 2) as projected_roi_x,
+                   projection_methodology
+            FROM {VIEW_BOARD_REALLOCATION_PROJECTION}
+            ORDER BY current_conversions DESC
+        """)
+
+        # 4. Channel scorecard for EXIT channels (complete picture)
+        scorecard = sql_query(f"""
+            SELECT channel, incremental_conversions, budget_action,
+                   ROUND(delivery_cost_usd, 2) as delivery_cost_usd,
+                   ROUND(delivery_roi_x, 2) as delivery_roi_x,
+                   board_one_liner, is_destructive
+            FROM {VIEW_BOARD_CHANNEL_SCORECARD}
+            ORDER BY incremental_conversions DESC
+        """)
+        exit_channels = [c for c in scorecard if c.get('is_destructive')]
+
+        # Aggregate projection totals
+        total_add_conv = sum(c.get('conservative_additional_conversions') or 0 for c in channels)
+        total_add_rev = sum(float(c.get('conservative_additional_revenue_usd') or 0) for c in channels)
+        total_proj_conv = sum(c.get('projected_total_conversions') or 0 for c in channels)
+        total_proj_rev = sum(float(c.get('projected_total_revenue_usd') or 0) for c in channels)
+
+        result = {
+            "waste": {
+                "headline": waste.get("headline", ""),
+                "waste_pct": float(waste.get("waste_pct") or 0),
+                "destructive_spend_usd": float(waste.get("destructive_spend_usd") or 0),
+                "constructive_spend_usd": float(waste.get("constructive_spend_usd") or 0),
+                "conversions_destroyed": abs(int(waste.get("conversions_destroyed") or 0)),
+                "conversions_created": int(waste.get("conversions_created") or 0),
+                "net_conversions": int(waste.get("net_incremental_conversions") or 0),
+                "waste_to_value_ratio": float(waste.get("waste_to_value_spend_ratio") or 0),
+                "attribution_illusion": waste.get("attribution_illusion_narrative", ""),
+                "legacy_cpa_usd": float(waste.get("legacy_cdp_paid_social_cpa") or 0),
+                "sms_reality": waste.get("sms_reality", ""),
+                "paid_social_reality": waste.get("paid_social_reality", ""),
+                "ps_to_sms_spend_ratio": float(waste.get("paid_social_to_sms_spend_ratio") or 0),
+                "board_recommendation": waste.get("board_recommendation", ""),
+                "differentiator": waste.get("customerlake_differentiator", ""),
+            },
+            "reallocation_headline": {
+                "headline_metric": hl.get("headline_metric", ""),
+                "organic_illusion": hl.get("organic_illusion_paid_social", ""),
+                "ps_attribution_roi_x": float(hl.get("paid_social_attribution_roi_x") or 0),
+                "ps_holdout_roi_x": float(hl.get("paid_social_holdout_roi_x") or 0),
+                "ps_organic_capture_usd": float(hl.get("paid_social_organic_capture_usd") or 0),
+                "projected_conversions": int(hl.get("realloc_projected_conversions") or 0),
+                "projected_revenue_usd": float(hl.get("realloc_projected_revenue_usd") or 0),
+                "uplift_conversions": int(hl.get("realloc_uplift_conversions") or 0),
+                "uplift_pct": float(hl.get("realloc_uplift_pct") or 0),
+                "new_roi_x": float(hl.get("realloc_new_roi_x") or 0),
+                "methodology": hl.get("realloc_methodology", ""),
+                "legacy_blind_spot": hl.get("legacy_cdp_blind_spot", ""),
+                "differentiation": hl.get("customerlake_differentiation", ""),
+            },
+            "channels": channels,
+            "exit_channels": exit_channels,
+            "totals": {
+                "current_conversions": int(waste.get("conversions_created") or 0),
+                "additional_conversions": total_add_conv,
+                "projected_conversions": total_proj_conv,
+                "additional_revenue_usd": round(total_add_rev, 0),
+                "projected_revenue_usd": round(total_proj_rev, 0),
+                "freed_budget_usd": float(waste.get("destructive_spend_usd") or 0),
+            },
+            "data_origin": "board_budget_waste_headline + board_reallocation_projection + board_reallocation_headline",
+            "app_version": APP_VERSION,
+        }
+        return cache_set("budget_reallocation_slide", result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
