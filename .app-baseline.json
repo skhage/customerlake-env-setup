@@ -1,18 +1,18 @@
 {
   "_comment": "CustomerLake App Regression Guard Baseline — DO NOT reduce these values without @devops approval",
-  "_updated_by": "@devops (DEVOPS-AUDIT-R150)",
+  "_updated_by": "@devops (DEVOPS-AUDIT-R151)",
   "_updated_at": "2026-10-18",
   "_root_cause": "v65.1.0→v56.0.0 regression caused by uncommitted workspace edits lost during branch checkout",
-  "_r150_note": "Baseline raised to v81.0.0 levels — BudgetWasteHeadlinePage (+1 endpoint, +2 pages, +166 app.py, +185 index.html).",
+  "_r151_note": "Baseline raised to v82.0.0 levels — BudgetReallocationSlidePage (+1 endpoint, +1 page, +125 app.py, +178 index.html).",
   "index_html": {
-    "min_lines": 9600,
-    "min_pages": 41,
+    "min_lines": 9800,
+    "min_pages": 42,
     "page_pattern": "case\\s+'[^']+':.*(?:return|\\{)",
     "path": "customerlake-app/static/index.html"
   },
   "app_py": {
-    "min_lines": 7600,
-    "min_endpoints": 99,
+    "min_lines": 7700,
+    "min_endpoints": 100,
     "endpoint_pattern": "@app\\.(get|post|put|delete|patch)\\(",
     "version_pattern": "APP_VERSION\\s*=\\s*['\"]([^'\"]+)['\"]",
     "path": "customerlake-app/app.py"
