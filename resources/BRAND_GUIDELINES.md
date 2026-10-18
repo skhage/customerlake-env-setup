@@ -1,6 +1,6 @@
 # CustomerLake Brand Guidelines
 
-**Version:** 3.22.0 — Updated 2026-10-16 by @designer (V111 Brand Sweep: App v72.0.0 — V110-fix verification + 9-dimension audit. 8.5/9. V110-UX-FIX-1 VERIFIED FIXED — 0 rgba(239,68,68) remaining. V110-UX-FIX-2 VERIFIED FIXED — L6664/L6687 both captioned, 53/53 tables = 100%. 0 off-brand hex, 0 undefined CSS vars, 1,826 var() refs. BINDING: V111-UX-FIX-1 filed — SYSTEMIC 17× fontWeight:700 on <h3>/<h2> headings (should be 600 per §3 rules 4-5). V111-UX-FIX-2 filed — 1× 3px badge padding (should be 4px per §5). 0 emoji, 0 fontWeight:800, WCAG 2.1 AA maintained (32 aria-live, 80 aria-label, 128 role). App: 8,576 lines, 30 pages, 6 nav sections.)  
+**Version:** 3.26.0 — Updated 2026-10-18 by @designer (UX-BOARDSAFE-R154: Board-Safe Five UX Data Integrity Audit. NEW §12 added: Data Integrity in Presentation Layer. FINDING: 3 CMO-385 wrong views still in app.py (exec_summary_v2, board_reallocation_projection, board_reallocation_headline). Only 2/5 Board-Safe Five aliased. Exec Summary page shows wrong channel ranking even after staged v84-v86. 2 BINDING remediation tasks filed: APP-UX-BOARDSAFE-EXEC-R154 HIGH, APP-UX-BOARDSAFE-ALIASES-R154 MEDIUM. Live app v82.0.0. Staged: v83→v84→v85→v86 pending CEO.)  
 **Status:** BINDING — All CustomerLake apps, dashboards, and demos MUST conform  
 **Scope:** Databricks App (`customerlake`), AI/BI dashboards, Genie spaces, demo materials  
 **Tag:** `customerlake_project: customerlake`
@@ -173,6 +173,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 | CPA Sensitivity | percent | `icons.percent` (nav + heading — V91-UX-ADVISORY-1 RESOLVED in v64.0.0) |
 | CLTV Impact | heart | `icons.heart` (nav + heading — V92-UX-FIX-1 VERIFIED in V93) |
 | Spend Less, Get More | trending-down | `icons.trendingDown` (nav + heading — V93-UX-FIX-1 RESOLVED in V102, L7212) |
+| Holdout Reconciliation | scale | `icons.scale` (nav + hero — V83-UX-FIX-5 deduped from shieldCheck in v85.0.0) |
 
 ### Icon Rules
 1. **NEVER use emoji in production UI** — rendering varies across OS/browser
@@ -451,6 +452,48 @@ When creating AI/BI dashboards or Genie spaces tagged `customerlake_project: cus
 - [ ] Loading skeleton screens for KPI cards
 - [ ] Empty state illustrations with constructive messaging
 - [x] `prefers-reduced-motion` media query for transitions (V6-UX-FIX-BUNDLE)
+
+---
+
+## 12. Data Integrity in Presentation Layer (NEW — v3.26.0, @designer R154)
+
+### Board-Safe Five Requirement
+All board-level, executive, and demo-facing pages MUST source their headline numbers exclusively from the **Board-Safe Five** canonical views. These are the ONLY views approved for board presentation:
+
+| # | Board-Safe View | Purpose | Status |
+|---|---|---|---|
+| 1 | `customerlake_board_executive_summary` | 5-row canonical summary, <1s | ✓ Aliased in app.py |
+| 2 | `customerlake_board_value_summary` | Value narrative, 5-row | ✓ Aliased in app.py |
+| 3 | `customerlake_board_channel_ranking_corrected` | Holdout-evidence channel ranking | ✗ NOT in app.py |
+| 4 | `customerlake_board_conversion_pivot_cached` | Conversion pivot, cached | ✗ NOT in app.py |
+| 5 | `customerlake_board_reallocation_headline_v2` | Log-saturation reallocation | ✗ NOT in app.py |
+
+### CMO-385 Deprecated Views (MUST NOT surface in UI)
+The following views contain **incorrect data** and MUST NOT be used for any user-facing page:
+
+| Deprecated View | What’s Wrong | Correct Replacement |
+|---|---|---|
+| `exec_summary_v2_cached` | Email ranked #2 (should be EXIT) | `board_channel_ranking_corrected` |
+| `board_reallocation_projection` | Linear projections (6.1x overstatement) | `board_reallocation_headline_v2` |
+| `board_reallocation_headline` | Revenue $210K (should be $503K) | `board_revenue_audit` |
+| `reallocation_scenario_model_cached` | Email 2.01x ROI (should be -47.8x) | `board_pilot_summary` |
+
+### Data Integrity Rules (BINDING)
+1. **No contradictory numbers:** A user navigating between pages MUST NOT encounter conflicting headline numbers (revenue, conversion counts, channel rankings)
+2. **Board-Safe sourcing:** All board/exec/demo pages MUST query from Board-Safe Five views or their approved cached equivalents
+3. **Deprecated view prohibition:** Any endpoint still using a CMO-385 deprecated view MUST be remediated before the next staged version is promoted to live
+4. **Visual deprecation warning:** If a page temporarily sources from a non-Board-Safe view (during transition), it MUST display a visible "Data source pending update" indicator in `--warning` color
+5. **View alias discipline:** All board-facing view constants in `app.py` MUST be declared with a `VIEW_BOARD_*` prefix and grouped under the Board-Safe section
+
+### Current Violations (R154 Audit)
+| Endpoint | View Used | Issue | Remediation Task |
+|---|---|---|---|
+| GET /api/executive/summary | `exec_summary_v2_cached` | Wrong channel ranking | APP-UX-BOARDSAFE-EXEC-R154 |
+| GET /api/demo-readiness | `exec_summary_v2_cached` | Wrong channel ranking | APP-UX-BOARDSAFE-EXEC-R154 |
+| GET /api/budget-reallocation-slide | `board_reallocation_projection` | DEPRECATED linear | v84 staged fix (CEO pending) |
+| GET /api/budget-reallocation-slide | `board_reallocation_headline` | Revenue $210K vs $503K | v84 staged fix (CEO pending) |
+
+---
 
 ### V10 Audit Findings (2026-09-30) — Polish Only
 - [x] **V10-UX-FIX-1:** Footer version stale at `v7.0`. PARTIALLY FIXED to v8.0 — superseded by V11-UX-FIX-3.
