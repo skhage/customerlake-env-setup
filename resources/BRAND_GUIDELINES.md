@@ -1,6 +1,6 @@
 # CustomerLake Brand Guidelines
 
-**Version:** 3.22.0 — Updated 2026-10-16 by @designer (V111 Brand Sweep: App v72.0.0 — V110-fix verification + 9-dimension audit. 8.5/9. V110-UX-FIX-1 VERIFIED FIXED — 0 rgba(239,68,68) remaining. V110-UX-FIX-2 VERIFIED FIXED — L6664/L6687 both captioned, 53/53 tables = 100%. 0 off-brand hex, 0 undefined CSS vars, 1,826 var() refs. BINDING: V111-UX-FIX-1 filed — SYSTEMIC 17× fontWeight:700 on <h3>/<h2> headings (should be 600 per §3 rules 4-5). V111-UX-FIX-2 filed — 1× 3px badge padding (should be 4px per §5). 0 emoji, 0 fontWeight:800, WCAG 2.1 AA maintained (32 aria-live, 80 aria-label, 128 role). App: 8,576 lines, 30 pages, 6 nav sections.)  
+**Version:** 3.32.0 — Updated 2026-10-20 by @designer (R167: DEMO-FINAL Proactive Audit. Score: 9.8/10 (down 0.1 from R166 9.9). App v86.0.0, 9,962 lines (+63), 646,022 chars (+5,523). 15-DIM REGRESSION: 13/15 MATCH R166 baseline. ISSUES: (1) 9x borderRadius:3 off-grid — progress bars L4122-4123/L8722-8723/L8957-8958, bar chart L8533, legend dots L9399-9400 → should be 4 (APP-UX-BORDERRADIUS3-R167 filed). (2) 2x color:#fff WCAG AA failures — L113 .skip-to-content CSS, L7423 ErrorBoundary reload button, both on var(--accent) bg, 3.26:1 FAIL → var(--bg-primary) 5.8:1 PASS (APP-UX-WCAG-FFF-R167 filed). (3) VIEW_BOARD_CONVERSION_PIVOT duplicate constant L118/L7010 (APP-UX-DUPE-CONST-R167 filed). IMPROVEMENTS: fontSize ALL ON-SCALE 1,091 refs 0 off-scale (was 1,011), <th> fontWeight 46/46=500 (was 40), @media 4 (was 3), CSS vars 2,283 (was 2,224). STABLE: ARIA 96+38+142, ErrorBoundary 5, skip-to-content WCAG 2.4.1, focus 10, prefers-reduced-motion. DEMO VERDICT: PASS. 3 post-demo tasks filed.)  
 **Status:** BINDING — All CustomerLake apps, dashboards, and demos MUST conform  
 **Scope:** Databricks App (`customerlake`), AI/BI dashboards, Genie spaces, demo materials  
 **Tag:** `customerlake_project: customerlake`
@@ -90,6 +90,7 @@ When coloring by channel (not by semantic meaning), use these non-semantic assig
 3. Semantic colors are reserved — do NOT use `--success` for non-positive states or `--warning` for non-caution states
 4. Source system colors are locked — new sources follow the same `rgba(color, 0.2)` pattern
 5. Channel differentiation MUST use the Channel Data-Viz palette above, NOT semantic colors (v1.1)
+6. **NEVER use `color:'#fff'` or `color: #fff` (white) on colored backgrounds** — white text on `--success` (#34D399), `--danger` (#F87171), `--warning` (#FBBF24), or `--accent` (#4F8FF7) backgrounds FAILS WCAG AA contrast. Use `color:'var(--bg-primary)'` (inline) or `color: var(--bg-primary)` (CSS) instead — dark text (#0F1117) passes on all semantic backgrounds: --danger = 6.2:1, --success = 10.3:1, --accent = 5.8:1. This applies to BOTH inline styles AND CSS class rules. (Added v3.29.0. R158: 21 inline JSX violations found. R159: all 21 inline fixed. R160: 7 CSS-level violations discovered in .btn-primary, bar-chart-fill, .demo-step-num, .demo-page-link, .demo-start-btn, .present-btn — tracked in APP-UX-WCAG-CSS-FFF-R160.)
 
 ---
 
@@ -119,6 +120,9 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 | Hero KPI Value | 32–36px | 700 | 1.2 | Normal | Page north-star metrics (CFO Bottom Line, True Causal ROI) |
 | Capability Hero Count | 48px | 700 | 1.2 | Normal | Single dramatic count on ComparisonPage capability-gap hero |
 | Diff Badge | 10px | 600 | 1.0 | Normal | UNIQUE/DEDUP feature callouts |
+| Large Body | 16px | 400–500 | 1.5 | Normal | Emphasized body text, section intros (formalized v3.27.0) |
+| Sub-heading | 20px | 600 | 1.3 | Normal | Secondary headings below page title (formalized v3.27.0) |
+| Secondary KPI Value | 24px | 700 | 1.2 | Normal | Supporting metric values, secondary hero numbers (formalized v3.27.0) |
 
 ### Typography Rules
 1. **Maximum 3 font sizes on any single view** (KPI value + body + label)
@@ -126,13 +130,20 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 3. Letter-spacing (`0.5px`) accompanies uppercase treatments only
 4. Bold (`700`) is reserved for KPI values, the wordmark, and source badges
 5. Semi-bold (`600`) for headings only — do not use for emphasis in body text
+6. **Type scale is CLOSED** — only sizes listed in the §3 table are permitted. Any new size must be added to BRAND_GUIDELINES.md before use. Currently off-scale: `26px` (normalize to 24 or 28). Added v3.27.0.
 
 ---
 
 ## 4. Iconography
 
-### Current State: ZERO EMOJI DEBT — ALL CLEAR (v3.14, v65.1.0)
-37+ unique Lucide SVG icon paths across 28 pages. 140 icon refs, 101 <Icon> components. V93-UX-FIX-1 NOW RESOLVED: Spend Less, Get More heading (L7212) includes icons.trendingDown. ZERO EMOJI in entire 7,576-line codebase. 0 OPEN — ALL 28/28 page headings include their nav icon. All icons compliant: 18px default, 1.5px stroke, currentColor, aria-hidden. 4 Unicode → arrows at L5551 in Demo Walkthrough prose (acceptable as typographic content). Utility icons: menu (mobile nav), x (close), checkCircle (success states + Board Ready nav), clock (timestamps), activity (Learning Loop), fileText (Spend Transparency), calendar (Production Path), percent (CPA Sensitivity), heart (CLTV Impact), trendingDown (Spend Less nav + heading).
+### Current State: ZERO EMOJI DEBT — 1 NAV ICON DUPE (v3.31.0, R160)
+43 unique Lucide SVG icon paths across 36 pages. 203 icon refs. ZERO EMOJI in entire 9,838-line codebase. All icons compliant: 18px default, 1.5px stroke, currentColor, aria-hidden (built into Icon component L751). 4 Unicode → arrows in Demo Walkthrough prose (acceptable as typographic content).
+
+**NAV ICON DUPLICATION (1 pair remaining — tracked in APP-UX-NAV-ALERT-TRIANGLE-R160):**
+- ✅ icons.checkCircle: FIXED R159 — now only on Board Ready (L9680). CERTAIN (L4336) uses it in page content (different context, acceptable).
+- ✅ icons.zap: FIXED R159 — now only on Why CustomerLake (L9708). STRONG SIGNAL (L4337) uses it in page content (acceptable).
+- ✅ icons.alertCircle: FIXED R159 — now only on Dark Audience (L9692). ANOMALY (L4342) uses it in page content (acceptable).
+- ❌ icons.alertTriangle: Attribution Truth (L9700) + Cost Methodology (L9718) → keep on Attribution Truth, reassign Cost Methodology to icons.calculator
 
 ### Required Standard
 - **Icon system:** Use inline SVG icons or a lightweight icon font (Lucide, Phosphor, or similar)
@@ -173,6 +184,14 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 | CPA Sensitivity | percent | `icons.percent` (nav + heading — V91-UX-ADVISORY-1 RESOLVED in v64.0.0) |
 | CLTV Impact | heart | `icons.heart` (nav + heading — V92-UX-FIX-1 VERIFIED in V93) |
 | Spend Less, Get More | trending-down | `icons.trendingDown` (nav + heading — V93-UX-FIX-1 RESOLVED in V102, L7212) |
+| Budget Reallocation | trending-up | `icons.trendingUp` ⚠️ DUPLICATE with Incrementality — APP-UX-NAV-ICON-DUPES-R156 |
+| Budget Waste Headline | scissors | `icons.scissors` ⚠️ DUPLICATE with Waste Exposure — APP-UX-NAV-ICON-DUPES-R156 |
+| Conversion Narrative | target | `icons.target` ⚠️ DUPLICATE with Audience Builder — APP-UX-NAV-ICON-DUPES-R156 |
+| Attribution Truth | alert-triangle | `icons.alertTriangle` ⚠️ DUPLICATE with Cost Methodology — APP-UX-NAV-ICON-DUPES-R156 |
+| Board Narrative | briefcase | `icons.briefcase` |
+| Activation Intel | send | `icons.send` |
+| Spend Optimization | trending-down | `icons.trendingDown` |
+| Cost Methodology | alert-triangle | `icons.alertTriangle` ⚠️ DUPLICATE with Attribution Truth |
 
 ### Icon Rules
 1. **NEVER use emoji in production UI** — rendering varies across OS/browser
@@ -199,6 +218,8 @@ All spacing values MUST be multiples of 8px:
 | `--space-10` | 40px | Loading/empty state padding |
 
 **Exception:** 4px is allowed for tight badge internal padding and 2px for badge vertical padding.
+
+**Off-grid violations (v3.29.0):** `padding:6px` (103 instances) and `padding:10px` (26 instances) are NOT on the 8px grid. Normalize to 4/8px or 8/12px respectively. For table cells, the spec is `padding:'8px 12px'` per §6. For callout boxes, use `padding:'12px 16px'` (both on-grid).
 
 ### Layout Structure
 ```
@@ -228,6 +249,8 @@ All spacing values MUST be multiples of 8px:
 | Badge radius | 10px | Status badges |
 | Source badge | 4px | Source system tags |
 | Confidence bar | 3px | Progress bars |
+
+**Border Radius is CLOSED** — only values in the table above are permitted. `borderRadius:6` (18 instances in v82.0.0) is NOT on-spec and must be normalized to 4px (badges/tags) or 8px (standard). Added v3.28.0.
 
 ### Shadow
 | Token | Value | Usage |

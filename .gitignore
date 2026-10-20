@@ -289,3 +289,12 @@ src/daily_cache_refresh.ipynb
 /DA-*.ipynb
 # Data-planner DP-* prefix notebooks (@devops R151 interactive audit, 2026-10-18)
 /DP-*.ipynb
+# Designer agent notebooks (@devops R162 proactive audit, 2026-10-19)
+/DESIGNER-*.ipynb
+
+# Scratch/temp files (@devops R164 pre-GO audit, 2026-10-19)
+/_tmp_*.txt
+_tmp_*.txt
+
+# Stray notebooks in root notebooks/ directory (canonical code lives in src/notebooks/)
+/notebooks/
